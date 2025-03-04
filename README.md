@@ -1,6 +1,22 @@
-[![UIT](https://www.uit.edu.vn/sites/vi/files/banner_uit.png)](https://www.uit.edu.vn/)
+<!-- Banner -->
+<p align='center'>
+  <a href=https://www.uit.edu.vn/" title="Trường Đại học Công nghệ Thông tin" style="border: none;">
+     <img src="https://i.imgur.com/WmMnSRt.png" alt="Trường Đại học Công nghệ Thông tin | University of Information Technology">
+  </a>
+</p>
 
-# SE104 - NHẬP MÔN CÔNG NGHỆ PHẦN MỀM
+<h1 align="center"><b>NHẬP MÔN CÔNG NGHỆ PHẦN MỀM</b></h>
 
-## SE104-Jewelry-Store-Management-Software
-This is our project for SE104 - Introduction to Software Engineering
+## GIỚI THIỆU MÔN HỌC
+* **Tên môn học:** Nhập môn công nghệ phần mềm
+* **Mã môn học:** SE104
+* **Mã lớp:** SE104.P23
+* **Giảng viên**: TS.Nguyễn Thị Xuân Hương
+
+## THÀNH VIÊN NHÓM
+|STT| MSSV      | Họ và Tên       |Chức Vụ    | Github                                                  | Email                   |
+|---|:---------:| ---------------:|----------:|--------------------------------------------------------:|-------------------------:
+| 1 | 23521704  | Trần Thị Cẩm Tú |Nhóm trưởng| https://github.com/TuTTC |23521704@gm.uit.edu.vn   |
+
+## ĐỒ ÁN
+<h2 align="center"><b>Jewelry Store Management Software</b></h>
