@@ -17,6 +17,7 @@
 |STT| MSSV      | Họ và Tên       |Chức Vụ    | Github                                                  | Email                   |
 |---|:---------:| ---------------:|----------:|--------------------------------------------------------:|-------------------------:
 | 1 | 23521704  | Trần Thị Cẩm Tú |Nhóm trưởng| https://github.com/TuTTC |23521704@gm.uit.edu.vn   |
+| 2 | 23521821  | Mai Lê Bá Vương |Thành viên|https://github.com/bavuong2005 |23521821@gm.uit.edu.vn   |
 
 ## ĐỒ ÁN
 <h2 align="center"><b>Jewelry Store Management Software</b></h>
