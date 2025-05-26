@@ -38,4 +38,7 @@
 
   Nếu chưa cài đặt MySQL thì mọi người cài và tiếp tục bước này
 
-- Bước 4: Khởi tạo DATABASE
+- Bước 4: Xuất biến môi trường trước khi chạy
+  `$env:FLASK_APP = "main.py"`
+
+- Bước 5: Khởi tạo DATABASE
