@@ -21,3 +21,21 @@
 | 3 | 23521193  | Đinh Hoàng Phúc |Thành viên|https://github.com/DinhHoangPhuc3010 |23521193@gm.uit.edu.vn  |
 ## ĐỒ ÁN
 <h2 align="center"><b>Jewelry Store Management Software</b></h>
+
+### Giới thiệu
+***
+### Hướng dẫn sau khi clone
+- Bước 1: Tạo môi trường ảo và kích hoạt
+
+  `python -m venv .venv`
+  `.venv\Scripts\activate`
+
+- Bước 2:  Cài đặt thư viện từ `requirements.txt`
+
+  `pip install -r requirements.txt`
+
+- Bước 3: Tạo file `.env` --> dùng thông tin cấu hình riêng cho MySQL cục bộ.
+
+  Nếu chưa cài đặt MySQL thì mọi người cài và tiếp tục bước này
+
+- Bước 4: Khởi tạo DATABASE
