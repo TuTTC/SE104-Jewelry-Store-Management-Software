@@ -16,3 +16,6 @@ migrate = Migrate(app, db)
 
 # Import models để Flask-Migrate nhận biết
 from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTietPhieuDichVu, PhieuDichVu, ChiTietDonHang, DonHang, SanPham, DanhGia, DanhMucSanPham, ThamSo, TonKho, BangGia, PhieuNhap, ChiTietPhieuNhap, PhieuBanHang, BaoCao
+
+from Routes import register_routes
+register_routes(app)
