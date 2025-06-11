@@ -9,7 +9,7 @@ class NGUOIDUNG(db.Model):
     TenDangNhap = Column(String(100), unique=True, nullable=False)
     Email = Column(String(100), unique=True, nullable=False)
     MatKhau = Column(String(255), nullable=False)
-    VaiTro = Column(Enum("admin", "employee", "customer"), nullable=False)
+    VaiTro = Column(Enum("admin", "customer"), nullable=False)
     TaoNgay = Column(DateTime, default=func.now())
 
     @validates('Email')
