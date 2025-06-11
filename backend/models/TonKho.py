@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, ForeignKey, DateTime, CheckConstraint, func
+from sqlalchemy.orm import relationship
 from database import db
 
 class TONKHO(db.Model):
