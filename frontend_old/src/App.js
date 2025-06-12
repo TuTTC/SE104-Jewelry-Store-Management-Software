@@ -1,30 +1,3 @@
-/*
-import logo from './logo.svg';
-import './App.css';
-
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
-
-export default App;
-*/
 import React, { useState } from "react";
 import './App.css';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -48,13 +21,13 @@ const initialOrders = [
 ];
 
 const initialCustomers = [
-  { id: 1, name: "John Doe", email: "john@example.com", phone: "(123) 456-7890", address: "123 Main St, NY", totalSpent: "$5000", status: "Active" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "(987) 654-3210", address: "456 Elm St, CA", totalSpent: "$3000", status: "Inactive" },
+  { id: 1, name: "John Doe", email: "john@example.com", phone: "(123) 456-7890", address: "123 Main St, NY", totalSpent: "$5000", status: "Active", customerCode: "KH001" },
+  { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "(987) 654-3210", address: "456 Elm St, CA", totalSpent: "$3000", status: "Inactive", customerCode: "KH002" },
 ];
 
-const initialEmployees = [
-  { id: 1, name: "Alice Johnson", position: "Sales Manager", email: "alice@jewelry.com", phone: "(111) 222-3333", address: "789 Pearl St, TX", status: "Active" },
-  { id: 2, name: "Bob Lee", position: "Inventory Clerk", email: "bob@jewelry.com", phone: "(444) 555-6666", address: "321 Opal Ave, FL", status: "Inactive" },
+const initialAccounts = [
+  { id: 1, name: "Alice Johnson", position: "Account Manager", email: "alice@jewelry.com", phone: "(111) 222-3333", address: "789 Pearl St, TX", status: "Active", accountCode: "TK001" },
+  { id: 2, name: "Bob Lee", position: "Account Clerk", email: "bob@jewelry.com", phone: "(444) 555-6666", address: "321 Opal Ave, FL", status: "Inactive", accountCode: "TK002" },
 ];
 
 function App() {
@@ -62,12 +35,12 @@ function App() {
   const [products, setProducts] = useState(initialProducts);
   const [orders, setOrders] = useState(initialOrders);
   const [customers, setCustomers] = useState(initialCustomers);
-  const [employees, setEmployees] = useState(initialEmployees);
+  const [accounts, setAccounts] = useState(initialAccounts);
 
   // State cho modal và form
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(""); // "add" hoặc "edit"
-  const [currentSection, setCurrentSection] = useState(""); // "products", "orders", "customers", "employees"
+  const [currentSection, setCurrentSection] = useState(""); // "products", "orders", "customers", "accounts"
   const [currentItem, setCurrentItem] = useState(null);
 
   // State cho form
@@ -106,7 +79,7 @@ function App() {
       if (currentSection === "products") setProducts([...products, newItem]);
       if (currentSection === "orders") setOrders([...orders, newItem]);
       if (currentSection === "customers") setCustomers([...customers, newItem]);
-      if (currentSection === "employees") setEmployees([...employees, newItem]);
+      if (currentSection === "accounts") setAccounts([...accounts, newItem]);
     } else if (modalType === "edit" && currentItem) {
       if (currentSection === "products") {
         setProducts(products.map((item) => (item.id === currentItem.id ? { ...formData, id: item.id } : item)));
@@ -117,8 +90,8 @@ function App() {
       if (currentSection === "customers") {
         setCustomers(customers.map((item) => (item.id === currentItem.id ? { ...formData, id: item.id } : item)));
       }
-      if (currentSection === "employees") {
-        setEmployees(employees.map((item) => (item.id === currentItem.id ? { ...formData, id: item.id } : item)));
+      if (currentSection === "accounts") {
+        setAccounts(accounts.map((item) => (item.id === currentItem.id ? { ...formData, id: item.id } : item)));
       }
     }
     closeModal();
@@ -130,7 +103,7 @@ function App() {
       if (section === "products") setProducts(products.filter((item) => item.id !== id));
       if (section === "orders") setOrders(orders.filter((item) => item.id !== id));
       if (section === "customers") setCustomers(customers.filter((item) => item.id !== id));
-      if (section === "employees") setEmployees(employees.filter((item) => item.id !== id));
+      if (section === "accounts") setAccounts(accounts.filter((item) => item.id !== id));
     }
   };
 
@@ -182,6 +155,7 @@ function App() {
               {currentSection === "customers" && (
                 <>
                   <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Name" required />
+                  <input type="text" name="customerCode" value={formData.customerCode || ""} onChange={handleInputChange} placeholder="Customer Code" required />
                   <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" required />
                   <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Phone" required />
                   <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Address" required />
@@ -193,10 +167,11 @@ function App() {
                   </select>
                 </>
               )}
-              {currentSection === "employees" && (
+              {currentSection === "accounts" && (
                 <>
                   <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Name" required />
                   <input type="text" name="position" value={formData.position || ""} onChange={handleInputChange} placeholder="Position" required />
+                  <input type="text" name="accountCode" value={formData.accountCode || ""} onChange={handleInputChange} placeholder="Account Code" required />
                   <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" required />
                   <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Phone" required />
                   <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Address" required />
@@ -225,7 +200,7 @@ function App() {
             { label: "Products", icon: Gem, key: "products" },
             { label: "Orders", icon: ShoppingCart, key: "orders" },
             { label: "Customers", icon: Users, key: "customers" },
-            { label: "Employees", icon: UserCircle, key: "employees" },
+            { label: "Account", icon: UserCircle, key: "accounts" },
           ].map(({ label, icon: Icon, key }) => (
             <button
               key={key}
@@ -414,6 +389,7 @@ function App() {
                 <thead>
                   <tr>
                     <th>ID</th>
+                    <th>CUSTOMER CODE</th>
                     <th>NAME</th>
                     <th>EMAIL</th>
                     <th>PHONE</th>
@@ -427,6 +403,7 @@ function App() {
                   {customers.map((c) => (
                     <tr key={c.id}>
                       <td>{c.id}</td>
+                      <td>{c.customerCode}</td>
                       <td>{c.name}</td>
                       <td>{c.email}</td>
                       <td>{c.phone}</td>
@@ -453,12 +430,12 @@ function App() {
           </div>
         )}
 
-        {/* Employees Section */}
-        {selectedMenu === "employees" && (
+        {/* Account Section */}
+        {selectedMenu === "accounts" && (
           <div className="table-card">
             <div className="table-header">
-              <h2 className="table-title">Employees</h2>
-              <button onClick={() => openModal("employees", "add")} className="action-button">Add Employee</button>
+              <h2 className="table-title">Account</h2>
+              <button onClick={() => openModal("accounts", "add")} className="action-button">Add Account</button>
             </div>
             <div className="table-container">
               <table className="data-table">
@@ -467,6 +444,7 @@ function App() {
                     <th>ID</th>
                     <th>NAME</th>
                     <th>POSITION</th>
+                    <th>ACCOUNT CODE</th>
                     <th>EMAIL</th>
                     <th>PHONE</th>
                     <th>ADDRESS</th>
@@ -475,24 +453,25 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((e) => (
-                    <tr key={e.id}>
-                      <td>{e.id}</td>
-                      <td>{e.name}</td>
-                      <td>{e.position}</td>
-                      <td>{e.email}</td>
-                      <td>{e.phone}</td>
-                      <td>{e.address}</td>
+                  {accounts.map((a) => (
+                    <tr key={a.id}>
+                      <td>{a.id}</td>
+                      <td>{a.name}</td>
+                      <td>{a.position}</td>
+                      <td>{a.accountCode}</td>
+                      <td>{a.email}</td>
+                      <td>{a.phone}</td>
+                      <td>{a.address}</td>
                       <td>
-                        <span className={e.status === "Active" ? "status-instock" : "status-inactive"}>
-                          {e.status}
+                        <span className={a.status === "Active" ? "status-instock" : "status-inactive"}>
+                          {a.status}
                         </span>
                       </td>
                       <td>
-                        <button onClick={() => openModal("employees", "edit", e)} className="action-icon edit">
+                        <button onClick={() => openModal("accounts", "edit", a)} className="action-icon edit">
                           <Edit className="icon" />
                         </button>
-                        <button onClick={() => handleDelete("employees", e.id)} className="action-icon delete">
+                        <button onClick={() => handleDelete("accounts", a.id)} className="action-icon delete">
                           <Trash className="icon" />
                         </button>
                       </td>
