@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, ForeignKey, DateTime, CheckConstraint, func
 from sqlalchemy.orm import relationship
 from database import db
+from sqlalchemy.orm import relationship
+
 
 class TONKHO(db.Model):
     __tablename__ = "TONKHO"
