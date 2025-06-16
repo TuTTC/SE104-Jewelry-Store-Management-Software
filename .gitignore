@@ -1,48 +1,38 @@
-# ==============================
-# 1. Python / Flask backend
-# ==============================
-*.pyc
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build file
+*.exe
+*.dll
+*.so
+*.o
+*.a
+*.out
+
+# Env
+env/
+venv/
+.venv/
+
+# Flask
+*.db
+*.sqlite
+*.log
 instance/
 .env
-venv/
-.env.*
-.mypy_cache/
-.pytest_cache/
-coverage/
-*.sqlite3
-*.db
 
-# VS Code or other IDEs
+# React
+node_modules/
+build/
+dist/
+
+# IDE
 .vscode/
 .idea/
-*.swp
 
-# Flask Migrations
-migrations/
-*.log
-
-# ==============================
-# 2. NodeJS / React frontend
-# ==============================
-# If frontend is in a subfolder like /frontend
-frontend/node_modules/
-frontend/build/
-frontend/.env
-frontend/.env.*
-
-# React editor/OS files
+# OS
 .DS_Store
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ==============================
-# 3. General
-# ==============================
-*.bak
-*.tmp
-*.log
-*.lock
 Thumbs.db
-*.orig
