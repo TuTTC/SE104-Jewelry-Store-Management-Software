@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, Enum, func
-from sqlalchemy.orm import validates
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
+from sqlalchemy.orm import relationship, validates
 from database import db
 
 class NGUOIDUNG(db.Model):
@@ -9,8 +9,10 @@ class NGUOIDUNG(db.Model):
     TenDangNhap = Column(String(100), unique=True, nullable=False)
     Email = Column(String(100), unique=True, nullable=False)
     MatKhau = Column(String(255), nullable=False)
-    VaiTro = Column(Enum("admin", "customer"), nullable=False)
+    MaVaiTro = Column(Integer, ForeignKey("VAITRO.MaVaiTro"), nullable=False)
     TaoNgay = Column(DateTime, default=func.now())
+
+    vaitro = relationship("VAITRO", backref="nguoidungs")
 
     @validates('Email')
     def validate_email(self, key, email):

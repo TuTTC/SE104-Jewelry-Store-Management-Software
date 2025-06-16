@@ -2,9 +2,10 @@ from flask import Blueprint, request, jsonify
 from database import db
 from models.SanPham import SANPHAM
 
-product_bp = Blueprint('product_bp', __name__, url_prefix='/api/products')
+product_bp = Blueprint('product_bp', __name__)
 
-@product_bp.route('', methods=['GET'])
+# Lấy sản phẩm
+@product_bp.route('/', methods=['GET'])
 def get_products():
     products = SANPHAM.query.all()
     result = []
@@ -21,7 +22,8 @@ def get_products():
         })
     return jsonify(result), 200
 
-@product_bp.route('', methods=['POST'])
+# Thêm sản phẩm
+@product_bp.route('/', methods=['POST'])
 def add_product():
     data = request.json
     try:
@@ -41,6 +43,7 @@ def add_product():
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
+#
 @product_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     product = SANPHAM.query.get(product_id)
