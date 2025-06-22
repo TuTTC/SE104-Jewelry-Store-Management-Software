@@ -9,7 +9,7 @@ from Routes.category import category_bp
 from oauth import oauth
 from utils.roles import seed_roles
 from extensions import mail
-
+from flask_cors import CORS
 
 
 
@@ -19,6 +19,7 @@ load_dotenv()  # ← Tải biến môi trường từ file .env
 
 # Khởi tạo app
 app = Flask(__name__)
+CORS(app)
 app.config.from_object(Config)
 mail.init_app(app)
 jwt = JWTManager(app)
