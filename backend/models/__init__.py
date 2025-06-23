@@ -15,3 +15,6 @@ from .BangGia import BANGGIA
 from .PhieuNhap import PHIEUNHAP
 from .ChiTietPhieuNhap import CHITIETPHIEUNHAP
 from .TonKho import TONKHO
+from .VaiTro import VAITRO
+from .PhieuBanHang import PHIEUBANHANG
+from .BaoCao import BAOCAO

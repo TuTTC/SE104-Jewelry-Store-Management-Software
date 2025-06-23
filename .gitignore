@@ -1,8 +1,39 @@
-.env
-*.pyc
+
+# Python cache
 __pycache__/
-node_modules/
+*.pyc
+*.pyo
+*.pyd
+
+# Build file
+*.exe
+*.dll
+*.so
+*.o
+*.a
+*.out
+
+# Env
+env/
 venv/
+.venv/
+
+# Flask
 *.db
+*.sqlite
 *.log
-.venv
+instance/
+.env
+
+# React
+node_modules/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
