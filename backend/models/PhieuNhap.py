@@ -8,7 +8,7 @@ class TrangThaiPhieuNhapEnum(enum.Enum):
     dang_xu_ly = 'Đang xử lý'
     huy = 'Hủy'
 
-class PHIEUNHAP(db.Model):
+class PhieuNhap(db.Model):
     __tablename__ = "PHIEUNHAP"
 
     MaPN = Column(Integer, primary_key=True, autoincrement=True)
@@ -20,5 +20,5 @@ class PHIEUNHAP(db.Model):
     GhiChu = Column(Text)
 
     # Quan hệ
-    nhacungcap = relationship("NHACUNGCAP", backref="phieunhaps")
+    nhacungcap = relationship("NhaCungCap", backref="phieunhaps")
     nguoitao = relationship("NGUOIDUNG", backref="phieunhaps")

@@ -51,7 +51,7 @@ def update_dichvu(id):
 # Tìm kiếm dịch vụ theo từ khóa
 @dichvu_bp.route('/dichvu/search', methods=['GET'])
 def search_dichvu():
-    keyword = request.args.get('q', '')
+    keyword = request.args.get('keyword', '')
     results = DichVu.query.filter(DichVu.TenDV.ilike(f'%{keyword}%')).all()
     data = [
         {

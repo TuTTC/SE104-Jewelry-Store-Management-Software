@@ -9,9 +9,8 @@ from Routes.category import category_bp
 from oauth import oauth
 from utils.roles import seed_roles
 from extensions import mail
-
-
-
+from flask_cors import CORS
+# from utils.seed_dichvu import seed_dichvu
 
 # 💡 Thêm dòng này để load biến môi trường từ .env
 from dotenv import load_dotenv
@@ -20,6 +19,7 @@ load_dotenv()  # ← Tải biến môi trường từ file .env
 # Khởi tạo app
 app = Flask(__name__)
 app.config.from_object(Config)
+CORS(app)
 mail.init_app(app)
 jwt = JWTManager(app)
 # Khởi tạo db và migrate
@@ -46,6 +46,7 @@ from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTie
 with app.app_context():
     db.create_all()
     seed_roles()
+    # seed_dichvu()
 
 from Routes import register_routes
 register_routes(app)

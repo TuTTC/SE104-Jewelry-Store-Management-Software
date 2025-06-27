@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, Date, UniqueConstraint
 from database import db
 
-class NHACUNGCAP(db.Model):
+class NhaCungCap(db.Model):
     __tablename__ = "NHACUNGCAP"
 
     MaNCC = Column(Integer, primary_key=True, autoincrement=True)

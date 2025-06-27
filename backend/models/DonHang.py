@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, DateTime, DECIMAL, String
 from sqlalchemy.orm import relationship
 from database import db
 
-class DONHANG(db.Model):
+class DonHang(db.Model):
     __tablename__ = "DONHANG"
 
     MaDH = Column(Integer, primary_key=True, autoincrement=True)

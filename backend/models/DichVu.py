@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DECIMAL, Boolean
 from database import db
 
-class DICHVU(db.Model):
+class DichVu(db.Model):
     __tablename__ = "DICHVU"
 
     MaDV = Column(Integer, primary_key=True, autoincrement=True)

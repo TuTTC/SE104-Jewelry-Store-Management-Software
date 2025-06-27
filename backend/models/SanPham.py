@@ -15,4 +15,4 @@ class SANPHAM(db.Model):
     HinhAnh = Column(String(255), nullable=True)
 
     danhmuc = relationship("DANHMUC", backref="sanphams")
-    nhacungcap = relationship("NHACUNGCAP", backref="sanphams")
+    nhacungcap = relationship("NhaCungCap", backref="sanphams")

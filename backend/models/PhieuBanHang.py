@@ -13,5 +13,5 @@ class PHIEUBANHANG(db.Model):
     GhiChu = Column(Text, nullable=True)
 
     # Quan hệ
-    donhang = relationship("DONHANG", backref="phieubanhang_entries")
+    donhang = relationship("DonHang", backref="phieubanhang_entries")
     

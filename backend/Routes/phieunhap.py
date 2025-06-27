@@ -16,10 +16,8 @@ def create_phieu_nhap():
         trang_thai = data.get('TrangThai', 'Đang xử lý')
         chi_tiet = data.get('ChiTiet', [])
 
-        # Tính tổng tiền
         tong_tien = sum(item['SoLuong'] * item['DonGiaNhap'] for item in chi_tiet)
 
-        # Tạo phiếu nhập
         phieu = PhieuNhap(
             MaNCC=ma_ncc,
             UserID=user_id,
@@ -31,7 +29,6 @@ def create_phieu_nhap():
         db.session.add(phieu)
         db.session.flush()
 
-        # Tạo chi tiết phiếu nhập và cập nhật tồn kho
         for item in chi_tiet:
             ct = ChiTietPhieuNhap(
                 MaPN=phieu.MaPN,
@@ -41,18 +38,21 @@ def create_phieu_nhap():
                 ThanhTien=item['SoLuong'] * item['DonGiaNhap']
             )
             db.session.add(ct)
+
         db.session.commit()
-        return jsonify({'status':'success','message':'Tạo phiếu nhập thành công','MaPN':phieu.MaPN}),201
+        return jsonify({'status': 'success', 'MaPN': phieu.MaPN}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'status':'error','message':str(e)}),400
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
 
 # Lấy danh sách phiếu nhập
 @phieunhap_bp.route('/phieunhap', methods=['GET'])
 def list_phieu_nhap():
     phieu = PhieuNhap.query.all()
     data = [p.to_dict() for p in phieu]
-    return jsonify({'status':'success','data':data})
+    return jsonify({'status': 'success', 'data': data})
+
 
 # Xem chi tiết một phiếu nhập
 @phieunhap_bp.route('/phieunhap/<int:id>', methods=['GET'])
@@ -61,4 +61,66 @@ def detail_phieu_nhap(id):
     details = ChiTietPhieuNhap.query.filter_by(MaPN=id).all()
     data = p.to_dict()
     data['ChiTiet'] = [d.to_dict() for d in details]
-    return jsonify({'status':'success','data':data})
+    return jsonify({'status': 'success', 'data': data})
+
+
+# Sửa phiếu nhập
+@phieunhap_bp.route('/phieunhap/<int:id>', methods=['PUT'])
+def update_phieu_nhap(id):
+    data = request.get_json()
+    p = PhieuNhap.query.get_or_404(id)
+    try:
+        p.MaNCC = data.get('MaNCC', p.MaNCC)
+        p.TrangThai = data.get('TrangThai', p.TrangThai)
+        p.GhiChu = data.get('GhiChu', p.GhiChu)
+        p.NgayNhap = datetime.strptime(data.get('NgayNhap'), "%Y-%m-%d") if data.get('NgayNhap') else p.NgayNhap
+
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Cập nhật thành công'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+
+# Xóa phiếu nhập
+@phieunhap_bp.route('/phieunhap/<int:id>', methods=['DELETE'])
+def delete_phieu_nhap(id):
+    p = PhieuNhap.query.get_or_404(id)
+    try:
+        # Xóa chi tiết trước
+        ChiTietPhieuNhap.query.filter_by(MaPN=id).delete()
+        db.session.delete(p)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Xóa thành công'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+# Sửa chi tiết phiếu nhập
+@phieunhap_bp.route('/phieunhap/chitiet/<int:id>', methods=['PUT'])
+def update_chi_tiet_phieu_nhap(id):
+    data = request.get_json()
+    ct = ChiTietPhieuNhap.query.get_or_404(id)
+    try:
+        ct.MaSP = data.get('MaSP', ct.MaSP)
+        ct.SoLuong = data.get('SoLuong', ct.SoLuong)
+        ct.DonGiaNhap = data.get('DonGiaNhap', ct.DonGiaNhap)
+        ct.ThanhTien = ct.SoLuong * ct.DonGiaNhap
+
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Cập nhật chi tiết thành công'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+
+# Xóa chi tiết phiếu nhập
+@phieunhap_bp.route('/phieunhap/chitiet/<int:id>', methods=['DELETE'])
+def delete_chi_tiet_phieu_nhap(id):
+    ct = ChiTietPhieuNhap.query.get_or_404(id)
+    try:
+        db.session.delete(ct)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Xóa chi tiết thành công'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 400

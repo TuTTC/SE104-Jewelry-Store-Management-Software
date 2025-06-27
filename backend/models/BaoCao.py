@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, Enum, Date, DateTime, JSON, ForeignKey, 
 from sqlalchemy.orm import relationship
 from database import db
 
-class BAOCAO(db.Model):
+class BaoCao(db.Model):
     __tablename__ = "BAOCAO"
 
     MaBC = Column(Integer, primary_key=True, autoincrement=True)
