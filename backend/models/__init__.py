@@ -6,7 +6,7 @@ from .NhaCungCap import NhaCungCap
 from .ChiTietPhieuDichVu import ChiTietPhieuDichVu
 from .PhieuDichVu import PhieuDichVu
 from .ChiTietDonHang import ChiTietDonHang
-from .ThamSo import THAMSO
+from .ThamSo import ThamSo
 from .DonHang import DonHang
 from .SanPham import SANPHAM
 from .DanhGia import DANHGIA

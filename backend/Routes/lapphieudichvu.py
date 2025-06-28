@@ -1,9 +1,16 @@
 from flask import Blueprint, request, jsonify
 from database import db
-from models import PhieuDichVu, ChiTietPhieuDichVu
+from models import PhieuDichVu, ChiTietPhieuDichVu, ThamSo, DichVu
 from datetime import datetime
 
 phieudichvu_bp = Blueprint('phieudichvu_bp', __name__)
+
+# Hàm tính đơn giá được tính từ đơn giá dịch vụ + chi phí riêng + lợi nhuận từ tham số
+def tinh_don_gia_duoc_tinh(dv: DichVu, chi_phi_rieng: float = 0.0):
+    ten_tham_so = f"LoiNhuan_{dv.TenDV}"
+    thamso = ThamSo.query.filter_by(TenThamSo=ten_tham_so, KichHoat=True).first()
+    ty_le = float(thamso.GiaTri) / 100 if thamso else 0.05  # Mặc định 5%
+    return float(dv.DonGia) + chi_phi_rieng + (float(dv.DonGia) * ty_le)
 
 # Tạo phiếu dịch vụ mới
 @phieudichvu_bp.route('/phieudichvu', methods=['POST'])
@@ -16,10 +23,41 @@ def create_phieu_dich_vu():
         tra_truoc = data.get('TraTruoc', 0)
         chi_tiet = data.get('ChiTiet', [])
 
-        # Tính tổng tiền
-        tong_tien = sum(item['DonGiaDuocTinh'] * item['SoLuong'] for item in chi_tiet)
+        tong_tien = 0
+        chi_tiet_objs = []
 
-        # Tạo phiếu dịch vụ
+        for item in chi_tiet:
+            dv = DichVu.query.get(item['MaDV'])
+            if not dv:
+                raise ValueError(f"Dịch vụ mã {item['MaDV']} không tồn tại.")
+
+            chi_phi_rieng = item.get('ChiPhiRieng', 0)
+            don_gia_duoc_tinh = tinh_don_gia_duoc_tinh(dv, chi_phi_rieng)
+            so_luong = item['SoLuong']
+            thanh_tien = don_gia_duoc_tinh * so_luong
+            tien_tra_truoc = item.get('TienTraTruoc', 0)
+            tinh_trang = item.get('TinhTrang', 'Chưa giao')
+
+            # Kiểm tra trả trước ≥ 50%
+            if tien_tra_truoc < 0.5 * thanh_tien:
+                raise ValueError(f"Tiền trả trước của dịch vụ mã {item['MaDV']} phải ≥ 50% thành tiền.")
+
+            ct = ChiTietPhieuDichVu(
+                MaDV=item['MaDV'],
+                DonGiaDichVu=float(dv.DonGia),
+                DonGiaDuocTinh=don_gia_duoc_tinh,
+                SoLuong=so_luong,
+                ThanhTien=thanh_tien,
+                TienTraTruoc=tien_tra_truoc,
+                TienConLai=thanh_tien - tien_tra_truoc,
+                NgayGiao=item.get('NgayGiao'),
+                TinhTrang=tinh_trang
+            )
+
+            chi_tiet_objs.append(ct)
+            tong_tien += thanh_tien
+
+        # Tạo phiếu
         phieu = PhieuDichVu(
             MaKH=ma_kh,
             NgayLap=datetime.now(),
@@ -31,23 +69,16 @@ def create_phieu_dich_vu():
         db.session.add(phieu)
         db.session.flush()
 
-        # Tạo chi tiết phiếu dịch vụ
-        for item in chi_tiet:
-            ct = ChiTietPhieuDichVu(
-                MaPDV=phieu.MaPDV,
-                MaDV=item['MaDV'],
-                DonGiaDichVu=item['DonGiaDichVu'],
-                DonGiaDuocTinh=item['DonGiaDuocTinh'],
-                SoLuong=item['SoLuong'],
-                ThanhTien=item['DonGiaDuocTinh'] * item['SoLuong'],
-                TienTraTruoc=item.get('TienTraTruoc', 0),
-                TienConLai=(item['DonGiaDuocTinh'] * item['SoLuong']) - item.get('TienTraTruoc', 0),
-                NgayGiao=item.get('NgayGiao'),
-                TinhTrang=item.get('TinhTrang', 'Chưa giao')
-            )
+        # Gán MaPDV và thêm chi tiết
+        for ct in chi_tiet_objs:
+            ct.MaPDV = phieu.MaPDV
             db.session.add(ct)
+
         db.session.commit()
+        cap_nhat_trang_thai_phieu(phieu.MaPDV)
+
         return jsonify({'status': 'success', 'message': 'Tạo phiếu dịch vụ thành công', 'MaPDV': phieu.MaPDV}), 201
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 400
@@ -84,14 +115,19 @@ def update_chi_tiet_dich_vu(id):
     ct.TienConLai = ct.ThanhTien - ct.TienTraTruoc
 
     db.session.commit()
+    # Cập nhật trạng thái phiếu nếu cần
+    cap_nhat_trang_thai_phieu(ct.MaPDV)
+    
     return jsonify({'status': 'success', 'message': 'Cập nhật chi tiết thành công'})
 
 # Xóa 1 dòng chi tiết dịch vụ
 @phieudichvu_bp.route('/phieudichvu/chitiet/<int:id>', methods=['DELETE'])
 def delete_chi_tiet_dich_vu(id):
     ct = ChiTietPhieuDichVu.query.get_or_404(id)
+    ma_pdv = ct.MaPDV
     db.session.delete(ct)
     db.session.commit()
+    cap_nhat_trang_thai_phieu(ma_pdv)
     return jsonify({'status': 'success', 'message': 'Xóa chi tiết dịch vụ thành công'})
 
 # (Tùy chọn) Xoá toàn bộ chi tiết của 1 phiếu dịch vụ
@@ -100,3 +136,14 @@ def clear_all_chi_tiet(ma_pdv):
     ChiTietPhieuDichVu.query.filter_by(MaPDV=ma_pdv).delete()
     db.session.commit()
     return jsonify({'status': 'success', 'message': 'Đã xóa toàn bộ chi tiết của phiếu'})
+
+def cap_nhat_trang_thai_phieu(ma_pdv):
+    chi_tiet = ChiTietPhieuDichVu.query.filter_by(MaPDV=ma_pdv).all()
+    if not chi_tiet:
+        return  # Không có chi tiết nào → giữ nguyên
+
+    da_giao_het = all(ct.TinhTrang == "Đã giao" for ct in chi_tiet)
+
+    phieu = PhieuDichVu.query.get(ma_pdv)
+    phieu.TrangThai = "Hoàn thành" if da_giao_het else "Chưa hoàn thành"
+    db.session.commit()

@@ -10,6 +10,7 @@ from .auth import auth_bp
 from .category import category_bp
 from .product import product_bp
 from .user import user_bp
+from .thamso import thamso_bp
 # from .thongke import thongke_bp
 
 def register_routes(app):
@@ -25,4 +26,5 @@ def register_routes(app):
     app.register_blueprint(nhaphang_bp, url_prefix='/api')
     app.register_blueprint(donhang_bp, url_prefix='/api')
     app.register_blueprint(baocao_bp, url_prefix='/api')
+    app.register_blueprint(thamso_bp, url_prefix='/api')
     # app.register_blueprint(thongke_bp, url_prefix='/api')

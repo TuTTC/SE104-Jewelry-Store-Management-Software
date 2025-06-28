@@ -10,7 +10,9 @@ from oauth import oauth
 from utils.roles import seed_roles
 from extensions import mail
 from flask_cors import CORS
-# from utils.seed_dichvu import seed_dichvu
+from seeds.seed_dichvu import seed_dichvu
+from seeds.seed_thamso import seed_thamso
+
 
 # 💡 Thêm dòng này để load biến môi trường từ .env
 from dotenv import load_dotenv
@@ -46,7 +48,8 @@ from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTie
 with app.app_context():
     db.create_all()
     seed_roles()
-    # seed_dichvu()
+    seed_dichvu()
+    seed_thamso()
 
 from Routes import register_routes
 register_routes(app)
