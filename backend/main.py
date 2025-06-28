@@ -10,10 +10,10 @@ from oauth import oauth
 from utils.roles import seed_roles
 from extensions import mail
 from flask_cors import CORS
+from seeds.seed_danhmuc import seed_danh_muc
+from seeds.seed_user import seed_user
 
-
-
-# 💡 Thêm dòng này để load biến môi trường từ .env
+# Thêm dòng này để load biến môi trường từ .env
 from dotenv import load_dotenv
 load_dotenv()  # ← Tải biến môi trường từ file .env
 
@@ -42,11 +42,15 @@ def hello():
 
 # Import models để Flask-Migrate nhận biết
 
-from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTietPhieuDichVu, PhieuDichVu, ChiTietDonHang, DonHang, SanPham, DanhGia, DanhMucSanPham, ThamSo, TonKho, BangGia, PhieuNhap, ChiTietPhieuNhap, PhieuBanHang, BaoCao,VaiTro
+from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTietPhieuDichVu, PhieuDichVu, ChiTietDonHang, DonHang, SanPham, DanhGia, DanhMucSanPham, ThamSo, TonKho, BangGia, PhieuNhap, ChiTietPhieuNhap, PhieuBanHang, BaoCao,VaiTro, Permissions
 
 with app.app_context():
     db.create_all()
     seed_roles()
+    seed_danh_muc()
+    seed_user()
+
+    
 
 from Routes import register_routes
 register_routes(app)

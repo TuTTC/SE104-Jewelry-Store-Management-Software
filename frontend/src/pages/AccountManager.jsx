@@ -1,13 +1,35 @@
-import React, { useState } from "react";
-import { Edit, Trash } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Edit, Trash, ShieldCheck } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm";
+import PermissionModal from "../components/PermissionModal";
+import userApi from "../services/userApi";
 
-function AccountManager({ initialAccounts = [] }) {
-  const [accounts, setAccounts] = useState(initialAccounts);
+function AccountManager() {
+  const [accounts, setAccounts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("add"); // "add" or "edit"
+  const [modalMode, setModalMode] = useState("add");
   const [selectedAccount, setSelectedAccount] = useState(null);
 
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+  const [permissionAccount, setPermissionAccount] = useState(null);
+  const [allPermissions, setAllPermissions] = useState([]);
+  const [userPermissions, setUserPermissions] = useState([]);
+
+  // Load tài khoản
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      const res = await userApi.getAllUsers();
+      setAccounts(res.data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Modal tài khoản
   const openModal = (mode, data = null) => {
     setModalMode(mode);
     setSelectedAccount(data);
@@ -19,25 +41,50 @@ function AccountManager({ initialAccounts = [] }) {
     setSelectedAccount(null);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc muốn xóa tài khoản này?")) {
-      setAccounts((prev) => prev.filter((a) => a.id !== id));
+      await userApi.deleteUser(id);
+      fetchAccounts();
     }
   };
 
-  const handleSubmit = (formData) => {
+  const handleSubmit = async (formData) => {
     if (modalMode === "add") {
-      const newAccount = {
-        id: Date.now(),
-        ...formData,
-      };
-      setAccounts((prev) => [...prev, newAccount]);
+      await userApi.createUser(formData);
     } else if (modalMode === "edit") {
-      setAccounts((prev) =>
-        prev.map((acc) => (acc.id === selectedAccount.id ? { ...acc, ...formData } : acc))
-      );
+      await userApi.updateUser(selectedAccount.UserID, formData);
     }
+    fetchAccounts();
     closeModal();
+  };
+
+  // Modal phân quyền
+  const openPermissionModal = async (account) => {
+    try {
+      const res = await userApi.getUserDetails(account.UserID);
+      setPermissionAccount(account);
+      setAllPermissions(res.data.TatCaQuyen);
+      setUserPermissions(res.data.QuyenRiengIDs);
+      setIsPermissionModalOpen(true);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const closePermissionModal = () => {
+    setPermissionAccount(null);
+    setAllPermissions([]);
+    setUserPermissions([]);
+    setIsPermissionModalOpen(false);
+  };
+
+  const handleUpdatePermissions = async (selectedPermissionIDs) => {
+    try {
+      await userApi.updateUserPermissions(permissionAccount.UserID, selectedPermissionIDs);
+      closePermissionModal();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -54,45 +101,30 @@ function AccountManager({ initialAccounts = [] }) {
           <thead>
             <tr>
               <th>ID</th>
-              <th>Tên</th>
-              <th>Chức vụ</th>
-              <th>Mã tài khoản</th>
+              <th>Tên đăng nhập</th>
               <th>Email</th>
-              <th>Điện thoại</th>
-              <th>Địa chỉ</th>
-              <th>Trạng thái</th>
               <th>Vai trò</th>
+              <th>Ngày tạo</th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {accounts.map((a) => (
-              <tr key={a.id}>
-                <td>{a.id}</td>
-                <td>{a.name}</td>
-                <td>{a.position}</td>
-                <td>{a.accountCode}</td>
-                <td>{a.email}</td>
-                <td>{a.phone}</td>
-                <td>{a.address}</td>
+              <tr key={a.UserID}>
+                <td>{a.UserID}</td>
+                <td>{a.TenDangNhap}</td>
+                <td>{a.Email}</td>
+                <td>{a.VaiTro}</td>
+                <td>{new Date(a.TaoNgay).toLocaleDateString()}</td>
                 <td>
-                  <span className={a.status === "Active" ? "status-instock" : "status-inactive"}>
-                    {a.status}
-                  </span>
-                </td>
-                <td>{a.role}</td>
-                <td>
-                  <button
-                    onClick={() => openModal("edit", a)}
-                    className="action-icon edit"
-                  >
+                  <button onClick={() => openModal("edit", a)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button
-                    onClick={() => handleDelete(a.id)}
-                    className="action-icon delete"
-                  >
+                  <button onClick={() => handleDelete(a.UserID)} className="action-icon delete">
                     <Trash className="icon" />
+                  </button>
+                  <button onClick={() => openPermissionModal(a)} className="action-icon">
+                    <ShieldCheck className="icon" />
                   </button>
                 </td>
               </tr>
@@ -108,6 +140,14 @@ function AccountManager({ initialAccounts = [] }) {
         mode={modalMode}
         data={selectedAccount}
         onSubmit={handleSubmit}
+      />
+
+      <PermissionModal
+        isOpen={isPermissionModalOpen}
+        onClose={closePermissionModal}
+        allPermissions={allPermissions}
+        userPermissions={userPermissions}
+        onSubmit={handleUpdatePermissions}
       />
     </div>
   );

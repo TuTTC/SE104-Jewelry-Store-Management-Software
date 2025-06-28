@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Edit, Trash } from "lucide-react";
-import GeneralModalForm from "./GeneralModalForm"; // Đường dẫn có thể cần điều chỉnh
+import GeneralModalForm from "../components/GeneralModalForm"; // Đường dẫn có thể cần điều chỉnh
 
 const OrdersManager = () => {
   const [orders, setOrders] = useState([

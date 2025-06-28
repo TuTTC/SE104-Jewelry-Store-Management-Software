@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import './Auth.css';
+import '../../App.css';
 import { X } from "lucide-react";
-import LoginForm from "./LoginForm";
-import RegisterForm from "./RegisterForm";
-import ForgotPasswordForm from "./ForgotPasswordForm";
-import { sendOtpRegister, login } from "./authAPI";
-import Auth from "./auth/Auth"; // <- thêm import
+import LoginForm from "./Login";
+import RegisterForm from "./Register";
+// import ForgotPasswordForm from "./ForgotPasswordForm";
+import { sendOtpRegister, login } from "./authApi";
+
 function Auth({ onAuthSuccess }) {
   const [selectedPage, setSelectedPage] = useState("login");
   const [showModal, setShowModal] = useState(true);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+  select_role: "customer", // Gán mặc định rõ ràng
+});
   const [error, setError] = useState("");
 
   const openModal = (page) => {
@@ -133,7 +135,7 @@ function Auth({ onAuthSuccess }) {
                   onGoogleLogin={handleGoogleLogin}
                 />
               )}
-              {selectedPage === "forgot" && (
+              {/* {selectedPage === "forgot" && (
                 <ForgotPasswordForm
                   formData={formData}
                   onChange={handleInputChange}
@@ -141,7 +143,7 @@ function Auth({ onAuthSuccess }) {
                   onSwitch={openModal}
                   error={error}
                 />
-              )}
+              )} */}
             </form>
           </div>
         </div>

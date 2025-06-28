@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Edit, Trash } from "lucide-react";
-import Modal from "./GeneralModalForm"; // hoặc modal bạn đang dùng
+import Modal from "../components/GeneralModalForm"; // hoặc modal bạn đang dùng
 
 const initialCategories = [
   { id: 1, name: "Ring", description: "Jewelry rings" },

@@ -1,18 +1,24 @@
-// src/components/ProductManager.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Edit, Trash } from "lucide-react";
-import GeneralModalForm from "./GeneralModalForm";
-
-const initialProducts = [
-  { id: 1, code: "SP001", name: "Ruby Ring", price: "$1200", category: "Ring", quantity: 10, status: "In Stock", image: "https://via.placeholder.com/50", note: "Best Seller" },
-  { id: 2, code: "SP002", name: "Sapphire Necklace", price: "$2500", category: "Necklace", quantity: 5, status: "Low Stock", image: "https://via.placeholder.com/50", note: "Limited Edition" },
-];
+import GeneralModalForm from "../components/GeneralModalForm";
+import * as productAPI from "../services/productApi";
 
 const ProductManager = () => {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [formMode, setFormMode] = useState("add"); // "add" | "edit"
+  const [formMode, setFormMode] = useState("add");
   const [selectedProduct, setSelectedProduct] = useState(null);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = () => {
+    productAPI.getAllProducts()
+      .then(data => setProducts(data))
+      .catch(err => alert(err.message));
+
+  };
 
   const openModal = (mode, product = null) => {
     setFormMode(mode);
@@ -27,20 +33,27 @@ const ProductManager = () => {
 
   const handleSubmit = (data) => {
     if (formMode === "add") {
-      const newProduct = { ...data, id: Date.now(), image: data.image || "/images/default.jpg" };
-      setProducts((prev) => [...prev, newProduct]);
+      productAPI.addProduct(data)
+        .then(() => {
+          fetchProducts();
+          closeModal();
+        })
+        .catch(err => alert(err.message));
     } else if (formMode === "edit" && selectedProduct) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === selectedProduct.id ? { ...p, ...data } : p))
-      );
+      productAPI.updateProduct(selectedProduct.MaSP, data)
+        .then(() => {
+          fetchProducts();
+          closeModal();
+        })
+        .catch(err => alert(err.message));
     }
-    closeModal();
   };
 
   const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?");
-    if (confirmDelete) {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
+      productAPI.deleteProduct(id)
+        .then(() => fetchProducts())
+        .catch(err => alert(err.message));
     }
   };
 
@@ -50,17 +63,17 @@ const ProductManager = () => {
         <h2 className="table-title">Quản lý sản phẩm</h2>
         <button onClick={() => openModal("add")} className="action-button">Thêm sản phẩm</button>
       </div>
+
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Mã</th>
               <th>Tên</th>
-              <th>Giá</th>
               <th>Danh mục</th>
+              <th>Nhà cung cấp</th>
+              <th>Giá</th>
               <th>Số lượng</th>
-              <th>Trạng thái</th>
               <th>Hình ảnh</th>
               <th>Ghi chú</th>
               <th>Hành động</th>
@@ -68,27 +81,22 @@ const ProductManager = () => {
           </thead>
           <tbody>
             {products.map((p) => (
-              <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>{p.code}</td>
-                <td>{p.name}</td>
-                <td>{p.price.toLocaleString()}₫</td>
-                <td>{p.category}</td>
-                <td>{p.quantity}</td>
+              <tr key={p.MaSP}>
+                <td>{p.MaSP}</td>
+                <td>{p.TenSP}</td>
+                <td>{p.MaDM}</td>
+                <td>{p.MaNCC}</td>
+                <td>{Number(p.GiaBan).toLocaleString()}₫</td>
+                <td>{p.SoLuongTon}</td>
                 <td>
-                  <span className={p.status === "In Stock" ? "status-instock" : "status-lowstock"}>
-                    {p.status}
-                  </span>
+                  <img src={p.HinhAnh || "/images/default.jpg"} alt={p.TenSP} className="product-image" />
                 </td>
-                <td>
-                  <img src={p.image} alt={p.name} className="product-image" />
-                </td>
-                <td>{p.note}</td>
+                <td>{p.MoTa}</td>
                 <td>
                   <button onClick={() => openModal("edit", p)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(p.id)} className="action-icon delete">
+                  <button onClick={() => handleDelete(p.MaSP)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                 </td>
