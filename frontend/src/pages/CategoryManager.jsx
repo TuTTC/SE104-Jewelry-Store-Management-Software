@@ -4,6 +4,7 @@ import { initialCategories } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import Pagination from '../components/Pagination';
 
 const CategoryManager = () => {
   const [categories, setCategories] = useState(initialCategories);
@@ -176,6 +177,7 @@ const CategoryManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

@@ -5,6 +5,7 @@ import { initialReports } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import Pagination from '../components/Pagination';
 
 const ReportDashboard = () => {
   const [reports, setReports] = useState(initialReports);
@@ -166,6 +167,7 @@ const ReportDashboard = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

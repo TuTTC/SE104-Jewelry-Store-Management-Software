@@ -4,6 +4,7 @@ import { initialProducts } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import Pagination from '../components/Pagination';
 
 const ProductManager = () => {
   const [products, setProducts] = useState(initialProducts);
@@ -196,6 +197,7 @@ const ProductManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

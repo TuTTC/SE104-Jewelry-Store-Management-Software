@@ -1,13 +1,17 @@
 
 // src/pages/AccountManager.jsx
 import React, { useState, useEffect } from 'react';
-import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
+import { ArrowUpDown, Download, Search, Filter, Edit, Trash} from 'lucide-react';
 import { initialAccounts } from '../data/initialData'; // Updated import
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import Pagination from '../components/Pagination';
+
 
 const AccountManager = () => {
+
+  // State variables
   const [accounts, setAccounts] = useState(initialAccounts);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
@@ -191,6 +195,7 @@ const AccountManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

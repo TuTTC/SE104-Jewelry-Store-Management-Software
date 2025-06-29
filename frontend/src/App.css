@@ -547,3 +547,112 @@ th {
   font-weight: 500;
   letter-spacing: 0.5px;
 }
+
+
+/* Pagination styles */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 320px;
+  margin: 20px auto;
+  font-family: Arial, sans-serif;
+  color: #475569;
+}
+
+.pagination-button {
+  background-color: rgba(203, 213, 225, 0.5);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  transition: background-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pagination-button:disabled {
+  background-color: rgba(203, 213, 225, 0.3);
+  cursor: not-allowed;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: rgba(203, 213, 225, 0.8);
+}
+
+.pagination-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(79, 70, 229, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.pagination-button:active::before {
+  width: 80px;
+  height: 80px;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pagination-page {
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pagination-page:hover {
+  background-color: rgba(203, 213, 225, 0.5);
+}
+
+.pagination-active {
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+  background-color: #e0e7ff;
+  transform: scale(1.1);
+  transition: all 0.3s ease;
+}
+
+.pagination-page::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(79, 70, 229, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.pagination-page:active::before {
+  width: 80px;
+  height: 80px;
+}

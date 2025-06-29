@@ -4,6 +4,7 @@ import { initialPurchaseOrders, initialSuppliers } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import Pagination from '../components/Pagination';
 
 const PurchaseOrderManager = () => {
   const [purchaseOrders, setPurchaseOrders] = useState(initialPurchaseOrders);
@@ -194,6 +195,7 @@ const PurchaseOrderManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

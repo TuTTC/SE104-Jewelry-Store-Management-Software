@@ -5,6 +5,7 @@ import { initialServiceDetails } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import Pagination from '../components/Pagination';
 
 const ServiceDetails = () => {
   const [details, setDetails] = useState(initialServiceDetails);
@@ -194,6 +195,7 @@ const ServiceDetails = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm
