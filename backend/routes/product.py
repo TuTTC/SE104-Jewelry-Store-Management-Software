@@ -4,13 +4,13 @@ from models.SanPham import SANPHAM
 
 product_bp = Blueprint('product_bp', __name__)
 
-# Lấy sản phẩm
+
+# Lấy toàn bộ sản phẩm
 @product_bp.route('/', methods=['GET'])
 def get_products():
-    products = SANPHAM.query.all()
-    result = []
-    for p in products:
-        result.append({
+    try:
+        products = SANPHAM.query.all()
+        result = [{
             'MaSP': p.MaSP,
             'TenSP': p.TenSP,
             'MaDM': p.MaDM,
@@ -18,37 +18,62 @@ def get_products():
             'GiaBan': float(p.GiaBan),
             'SoLuongTon': p.SoLuongTon,
             'MoTa': p.MoTa,
-            'HinhAnh': p.HinhAnh,
-        })
-    return jsonify(result), 200
+            'HinhAnh': p.HinhAnh
+        } for p in products]
 
-# Thêm sản phẩm
+        return jsonify({'status': 'success', 'data': result}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# Lấy sản phẩm theo danh mục
+@product_bp.route('/danhmuc/<int:ma_dm>', methods=['GET'])
+def get_products_by_category(ma_dm):
+    try:
+        products = SANPHAM.query.filter_by(MaDM=ma_dm).all()
+        result = [{
+            'MaSP': p.MaSP,
+            'TenSP': p.TenSP,
+            'GiaBan': float(p.GiaBan),
+            'SoLuongTon': p.SoLuongTon
+        } for p in products]
+
+        return jsonify({'status': 'success', 'data': result}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# Thêm sản phẩm mới
 @product_bp.route('/', methods=['POST'])
 def add_product():
-    data = request.json
+    data = request.get_json()
     try:
         new_product = SANPHAM(
             TenSP=data['TenSP'],
             MaDM=data['MaDM'],
             MaNCC=data['MaNCC'],
             GiaBan=data['GiaBan'],
-            SoLuongTon=data['SoLuongTon'],
+            SoLuongTon=data.get('SoLuongTon', 0),
             MoTa=data.get('MoTa'),
             HinhAnh=data.get('HinhAnh')
         )
         db.session.add(new_product)
+        db.session.flush()  # Lấy MaSP sau khi thêm
         db.session.commit()
-        return jsonify({'message': 'Tạo sản phẩm thành công', 'MaSP': new_product.MaSP}), 201
+
+        return jsonify({'status': 'success', 'message': 'Tạo sản phẩm thành công', 'MaSP': new_product.MaSP}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'status': 'error', 'message': str(e)}), 400
 
-#
+
+# Lấy sản phẩm theo ID
 @product_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:
-        return jsonify({'error': 'Sản phẩm không tồn tại'}), 404
+        return jsonify({'status': 'error', 'message': 'Sản phẩm không tồn tại'}), 404
+
     return jsonify({
         'MaSP': product.MaSP,
         'TenSP': product.TenSP,
@@ -57,16 +82,18 @@ def get_product(product_id):
         'GiaBan': float(product.GiaBan),
         'SoLuongTon': product.SoLuongTon,
         'MoTa': product.MoTa,
-        'HinhAnh': product.HinhAnh,
+        'HinhAnh': product.HinhAnh
     }), 200
 
+
+# Cập nhật sản phẩm
 @product_bp.route('/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:
-        return jsonify({'error': 'Sản phẩm không tồn tại'}), 404
+        return jsonify({'status': 'error', 'message': 'Sản phẩm không tồn tại'}), 404
 
-    data = request.json
+    data = request.get_json()
     try:
         product.TenSP = data.get('TenSP', product.TenSP)
         product.MaDM = data.get('MaDM', product.MaDM)
@@ -77,20 +104,22 @@ def update_product(product_id):
         product.HinhAnh = data.get('HinhAnh', product.HinhAnh)
 
         db.session.commit()
-        return jsonify({'message': 'Cập nhật sản phẩm thành công'}), 200
+        return jsonify({'status': 'success', 'message': 'Cập nhật sản phẩm thành công'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'status': 'error', 'message': str(e)}), 400
 
+
+# Xóa sản phẩm
 @product_bp.route('/<int:product_id>', methods=['DELETE'])
 def delete_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:
-        return jsonify({'error': 'Sản phẩm không tồn tại'}), 404
+        return jsonify({'status': 'error', 'message': 'Sản phẩm không tồn tại'}), 404
     try:
         db.session.delete(product)
         db.session.commit()
-        return jsonify({'message': 'Xóa sản phẩm thành công'}), 200
+        return jsonify({'status': 'success', 'message': 'Xóa sản phẩm thành công'}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 400
+        return jsonify({'status': 'error', 'message': str(e)}), 400
