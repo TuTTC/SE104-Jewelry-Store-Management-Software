@@ -1,12 +1,13 @@
+// src/pages/PurchaseOrderDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
-import { initialSuppliers } from '../data/initialData';
+import { initialPurchaseOrderDetails } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 
-const SupplierManager = () => {
-  const [suppliers, setSuppliers] = useState(initialSuppliers);
+const PurchaseOrderDetails = () => {
+  const [details, setDetails] = useState(initialPurchaseOrderDetails);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [currentItem, setCurrentItem] = useState(null);
@@ -19,8 +20,8 @@ const SupplierManager = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
 
   useEffect(() => {
-    // Placeholder cho API call
-    // fetchSuppliers().then(data => setSuppliers(data));
+    // Placeholder for backend API call
+    // fetchPurchaseOrderDetails().then(data => setDetails(data));
   }, []);
 
   const openModal = (type, item = null) => {
@@ -64,34 +65,34 @@ const SupplierManager = () => {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-    const sortedData = [...suppliers].sort((a, b) => {
+    const sortedData = [...details].sort((a, b) => {
       if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
       if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-    setSuppliers(sortedData);
+    setDetails(sortedData);
   };
 
   const exportToCSV = () => {
-    const headers = Object.keys(suppliers[0]).join(',');
-    const rows = suppliers.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
+    const headers = Object.keys(details[0]).join(',');
+    const rows = details.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
     const csv = `${headers}\n${rows}`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'suppliers.csv';
+    a.download = 'purchaseOrderDetails.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
   const validateForm = () => {
-    if (!formData.name || !formData.phone || !formData.email || !formData.address) {
+    if (!formData.maPN || !formData.maSP || !formData.soLuong || !formData.donGiaNhap) {
       setError('Vui lòng điền đầy đủ các trường bắt buộc.');
       return false;
     }
-    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      setError('Email không hợp lệ.');
+    if (parseInt(formData.soLuong) <= 0 || parseFloat(formData.donGiaNhap) <= 0) {
+      setError('Số lượng và đơn giá phải lớn hơn 0.');
       return false;
     }
     return true;
@@ -101,39 +102,40 @@ const SupplierManager = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const newItem = { ...formData, id: Date.now() };
+    const thanhTien = (parseFloat(formData.soLuong) * parseFloat(formData.donGiaNhap)).toFixed(2);
+    const newItem = { ...formData, id: Date.now(), thanhTien };
     if (modalType === 'add') {
-      setSuppliers([...suppliers, newItem]);
+      setDetails([...details, newItem]);
     } else if (modalType === 'edit' && currentItem) {
-      setSuppliers(suppliers.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
+      setDetails(details.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
     }
     closeModal();
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa nhà cung cấp này?')) {
-      setSuppliers(suppliers.filter(item => item.id !== id));
+    if (window.confirm('Bạn có chắc chắn muốn xóa mục này?')) {
+      setDetails(details.filter(item => item.id !== id));
     }
   };
 
   const handleSearchSubmit = () => {
-    // Placeholder cho API call
+    // Placeholder for backend API call
     closeSearchModal();
   };
 
   const handleFilterSubmit = () => {
-    // Placeholder cho API call
+    // Placeholder for backend API call
     closeFilterModal();
   };
 
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý nhà cung cấp</h2>
+        <h2 className="table-title">Chi tiết phiếu nhập</h2>
         <div>
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-          <button onClick={() => openModal('add')} className="action-button">Thêm nhà cung cấp</button>
+          <button onClick={() => openModal('add')} className="action-button">Thêm chi tiết</button>
           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
         </div>
       </div>
@@ -142,26 +144,30 @@ const SupplierManager = () => {
           <thead>
             <tr>
               <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('name')}>Tên <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('phone')}>Điện thoại <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('email')}>Email <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('address')}>Địa chỉ <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('maCTPN')}>Mã CTPN <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('maPN')}>Mã phiếu nhập <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('maSP')}>Mã sản phẩm <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('soLuong')}>Số lượng <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('donGiaNhap')}>Đơn giá nhập <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('thanhTien')}>Thành tiền <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {suppliers.map((supplier) => (
-              <tr key={supplier.id}>
-                <td>{supplier.id}</td>
-                <td>{supplier.name}</td>
-                <td>{supplier.phone}</td>
-                <td>{supplier.email}</td>
-                <td>{supplier.address}</td>
+            {details.map((pod) => (
+              <tr key={pod.id}>
+                <td>{pod.id}</td>
+                <td>{pod.maCTPN}</td>
+                <td>{pod.maPN}</td>
+                <td>{pod.maSP}</td>
+                <td>{pod.soLuong}</td>
+                <td>${pod.donGiaNhap.toFixed(2)}</td>
+                <td>${pod.thanhTien}</td>
                 <td>
-                  <button onClick={() => openModal('edit', supplier)} className="action-icon edit">
+                  <button onClick={() => openModal('edit', pod)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(supplier.id)} className="action-icon delete">
+                  <button onClick={() => handleDelete(pod.id)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                 </td>
@@ -175,7 +181,7 @@ const SupplierManager = () => {
         showModal={showModal}
         closeModal={closeModal}
         modalType={modalType}
-        currentSection="suppliers"
+        currentSection="purchaseOrderDetails"
         formData={formData}
         handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
@@ -184,7 +190,7 @@ const SupplierManager = () => {
       <SearchModal
         showSearchModal={showSearchModal}
         closeSearchModal={closeSearchModal}
-        currentSection="suppliers"
+        currentSection="purchaseOrderDetails"
         searchFormData={searchFormData}
         handleSearchInputChange={handleSearchInputChange}
         handleSearchSubmit={handleSearchSubmit}
@@ -192,7 +198,7 @@ const SupplierManager = () => {
       <FilterModal
         showFilterModal={showFilterModal}
         closeFilterModal={closeFilterModal}
-        currentSection="suppliers"
+        currentSection="purchaseOrderDetails"
         filterFormData={filterFormData}
         handleFilterInputChange={handleFilterInputChange}
         handleFilterSubmit={handleFilterSubmit}
@@ -201,4 +207,4 @@ const SupplierManager = () => {
   );
 };
 
-export default SupplierManager;
+export default PurchaseOrderDetails;
