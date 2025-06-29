@@ -126,6 +126,7 @@ const GeneralModalForm = ({
             <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Điện thoại" />
             <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" />
             <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Địa chỉ" required />
+            <input type="text" name="note" value={formData.note || ""} onChange={handleInputChange} placeholder="Ghi chú"/>
           </>
         );
       case "inventory":
