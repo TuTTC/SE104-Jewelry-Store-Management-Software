@@ -50,7 +50,7 @@ const AdminLayout = ({ children }) => {
     <div className="container">
       <aside className="sidebar">
         <h1 className="sidebar-title flex items-center gap-2 px-4 py-2">
-          Jewelry Admin
+          PTV Jewelry
           <img src="/logoVTP.svg" alt="Jewelry Admin Logo" className="sidebar-logo" />
         </h1>
         <nav className="sidebar-nav">
