@@ -41,3 +41,6 @@ def send_otp_email(email, otp):
     except Exception as e:
         print("Lỗi gửi OTP:", e)
         return False
+
+
+

@@ -5,12 +5,19 @@ from database import db
 
 def seed_role_permissions():
     try:
-        # Lấy các Vai Trò
         admin_role = VAITRO.query.filter_by(TenVaiTro="Admin").first()
         nhanvien_role = VAITRO.query.filter_by(TenVaiTro="Nhân viên").first()
         khachhang_role = VAITRO.query.filter_by(TenVaiTro="Khách hàng").first()
 
-        # Lấy toàn bộ quyền
+        if not admin_role or not nhanvien_role or not khachhang_role:
+            print("Thiếu dữ liệu Vai Trò, vui lòng seed Vai Trò trước!")
+            return
+
+        # Kiểm tra nếu Admin đã có quyền thì không seed lại
+        if admin_role.permissions:
+            print("Quyền cho các vai trò đã được thiết lập, bỏ qua seed.")
+            return
+
         all_permissions = PERMISSIONS.query.all()
         permissions_dict = {p.TenQuyen: p for p in all_permissions}
 

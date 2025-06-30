@@ -1,49 +1,110 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Edit, Trash } from "lucide-react";
-import GeneralModalForm from "../components/GeneralModalForm"; // điều chỉnh lại đường dẫn nếu cần
+import GeneralModalForm from "../components/GeneralModalForm";
+import * as supplierApi from "../services/supplierApi";
 
 const SupplierManager = () => {
-  const [suppliers, setSuppliers] = useState([
-    {
-      id: 1,
-      name: "Công ty TNHH ABC",
-      phone: "0901234567",
-      email: "abc@gmail.com",
-      address: "123 Lê Lợi, Quận 1, TP.HCM",
-    },
-  ]);
-
+  const [suppliers, setSuppliers] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("add");
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    note: ""
+  });
   const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  const fetchSuppliers = () => {
+    supplierApi.getAllSuppliers()
+      .then(data => setSuppliers(data))
+      .catch(err => alert(err.message));
+  };
 
   const openModal = (mode, supplier = null) => {
     setModalMode(mode);
-    setSelectedSupplier(supplier);
     setModalVisible(true);
+
+    if (mode === "edit" && supplier) {
+      setSelectedSupplier(supplier);
+      setFormData({
+        name: supplier.TenNCC || "",
+        phone: supplier.SoDienThoai || "",
+        email: supplier.Email || "",
+        address: supplier.DiaChi || "",
+        note: supplier.GhiChu || ""
+      });
+    } else {
+      setSelectedSupplier(null);
+      setFormData({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+        note: ""
+      });
+    }
   };
 
   const closeModal = () => {
     setModalVisible(false);
     setSelectedSupplier(null);
+    setFormData({
+      name: "",
+      phone: "",
+      email: "",
+      address: "",
+      note: ""
+    });
+    setError(null);
   };
 
-  const handleSubmit = (data) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const payload = {
+      TenNCC: formData.name,
+      SoDienThoai: formData.phone,
+      Email: formData.email,
+      DiaChi: formData.address,
+      GhiChu: formData.note
+    };
+
     if (modalMode === "add") {
-      const newSupplier = { ...data, id: Date.now() };
-      setSuppliers([...suppliers, newSupplier]);
+      supplierApi.addSupplier(payload)
+        .then(() => {
+          fetchSuppliers();
+          closeModal();
+        })
+        .catch(err => setError(err.message));
     } else if (modalMode === "edit" && selectedSupplier) {
-      const updated = suppliers.map((s) =>
-        s.id === selectedSupplier.id ? { ...s, ...data } : s
-      );
-      setSuppliers(updated);
+      supplierApi.updateSupplier(selectedSupplier.MaNCC, payload)
+        .then(() => {
+          fetchSuppliers();
+          closeModal();
+        })
+        .catch(err => setError(err.message));
     }
-    closeModal();
   };
 
   const handleDelete = (id) => {
     if (window.confirm("Bạn có chắc muốn xoá nhà cung cấp này?")) {
-      setSuppliers(suppliers.filter((s) => s.id !== id));
+      supplierApi.deleteSupplier(id)
+        .then(() => fetchSuppliers())
+        .catch(err => alert(err.message));
     }
   };
 
@@ -55,6 +116,7 @@ const SupplierManager = () => {
           Thêm nhà cung cấp
         </button>
       </div>
+
       <div className="table-container">
         <table className="data-table">
           <thead>
@@ -64,22 +126,26 @@ const SupplierManager = () => {
               <th>Điện thoại</th>
               <th>Email</th>
               <th>Địa chỉ</th>
+              <th>Ngày hợp tác</th>
+              <th>Ghi chú</th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {suppliers.map((s) => (
-              <tr key={s.id}>
-                <td>{s.id}</td>
-                <td>{s.name}</td>
-                <td>{s.phone}</td>
-                <td>{s.email}</td>
-                <td>{s.address}</td>
+              <tr key={s.MaNCC}>
+                <td>{s.MaNCC}</td>
+                <td>{s.TenNCC}</td>
+                <td>{s.SoDienThoai}</td>
+                <td>{s.Email}</td>
+                <td>{s.DiaChi}</td>
+                <td>{s.NgayHopTac || "Chưa cập nhật"}</td>
+                <td>{s.GhiChu}</td>
                 <td>
                   <button onClick={() => openModal("edit", s)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(s.id)} className="action-icon delete">
+                  <button onClick={() => handleDelete(s.MaNCC)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                 </td>
@@ -91,11 +157,14 @@ const SupplierManager = () => {
 
       {modalVisible && (
         <GeneralModalForm
-          section="suppliers"
-          mode={modalMode}
-          initialData={selectedSupplier}
-          onClose={closeModal}
-          onSubmit={handleSubmit}
+          showModal={modalVisible}
+          closeModal={closeModal}
+          currentSection="suppliers"
+          modalType={modalMode}
+          formData={formData}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          error={null}
         />
       )}
     </div>

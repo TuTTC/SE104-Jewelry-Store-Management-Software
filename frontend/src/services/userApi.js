@@ -1,27 +1,26 @@
 const BASE_URL = "http://localhost:5000/api/user";
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
+// Hàm header không cần token
+const getHeaders = () => {
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
   };
 };
 
 const userApi = {
   // 1. Lấy thông tin tài khoản hiện tại
   getCurrentUser: async () => {
-    const res = await fetch(`${BASE_URL}/users/me`, {
-      headers: getAuthHeaders(),
+    const res = await fetch(`${BASE_URL}/me`, {
+      headers: getHeaders(),
     });
     return res.json();
   },
 
   // 2. Cập nhật thông tin tài khoản hiện tại
   updateCurrentUser: async (data) => {
-    const res = await fetch(`${BASE_URL}/users/me`, {
+    const res = await fetch(`${BASE_URL}/me`, {
       method: "PUT",
-      headers: getAuthHeaders(),
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return res.json();
@@ -30,7 +29,7 @@ const userApi = {
   // 3. Lấy danh sách tất cả người dùng (admin)
   getAllUsers: async () => {
   const res = await fetch(`${BASE_URL}/users`, {
-    headers: getAuthHeaders(),
+    headers: getHeaders(),
   });
   if (!res.ok) throw new Error("Lỗi khi lấy danh sách người dùng");
   return res.json();
@@ -40,7 +39,7 @@ const userApi = {
   // 4. Lấy thông tin chi tiết người dùng theo ID (kèm quyền)
   getUserDetails: async (userId) => {
     const res = await fetch(`${BASE_URL}/users/${userId}/details`, {
-      headers: getAuthHeaders(),
+      headers: getHeaders(),
     });
     return res.json();
   },
@@ -49,7 +48,7 @@ const userApi = {
   updateUserById: async (id, data) => {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "PUT",
-      headers: getAuthHeaders(),
+      headers: getHeaders(),
       body: JSON.stringify(data),
     });
     return res.json();
@@ -59,7 +58,7 @@ const userApi = {
   deleteUser: async (id) => {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "DELETE",
-      headers: getAuthHeaders(),
+      headers: getHeaders(),
     });
     return res.json();
   },
@@ -68,7 +67,7 @@ const userApi = {
   changeUserRole: async (id, roleId) => {
     const res = await fetch(`${BASE_URL}/users/${id}/role`, {
       method: "PUT",
-      headers: getAuthHeaders(),
+      headers: getHeaders(),
       body: JSON.stringify({ VaiTroID: roleId }),
     });
     return res.json();
@@ -78,7 +77,7 @@ const userApi = {
   updateUserPermissions: async (userId, permissions) => {
     const res = await fetch(`${BASE_URL}/users/${userId}/permissions`, {
       method: "PUT",
-      headers: getAuthHeaders(),
+      headers: getHeaders(),
       body: JSON.stringify({ permissions }),
     });
     return res.json();
