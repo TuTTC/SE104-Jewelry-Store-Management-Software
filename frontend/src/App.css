@@ -13,8 +13,6 @@
   display: inline-block;
 }
 
-
-
 .action-button:hover {
   background-color: #6d5543;
 }
@@ -32,7 +30,6 @@
   cursor: pointer;
   vertical-align: middle;
 }
-
 
 /* Các kiểu dáng hiện có khác */
 .auth-page {
@@ -504,4 +501,49 @@ th {
 .product-image {
   width: 50px;
   height: 50px;
+}
+
+/* Intro Page */
+.intro-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  min-height: 100vh; /* Đảm bảo chiếm toàn bộ chiều cao */
+  width: 100vw;      /* Đảm bảo chiếm toàn bộ chiều rộng */
+  background-color: #f4f4f9;
+  margin: 0; /* Sửa lỗi cú pháp và loại bỏ margin để căn giữa */
+  padding: 0; /* Loại bỏ padding mặc định */
+}
+
+.intro-content {
+  text-align: center;
+  max-width: 600px;
+  padding: 20px;
+  width: 100%; /* Đảm bảo nội dung không vượt quá container */
+}
+
+.intro-logo {
+  width: 200px;
+  height: 200px;
+  margin-bottom: 20px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.intro-content h1 {
+  font-size: 36px;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 20px;
+}
+
+.intro-content p {
+  font-size: 18px;
+  color: #666666;
+  margin-bottom: 30px;
+  font-family: 'Playfair Display', 'Times New Roman', Times, serif;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }

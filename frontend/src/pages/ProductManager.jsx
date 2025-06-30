@@ -1,68 +1,168 @@
-// src/components/ProductManager.jsx
-import React, { useState } from "react";
-import { Edit, Trash } from "lucide-react";
-import GeneralModalForm from "./GeneralModalForm";
-
-const initialProducts = [
-  { id: 1, code: "SP001", name: "Ruby Ring", price: "$1200", category: "Ring", quantity: 10, status: "In Stock", image: "https://via.placeholder.com/50", note: "Best Seller" },
-  { id: 2, code: "SP002", name: "Sapphire Necklace", price: "$2500", category: "Necklace", quantity: 5, status: "Low Stock", image: "https://via.placeholder.com/50", note: "Limited Edition" },
-];
+import React, { useState, useEffect } from 'react';
+import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
+import { initialProducts } from '../data/initialData';
+import GeneralModalForm from '../components/GeneralModalForm';
+import SearchModal from '../components/SearchModal';
+import FilterModal from '../components/FilterModal';
 
 const ProductManager = () => {
   const [products, setProducts] = useState(initialProducts);
   const [showModal, setShowModal] = useState(false);
-  const [formMode, setFormMode] = useState("add"); // "add" | "edit"
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [modalType, setModalType] = useState("");
+  const [currentItem, setCurrentItem] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [error, setError] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [searchFormData, setSearchFormData] = useState({});
+  const [filterFormData, setFilterFormData] = useState({});
 
-  const openModal = (mode, product = null) => {
-    setFormMode(mode);
-    setSelectedProduct(product);
+  useEffect(() => {
+    // Placeholder for backend API call
+    // fetchProducts().then(data => setProducts(data));
+  }, []);
+
+  const openModal = (type, item = null) => {
+    setModalType(type);
+    setCurrentItem(item);
+    setFormData(item || {});
     setShowModal(true);
+    setError("");
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setSelectedProduct(null);
+    setFormData({});
+    setCurrentItem(null);
+    setError("");
   };
 
-  const handleSubmit = (data) => {
-    if (formMode === "add") {
-      const newProduct = { ...data, id: Date.now(), image: data.image || "/images/default.jpg" };
-      setProducts((prev) => [...prev, newProduct]);
-    } else if (formMode === "edit" && selectedProduct) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === selectedProduct.id ? { ...p, ...data } : p))
-      );
+  const openSearchModal = () => setShowSearchModal(true);
+  const openFilterModal = () => setShowFilterModal(true);
+  const closeSearchModal = () => setShowSearchModal(false);
+  const closeFilterModal = () => setShowFilterModal(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSearchInputChange = (e) => {
+    const { name, value } = e.target;
+    setSearchFormData({ ...searchFormData, [name]: value });
+  };
+
+  const handleFilterInputChange = (e) => {
+    const { name, value } = e.target;
+    setFilterFormData({ ...filterFormData, [name]: value });
+  };
+
+  const sortData = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    const sortedData = [...products].sort((a, b) => {
+      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setProducts(sortedData);
+  };
+
+  const exportToCSV = () => {
+    const headers = Object.keys(products[0]).join(',');
+    const rows = products.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
+    const csv = `${headers}\n${rows}`;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "products.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const validateForm = () => {
+    if (!formData.code || !formData.name || !formData.price || !formData.quantity || !formData.category || !formData.status || !formData.image) {
+      setError("Vui lòng điền đầy đủ các trường bắt buộc.");
+      return false;
+    }
+    if (isNaN(parseFloat(formData.price.replace("$", ""))) || parseFloat(formData.price.replace("$", "")) <= 0) {
+      setError("Giá phải là số dương.");
+      return false;
+    }
+    if (parseInt(formData.quantity) < 0) {
+      setError("Số lượng không được âm.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    const newItem = { ...formData, id: Date.now() };
+    if (modalType === "add") {
+      setProducts([...products, newItem]);
+      // Placeholder for backend API call
+      // postProduct(newItem);
+    } else if (modalType === "edit" && currentItem) {
+      setProducts(products.map((item) => (item.id === currentItem.id ? { ...formData, id: item.id } : item)));
+      // Placeholder for backend API call
+      // updateProduct(currentItem.id, formData);
     }
     closeModal();
   };
 
   const handleDelete = (id) => {
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?");
-    if (confirmDelete) {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+    if (window.confirm("Bạn có chắc chắn muốn xóa mục này?")) {
+      setProducts(products.filter((item) => item.id !== id));
+      // Placeholder for backend API call
+      // deleteProduct(id);
     }
+  };
+
+  const handleSearchSubmit = () => {
+    // Placeholder for backend API call with search params
+    // fetchProducts(searchFormData).then(data => setProducts(data));
+    closeSearchModal();
+  };
+
+  const handleFilterSubmit = () => {
+    // Placeholder for backend API call with filter params
+    // fetchProducts(filterFormData).then(data => setProducts(data));
+    closeFilterModal();
   };
 
   return (
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title">Quản lý sản phẩm</h2>
-        <button onClick={() => openModal("add")} className="action-button">Thêm sản phẩm</button>
+        <div>
+          <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
+          <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
+          <button onClick={() => openModal("add")} className="action-button">Thêm sản phẩm</button>
+          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+        </div>
       </div>
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Mã</th>
-              <th>Tên</th>
-              <th>Giá</th>
-              <th>Danh mục</th>
-              <th>Số lượng</th>
-              <th>Trạng thái</th>
+              <th onClick={() => sortData("id")}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("code")}>Mã <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("name")}>Tên <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("price")}>Giá <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("category")}>Danh mục <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("quantity")}>Số lượng <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("status")}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
               <th>Hình ảnh</th>
-              <th>Ghi chú</th>
+              <th onClick={() => sortData("note")}>Ghi chú <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>
           </thead>
@@ -72,7 +172,7 @@ const ProductManager = () => {
                 <td>{p.id}</td>
                 <td>{p.code}</td>
                 <td>{p.name}</td>
-                <td>{p.price.toLocaleString()}₫</td>
+                <td>{p.price}</td>
                 <td>{p.category}</td>
                 <td>{p.quantity}</td>
                 <td>
@@ -98,13 +198,351 @@ const ProductManager = () => {
         </table>
       </div>
 
+      <GeneralModalForm
+        showModal={showModal}
+        closeModal={closeModal}
+        modalType={modalType}
+        currentSection="products"
+        formData={formData}
+        handleInputChange={handleInputChange}
+        handleSubmit={handleSubmit}
+        error={error}
+      />
+      <SearchModal
+        showSearchModal={showSearchModal}
+        closeSearchModal={closeSearchModal}
+        currentSection="products"
+        searchFormData={searchFormData}
+        handleSearchInputChange={handleSearchInputChange}
+        handleSearchSubmit={handleSearchSubmit}
+      />
+      <FilterModal
+        showFilterModal={showFilterModal}
+        closeFilterModal={closeFilterModal}
+        currentSection="products"
+        filterFormData={filterFormData}
+        handleFilterInputChange={handleFilterInputChange}
+        handleFilterSubmit={handleFilterSubmit}
+      />
+    </div>
+  );
+};
+
+export default ProductManager;
+
+
+// import React, { useEffect, useState } from "react";
+// import { Edit, Trash } from "lucide-react";
+// import GeneralModalForm from "../components/GeneralModalForm";
+// import * as productAPI from "../services/productApi";
+
+// const ProductManager = () => {
+//   const [products, setProducts] = useState([]);
+//   const [showModal, setShowModal] = useState(false);
+//   const [formMode, setFormMode] = useState("add");
+//   const [selectedProduct, setSelectedProduct] = useState(null);
+
+//   useEffect(() => {
+//     fetchProducts();
+//   }, []);
+
+//   const fetchProducts = () => {
+//     productAPI.getAllProducts()
+//       .then(data => setProducts(data))
+//       .catch(err => alert(err.message));
+
+//   };
+
+//   const openModal = (mode, product = null) => {
+//     setFormMode(mode);
+//     setSelectedProduct(product);
+//     setShowModal(true);
+//   };
+
+//   const closeModal = () => {
+//     setShowModal(false);
+//     setSelectedProduct(null);
+//   };
+
+//   const handleSubmit = (data) => {
+//     if (formMode === "add") {
+//       productAPI.addProduct(data)
+//         .then(() => {
+//           fetchProducts();
+//           closeModal();
+//         })
+//         .catch(err => alert(err.message));
+//     } else if (formMode === "edit" && selectedProduct) {
+//       productAPI.updateProduct(selectedProduct.MaSP, data)
+//         .then(() => {
+//           fetchProducts();
+//           closeModal();
+//         })
+//         .catch(err => alert(err.message));
+//     }
+//   };
+
+//   const handleDelete = (id) => {
+//     if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
+//       productAPI.deleteProduct(id)
+//         .then(() => fetchProducts())
+//         .catch(err => alert(err.message));
+//     }
+//   };
+
+//   return (
+//     <div className="table-card">
+//       <div className="table-header">
+//         <h2 className="table-title">Quản lý sản phẩm</h2>
+//         <button onClick={() => openModal("add")} className="action-button">Thêm sản phẩm</button>
+//       </div>
+
+//       <div className="table-container">
+//         <table className="data-table">
+//           <thead>
+//             <tr>
+//               <th>ID</th>
+//               <th>Tên</th>
+//               <th>Danh mục</th>
+//               <th>Nhà cung cấp</th>
+//               <th>Giá</th>
+//               <th>Số lượng</th>
+//               <th>Hình ảnh</th>
+//               <th>Ghi chú</th>
+//               <th>Hành động</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {products.map((p) => (
+//               <tr key={p.MaSP}>
+//                 <td>{p.MaSP}</td>
+//                 <td>{p.TenSP}</td>
+//                 <td>{p.MaDM}</td>
+//                 <td>{p.MaNCC}</td>
+//                 <td>{Number(p.GiaBan).toLocaleString()}₫</td>
+//                 <td>{p.SoLuongTon}</td>
+//                 <td>
+//                   <img src={p.HinhAnh || "/images/default.jpg"} alt={p.TenSP} className="product-image" />
+//                 </td>
+//                 <td>{p.MoTa}</td>
+//                 <td>
+//                   <button onClick={() => openModal("edit", p)} className="action-icon edit">
+//                     <Edit className="icon" />
+//                   </button>
+//                   <button onClick={() => handleDelete(p.MaSP)} className="action-icon delete">
+//                     <Trash className="icon" />
+//                   </button>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+
+//       {showModal && (
+//         <GeneralModalForm
+//           section="products"
+//           mode={formMode}
+//           data={selectedProduct}
+//           onClose={closeModal}
+//           onSubmit={handleSubmit}
+//         />
+//       )}
+//     </div>
+//   );
+// };
+
+// export default ProductManager;
+
+/*
+import React, { useEffect, useState } from "react";
+import { Edit, Trash } from "lucide-react";
+import GeneralModalForm from "../components/GeneralModalForm";
+import * as productAPI from "../services/productApi";
+
+const ProductManager = () => {
+  const [products, setProducts] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [formMode, setFormMode] = useState("add");
+  const [formData, setFormData] = useState({
+    code: "",
+    name: "",
+    price: "",
+    category: "",
+    quantity: "",
+    status: "",
+    image: "",
+    note: "",
+  });
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // const fetchProducts = () => {
+  //   productAPI.getAllProducts()
+  //     .then(data => setProducts(data))
+  //     .catch(err => alert(err.message));
+  // };
+  const fetchProducts = () => {
+  productAPI.getAllProducts()
+    .then(data => {
+      console.log("DATA FROM API:", data);
+      setProducts(data.data);
+    })
+    .catch(err => alert(err.message));
+};
+
+  const openModal = (mode, product = null) => {
+    setFormMode(mode);
+    setShowModal(true);
+
+    if (mode === "edit" && product) {
+      setFormData({
+        code: product.MaSP || "",
+        name: product.TenSP || "",
+        price: product.GiaBan || "",
+        category: product.MaDM || "",
+        quantity: product.SoLuongTon || "",
+        status: product.TrangThai || "",
+        image: product.HinhAnh || "",
+        note: product.MoTa || "",
+      });
+    } else {
+      setFormData({
+        code: "",
+        name: "",
+        price: "",
+        category: "",
+        quantity: "",
+        status: "",
+        image: "",
+        note: "",
+      });
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setFormData({
+      code: "",
+      name: "",
+      price: "",
+      category: "",
+      quantity: "",
+      status: "",
+      image: "",
+      note: "",
+    });
+    setError(null);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      MaSP: formData.code,
+      TenSP: formData.name,
+      GiaBan: formData.price,
+      MaDM: formData.category,
+      SoLuongTon: formData.quantity,
+      TrangThai: formData.status,
+      HinhAnh: formData.image,
+      MoTa: formData.note,
+    };
+
+    if (formMode === "add") {
+      productAPI.addProduct(data)
+        .then(() => {
+          fetchProducts();
+          closeModal();
+        })
+        .catch(err => setError(err.message));
+    } else if (formMode === "edit") {
+      productAPI.updateProduct(formData.code, data)
+        .then(() => {
+          fetchProducts();
+          closeModal();
+        })
+        .catch(err => setError(err.message));
+    }
+  };
+
+  const handleDelete = (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
+      productAPI.deleteProduct(id)
+        .then(() => fetchProducts())
+        .catch(err => alert(err.message));
+    }
+  };
+
+  return (
+    <div className="table-card">
+      <div className="table-header">
+        <h2 className="table-title">Quản lý sản phẩm</h2>
+        <button onClick={() => openModal("add")} className="action-button">Thêm sản phẩm</button>
+      </div>
+
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tên</th>
+              <th>Danh mục</th>
+              <th>Nhà cung cấp</th>
+              <th>Giá</th>
+              <th>Số lượng</th>
+              <th>Hình ảnh</th>
+              <th>Ghi chú</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((p) => (
+              <tr key={p.MaSP}>
+                <td>{p.MaSP}</td>
+                <td>{p.TenSP}</td>
+                <td>{p.MaDM}</td>
+                <td>{p.MaNCC}</td>
+                <td>{Number(p.GiaBan).toLocaleString()}₫</td>
+                <td>{p.SoLuongTon}</td>
+                <td>
+                  <img src={p.HinhAnh || "/images/default.jpg"} alt={p.TenSP} className="product-image" />
+                </td>
+                <td>{p.MoTa}</td>
+                <td>
+                  <button onClick={() => openModal("edit", p)} className="action-icon edit">
+                    <Edit className="icon" />
+                  </button>
+                  <button onClick={() => handleDelete(p.MaSP)} className="action-icon delete">
+                    <Trash className="icon" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       {showModal && (
         <GeneralModalForm
-          section="products"
-          mode={formMode}
-          data={selectedProduct}
-          onClose={closeModal}
-          onSubmit={handleSubmit}
+          showModal={showModal}
+          closeModal={closeModal}
+          modalType={formMode}
+          currentSection="products"
+          formData={formData}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          error={error}
         />
       )}
     </div>
@@ -112,3 +550,4 @@ const ProductManager = () => {
 };
 
 export default ProductManager;
+*/

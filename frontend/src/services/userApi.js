@@ -1,6 +1,4 @@
-// src/api/userApi.js
-
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const BASE_URL = "http://localhost:5000/api/user";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -13,7 +11,7 @@ const getAuthHeaders = () => {
 const userApi = {
   // 1. Lấy thông tin tài khoản hiện tại
   getCurrentUser: async () => {
-    const res = await fetch(`${BASE_URL}/api/users/me`, {
+    const res = await fetch(`${BASE_URL}/users/me`, {
       headers: getAuthHeaders(),
     });
     return res.json();
@@ -21,7 +19,7 @@ const userApi = {
 
   // 2. Cập nhật thông tin tài khoản hiện tại
   updateCurrentUser: async (data) => {
-    const res = await fetch(`${BASE_URL}/api/users/me`, {
+    const res = await fetch(`${BASE_URL}/users/me`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -31,15 +29,17 @@ const userApi = {
 
   // 3. Lấy danh sách tất cả người dùng (admin)
   getAllUsers: async () => {
-    const res = await fetch(`${BASE_URL}/api/users`, {
-      headers: getAuthHeaders(),
-    });
-    return res.json();
+  const res = await fetch(`${BASE_URL}/users`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Lỗi khi lấy danh sách người dùng");
+  return res.json();
   },
 
-  // 4. Lấy thông tin người dùng theo ID
-  getUserById: async (id) => {
-    const res = await fetch(`${BASE_URL}/api/users/${id}`, {
+
+  // 4. Lấy thông tin chi tiết người dùng theo ID (kèm quyền)
+  getUserDetails: async (userId) => {
+    const res = await fetch(`${BASE_URL}/users/${userId}/details`, {
       headers: getAuthHeaders(),
     });
     return res.json();
@@ -47,7 +47,7 @@ const userApi = {
 
   // 5. Cập nhật người dùng theo ID
   updateUserById: async (id, data) => {
-    const res = await fetch(`${BASE_URL}/api/users/${id}`, {
+    const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -57,19 +57,29 @@ const userApi = {
 
   // 6. Xóa người dùng
   deleteUser: async (id) => {
-    const res = await fetch(`${BASE_URL}/api/users/${id}`, {
+    const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
     });
     return res.json();
   },
 
-  // 7. Gán vai trò mới cho người dùng
-  changeUserRole: async (id, role) => {
-    const res = await fetch(`${BASE_URL}/api/users/${id}/role`, {
+  // 7. Đổi vai trò người dùng
+  changeUserRole: async (id, roleId) => {
+    const res = await fetch(`${BASE_URL}/users/${id}/role`, {
       method: "PUT",
       headers: getAuthHeaders(),
-      body: JSON.stringify({ VaiTro: role }),
+      body: JSON.stringify({ VaiTroID: roleId }),
+    });
+    return res.json();
+  },
+
+  // 8. Cập nhật quyền riêng của người dùng
+  updateUserPermissions: async (userId, permissions) => {
+    const res = await fetch(`${BASE_URL}/users/${userId}/permissions`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ permissions }),
     });
     return res.json();
   },

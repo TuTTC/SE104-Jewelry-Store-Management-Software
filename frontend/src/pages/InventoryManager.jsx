@@ -1,82 +1,151 @@
-import React, { useState } from "react";
-import { Edit, Trash } from "lucide-react";
-import GeneralModalForm from "../components/GeneralModalForm"; // cập nhật đường dẫn nếu cần
+// src/pages/InventoryManager.jsx
+import React, { useState, useEffect } from 'react';
+import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
+import { initialInventory } from '../data/initialData';
+import GeneralModalForm from '../components/GeneralModalForm';
+import SearchModal from '../components/SearchModal';
+import FilterModal from '../components/FilterModal';
 
 const InventoryManager = () => {
-  const [inventory, setInventory] = useState([
-    { id: 1, productId: 101, quantity: 50, lastUpdated: "2025-06-01" },
-    { id: 2, productId: 102, quantity: 30, lastUpdated: "2025-06-10" },
-  ]);
-
+  const [inventory, setInventory] = useState(initialInventory);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState("add"); // or "edit"
+  const [modalType, setModalType] = useState('');
+  const [currentItem, setCurrentItem] = useState(null);
   const [formData, setFormData] = useState({});
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [searchFormData, setSearchFormData] = useState({});
+  const [filterFormData, setFilterFormData] = useState({});
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
-  const openModal = (section, type, data = {}) => {
-    if (section !== "inventory") return;
+  useEffect(() => {
+    // Placeholder for backend API call
+    // fetchInventory().then(data => setInventory(data));
+  }, []);
+
+  const openModal = (type, item = null) => {
     setModalType(type);
-    setFormData(type === "edit" ? data : {});
+    setCurrentItem(item);
+    setFormData(item || {});
     setShowModal(true);
+    setError('');
   };
 
   const closeModal = () => {
     setShowModal(false);
     setFormData({});
-    setError("");
+    setCurrentItem(null);
+    setError('');
   };
+
+  const openSearchModal = () => setShowSearchModal(true);
+  const openFilterModal = () => setShowFilterModal(true);
+  const closeSearchModal = () => setShowSearchModal(false);
+  const closeFilterModal = () => setShowFilterModal(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSearchInputChange = (e) => {
+    const { name, value } = e.target;
+    setSearchFormData({ ...searchFormData, [name]: value });
+  };
+
+  const handleFilterInputChange = (e) => {
+    const { name, value } = e.target;
+    setFilterFormData({ ...filterFormData, [name]: value });
+  };
+
+  const sortData = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+    const sortedData = [...inventory].sort((a, b) => {
+      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setInventory(sortedData);
+  };
+
+  const exportToCSV = () => {
+    const headers = Object.keys(inventory[0]).join(',');
+    const rows = inventory.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
+    const csv = `${headers}\n${rows}`;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'inventory.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const validateForm = () => {
+    if (!formData.productId || !formData.quantity || !formData.lastUpdated) {
+      setError('Vui lòng điền đầy đủ các trường bắt buộc.');
+      return false;
+    }
+    if (parseInt(formData.quantity) < 0) {
+      setError('Số lượng không được âm.');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { productId, quantity, lastUpdated } = formData;
+    if (!validateForm()) return;
 
-    if (!productId || !quantity || !lastUpdated) {
-      setError("Vui lòng điền đầy đủ thông tin.");
-      return;
-    }
-
-    if (modalType === "add") {
-      const newId = inventory.length ? Math.max(...inventory.map((i) => i.id)) + 1 : 1;
-      const newItem = { id: newId, ...formData };
+    const newItem = { ...formData, id: Date.now() };
+    if (modalType === 'add') {
       setInventory([...inventory, newItem]);
-    } else {
-      setInventory((prev) =>
-        prev.map((i) => (i.id === formData.id ? formData : i))
-      );
+    } else if (modalType === 'edit' && currentItem) {
+      setInventory(inventory.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
     }
-
     closeModal();
   };
 
-  const handleDelete = (section, id) => {
-    if (section !== "inventory") return;
-    const confirm = window.confirm("Bạn có chắc chắn muốn xóa?");
-    if (confirm) {
-      setInventory((prev) => prev.filter((i) => i.id !== id));
+  const handleDelete = (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa mục này?')) {
+      setInventory(inventory.filter(item => item.id !== id));
     }
+  };
+
+  const handleSearchSubmit = () => {
+    // Placeholder for backend API call
+    closeSearchModal();
+  };
+
+  const handleFilterSubmit = () => {
+    // Placeholder for backend API call
+    closeFilterModal();
   };
 
   return (
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title">Quản lý tồn kho</h2>
-        <button onClick={() => openModal("inventory", "add")} className="action-button">
-          Thêm tồn kho
-        </button>
+        <div>
+          <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
+          <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
+          <button onClick={() => openModal('add')} className="action-button">Thêm tồn kho</button>
+          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+        </div>
       </div>
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>ID Sản phẩm</th>
-              <th>Số lượng</th>
-              <th>Ngày cập nhật</th>
+              <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('productId')}>ID sản phẩm <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('quantity')}>Số lượng <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('lastUpdated')}>Cập nhật lần cuối <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>
           </thead>
@@ -88,16 +157,10 @@ const InventoryManager = () => {
                 <td>{i.quantity}</td>
                 <td>{i.lastUpdated}</td>
                 <td>
-                  <button
-                    onClick={() => openModal("inventory", "edit", i)}
-                    className="action-icon edit"
-                  >
+                  <button onClick={() => openModal('edit', i)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button
-                    onClick={() => handleDelete("inventory", i.id)}
-                    className="action-icon delete"
-                  >
+                  <button onClick={() => handleDelete(i.id)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                 </td>
@@ -107,7 +170,6 @@ const InventoryManager = () => {
         </table>
       </div>
 
-      {/* Modal Form */}
       <GeneralModalForm
         showModal={showModal}
         closeModal={closeModal}
@@ -117,6 +179,22 @@ const InventoryManager = () => {
         handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
         error={error}
+      />
+      <SearchModal
+        showSearchModal={showSearchModal}
+        closeSearchModal={closeSearchModal}
+        currentSection="inventory"
+        searchFormData={searchFormData}
+        handleSearchInputChange={handleSearchInputChange}
+        handleSearchSubmit={handleSearchSubmit}
+      />
+      <FilterModal
+        showFilterModal={showFilterModal}
+        closeFilterModal={closeFilterModal}
+        currentSection="inventory"
+        filterFormData={filterFormData}
+        handleFilterInputChange={handleFilterInputChange}
+        handleFilterSubmit={handleFilterSubmit}
       />
     </div>
   );
