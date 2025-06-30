@@ -1,13 +1,13 @@
-// src/pages/InventoryManager.jsx
+// src/pages/PurchaseOrderDetails.jsx
 import React, { useState, useEffect } from 'react';
 import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
-import { initialInventory } from '../data/initialData';
+import { initialPurchaseOrderDetails } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 
-const InventoryManager = () => {
-  const [inventory, setInventory] = useState(initialInventory);
+const PurchaseOrderDetails = () => {
+  const [details, setDetails] = useState(initialPurchaseOrderDetails);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [currentItem, setCurrentItem] = useState(null);
@@ -21,7 +21,7 @@ const InventoryManager = () => {
 
   useEffect(() => {
     // Placeholder for backend API call
-    // fetchInventory().then(data => setInventory(data));
+    // fetchPurchaseOrderDetails().then(data => setDetails(data));
   }, []);
 
   const openModal = (type, item = null) => {
@@ -65,34 +65,34 @@ const InventoryManager = () => {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-    const sortedData = [...inventory].sort((a, b) => {
+    const sortedData = [...details].sort((a, b) => {
       if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
       if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-    setInventory(sortedData);
+    setDetails(sortedData);
   };
 
   const exportToCSV = () => {
-    const headers = Object.keys(inventory[0]).join(',');
-    const rows = inventory.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
+    const headers = Object.keys(details[0]).join(',');
+    const rows = details.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
     const csv = `${headers}\n${rows}`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'inventory.csv';
+    a.download = 'purchaseOrderDetails.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
   const validateForm = () => {
-    if (!formData.productId || !formData.quantity || !formData.lastUpdated) {
+    if (!formData.maPN || !formData.maSP || !formData.soLuong || !formData.donGiaNhap) {
       setError('Vui lòng điền đầy đủ các trường bắt buộc.');
       return false;
     }
-    if (parseInt(formData.quantity) < 0) {
-      setError('Số lượng không được âm.');
+    if (parseInt(formData.soLuong) <= 0 || parseFloat(formData.donGiaNhap) <= 0) {
+      setError('Số lượng và đơn giá phải lớn hơn 0.');
       return false;
     }
     return true;
@@ -102,18 +102,19 @@ const InventoryManager = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const newItem = { ...formData, id: Date.now() };
+    const thanhTien = (parseFloat(formData.soLuong) * parseFloat(formData.donGiaNhap)).toFixed(2);
+    const newItem = { ...formData, id: Date.now(), thanhTien };
     if (modalType === 'add') {
-      setInventory([...inventory, newItem]);
+      setDetails([...details, newItem]);
     } else if (modalType === 'edit' && currentItem) {
-      setInventory(inventory.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
+      setDetails(details.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
     }
     closeModal();
   };
 
   const handleDelete = (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa mục này?')) {
-      setInventory(inventory.filter(item => item.id !== id));
+      setDetails(details.filter(item => item.id !== id));
     }
   };
 
@@ -130,11 +131,11 @@ const InventoryManager = () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý tồn kho</h2>
+        <h2 className="table-title">Chi tiết phiếu nhập</h2>
         <div>
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-          <button onClick={() => openModal('add')} className="action-button">Thêm tồn kho</button>
+          <button onClick={() => openModal('add')} className="action-button">Thêm chi tiết</button>
           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
         </div>
       </div>
@@ -143,24 +144,30 @@ const InventoryManager = () => {
           <thead>
             <tr>
               <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('productId')}>ID sản phẩm <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('quantity')}>Số lượng <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('lastUpdated')}>Cập nhật lần cuối <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('maCTPN')}>Mã CTPN <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('maPN')}>Mã phiếu nhập <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('maSP')}>Mã sản phẩm <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('soLuong')}>Số lượng <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('donGiaNhap')}>Đơn giá nhập <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('thanhTien')}>Thành tiền <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {inventory.map((i) => (
-              <tr key={i.id}>
-                <td>{i.id}</td>
-                <td>{i.productId}</td>
-                <td>{i.quantity}</td>
-                <td>{i.lastUpdated}</td>
+            {details.map((pod) => (
+              <tr key={pod.id}>
+                <td>{pod.id}</td>
+                <td>{pod.maCTPN}</td>
+                <td>{pod.maPN}</td>
+                <td>{pod.maSP}</td>
+                <td>{pod.soLuong}</td>
+                <td>${pod.donGiaNhap.toFixed(2)}</td>
+                <td>${pod.thanhTien}</td>
                 <td>
-                  <button onClick={() => openModal('edit', i)} className="action-icon edit">
+                  <button onClick={() => openModal('edit', pod)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(i.id)} className="action-icon delete">
+                  <button onClick={() => handleDelete(pod.id)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                 </td>
@@ -174,7 +181,7 @@ const InventoryManager = () => {
         showModal={showModal}
         closeModal={closeModal}
         modalType={modalType}
-        currentSection="inventory"
+        currentSection="purchaseOrderDetails"
         formData={formData}
         handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
@@ -183,7 +190,7 @@ const InventoryManager = () => {
       <SearchModal
         showSearchModal={showSearchModal}
         closeSearchModal={closeSearchModal}
-        currentSection="inventory"
+        currentSection="purchaseOrderDetails"
         searchFormData={searchFormData}
         handleSearchInputChange={handleSearchInputChange}
         handleSearchSubmit={handleSearchSubmit}
@@ -191,7 +198,7 @@ const InventoryManager = () => {
       <FilterModal
         showFilterModal={showFilterModal}
         closeFilterModal={closeFilterModal}
-        currentSection="inventory"
+        currentSection="purchaseOrderDetails"
         filterFormData={filterFormData}
         handleFilterInputChange={handleFilterInputChange}
         handleFilterSubmit={handleFilterSubmit}
@@ -200,4 +207,4 @@ const InventoryManager = () => {
   );
 };
 
-export default InventoryManager;
+export default PurchaseOrderDetails;

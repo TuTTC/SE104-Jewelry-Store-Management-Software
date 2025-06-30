@@ -1,31 +1,19 @@
 import React, { useState } from "react";
-import '../../App.css';
+import "../../App.css";
 import { X } from "lucide-react";
 import LoginForm from "./Login";
 import RegisterForm from "./Register";
-// import ForgotPasswordForm from "./ForgotPasswordForm";
 import { sendOtpRegister, login } from "./authApi";
+import { useNavigate } from "react-router-dom";
 
-function Auth({ onAuthSuccess }) {
+function Auth() {
   const [selectedPage, setSelectedPage] = useState("login");
-  const [showModal, setShowModal] = useState(true);
   const [formData, setFormData] = useState({
-  select_role: "customer", // Gán mặc định rõ ràng
-});
+    select_role: "customer",
+  });
   const [error, setError] = useState("");
 
-  const openModal = (page) => {
-    setSelectedPage(page);
-    setShowModal(true);
-    setError("");
-    setFormData({});
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setFormData({});
-    setError("");
-  };
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -89,8 +77,8 @@ function Auth({ onAuthSuccess }) {
         });
         if (res.token) {
           localStorage.setItem("token", res.token);
-          onAuthSuccess(true, res.user.VaiTro, res.user);
-          closeModal();
+          localStorage.setItem("user", JSON.stringify(res.user));
+          navigate("/admin/dashboard");
         } else {
           setError(res.message || "Đăng nhập thất bại.");
         }
@@ -107,47 +95,33 @@ function Auth({ onAuthSuccess }) {
 
   return (
     <div className="container">
-      {showModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>{selectedPage === "login" ? "Đăng nhập" : selectedPage === "register" ? "Đăng ký" : "Quên mật khẩu"}</h2>
-              <button onClick={closeModal} className="modal-close"><X className="icon" /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="modal-form">
-              {selectedPage === "login" && (
-                <LoginForm
-                  formData={formData}
-                  onChange={handleInputChange}
-                  onSubmit={handleSubmit}
-                  onSwitch={openModal}
-                  error={error}
-                  onGoogleLogin={handleGoogleLogin}
-                />
-              )}
-              {selectedPage === "register" && (
-                <RegisterForm
-                  formData={formData}
-                  onChange={handleInputChange}
-                  onSubmit={handleSubmit}
-                  onSwitch={openModal}
-                  error={error}
-                  onGoogleLogin={handleGoogleLogin}
-                />
-              )}
-              {/* {selectedPage === "forgot" && (
-                <ForgotPasswordForm
-                  formData={formData}
-                  onChange={handleInputChange}
-                  onSubmit={handleSubmit}
-                  onSwitch={openModal}
-                  error={error}
-                />
-              )} */}
-            </form>
-          </div>
+      <div className="modal">
+        <div className="modal-header">
+          <h2>{selectedPage === "login" ? "Đăng nhập" : "Đăng ký"}</h2>
         </div>
-      )}
+        <form onSubmit={handleSubmit} className="modal-form">
+          {selectedPage === "login" && (
+            <LoginForm
+              formData={formData}
+              onChange={handleInputChange}
+              onSubmit={handleSubmit}
+              onSwitch={setSelectedPage}
+              error={error}
+              onGoogleLogin={handleGoogleLogin}
+            />
+          )}
+          {selectedPage === "register" && (
+            <RegisterForm
+              formData={formData}
+              onChange={handleInputChange}
+              onSubmit={handleSubmit}
+              onSwitch={setSelectedPage}
+              error={error}
+              onGoogleLogin={handleGoogleLogin}
+            />
+          )}
+        </form>
+      </div>
     </div>
   );
 }

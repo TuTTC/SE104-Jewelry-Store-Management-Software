@@ -1,44 +1,32 @@
-// src/App.jsx
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import "./App.css";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import './App.css';
 
-import Auth from "./pages/auth/Auth";
-import PrivateRoute from "./routes/PrivateRoute";
-import AdminLayout from "./Layouts/AdminLayout";
+import Auth from './pages/auth/Auth';
+import PrivateRoute from './routes/PrivateRoute';
+import AdminLayout from './Layouts/AdminLayout';
 
-import Dashboard from "./pages/Dashboard";
-import AccountManager from "./pages/AccountManager";
-import ProductManager from "./pages/ProductManager";
-import CategoryManager from "./pages/CategoryManager";
-import OrderManager from "./pages/OrderManager";
-import ServiceManager from "./pages/ServiceManager";
-import PurchaseOrderManager from "./pages/PurchaseOrderManager";
-import SupplierManager from "./pages/SupplierManager";
-import InventoryManager from "./pages/InventoryManager";
-import ReportDashboard from "./pages/ReportDashboard";
+import Dashboard from './pages/Dashboard';
+import AccountManager from './pages/AccountManager';
+import ProductManager from './pages/ProductManager';
+import CategoryManager from './pages/CategoryManager';
+import OrderManager from './pages/OrderManager';
+import ServiceManager from './pages/ServiceManager';
+import PurchaseOrderManager from './pages/PurchaseOrderManager';
+import SupplierManager from './pages/SupplierManager';
+import InventoryManager from './pages/InventoryManager';
+import ReportDashboard from './pages/ReportDashboard';
+import PurchaseOrderDetails from './pages/PurchaseOrderDetails';
+import ServiceDetails from './pages/ServiceDetails';
+import IntroPage from './pages/IntroPage';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Redirect root to admin dashboard */}
-        <Route path="/" element={<Navigate to="/admin/dashboard" />} />
-
-        {/* Public route */}
-        <Route
-          path="/login"
-          element={
-            <Auth
-              onAuthSuccess={() => {
-                window.location.href = "/admin/dashboard";
-              }}
-            />
-          }
-        />
-
-
-        {/* Protected admin route */}
+        <Route path="/" element={<IntroPage />} />
+        <Route path="/login" element={<Auth />} />
+        
         <Route path="/admin" element={<PrivateRoute />}>
           <Route element={<AdminLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
@@ -48,6 +36,8 @@ function App() {
             <Route path="orders" element={<OrderManager />} />
             <Route path="services" element={<ServiceManager />} />
             <Route path="purchaseOrders" element={<PurchaseOrderManager />} />
+            <Route path="purchaseOrderDetails" element={<PurchaseOrderDetails />} />
+            <Route path="serviceDetails" element={<ServiceDetails />} />
             <Route path="suppliers" element={<SupplierManager />} />
             <Route path="inventory" element={<InventoryManager />} />
             <Route path="reports" element={<ReportDashboard />} />

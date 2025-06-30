@@ -25,20 +25,17 @@ function PermissionModal({
     );
   };
 
-  const handleSave = () => {
-    onSubmit(selectedPermissions);
-  };
-
   if (!isOpen || !permissionAccount) return null;
 
-  // Nhóm quyền theo module
+  // Gom quyền theo module và loại quyền (view, edit, delete, create)
   const groupedPermissions = {};
+
   allPermissions.forEach((p) => {
-    const [module] = p.TenQuyen.split(":");
+    const [module, action] = p.TenQuyen.split(":");
     if (!groupedPermissions[module]) {
-      groupedPermissions[module] = [];
+      groupedPermissions[module] = {};
     }
-    groupedPermissions[module].push(p);
+    groupedPermissions[module][action] = p;
   });
 
   return (
@@ -55,30 +52,47 @@ function PermissionModal({
         </div>
 
         <div className="modal-body">
-          {Object.entries(groupedPermissions).map(([module, permissions]) => (
-            <div key={module} className="permission-group">
-              <h4 className="module-title">{module.toUpperCase()}</h4>
-              <div className="permission-checkboxes">
-                {permissions.map((p) => (
-                  <label key={p.PermissionID} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedPermissions.includes(p.PermissionID)}
-                      onChange={() => handleCheckboxChange(p.PermissionID)}
-                    />
-                    {p.MoTa}
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
+          <table className="permission-table">
+            <thead>
+              <tr>
+                <th>Module</th>
+                <th>Xem</th>
+                <th>Sửa</th>
+                <th>Xóa</th>
+                <th>Thêm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(groupedPermissions).map(([module, actions]) => (
+                <tr key={module}>
+                  <td>{module.toUpperCase()}</td>
+                  {["view", "edit", "delete", "create"].map((actionKey) => {
+                    const permission = actions[actionKey];
+                    return (
+                      <td key={actionKey} style={{ textAlign: "center" }}>
+                        {permission ? (
+                          <input
+                            type="checkbox"
+                            checked={selectedPermissions.includes(permission.PermissionID)}
+                            onChange={() => handleCheckboxChange(permission.PermissionID)}
+                          />
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div className="modal-footer">
           <button onClick={onClose} className="action-button secondary">
             Hủy
           </button>
-          <button onClick={handleSave} className="action-button">
+          <button onClick={() => onSubmit(selectedPermissions)} className="action-button">
             Lưu
           </button>
         </div>
