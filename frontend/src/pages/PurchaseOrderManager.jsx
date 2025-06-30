@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
-import { initialPurchaseOrders, initialSuppliers } from '../data/initialData';
-import GeneralModalForm from '../components/GeneralModalForm';
+import React, { useState, useEffect } from "react";
+import { Edit, Trash, Plus } from "lucide-react";
+import GeneralModalForm from "../components/GeneralModalForm"; // Điều chỉnh path nếu cần
+import * as orderApi from "../services/purchaseOrderApi";
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 
-const PurchaseOrderManager = () => {
-  const [purchaseOrders, setPurchaseOrders] = useState(initialPurchaseOrders);
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('');
-  const [currentItem, setCurrentItem] = useState(null);
-  const [formData, setFormData] = useState({});
+
+function PurchaseOrderManager() {
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState("add"); // "add" | "edit"
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [error, setError] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [searchFormData, setSearchFormData] = useState({});
@@ -18,37 +18,90 @@ const PurchaseOrderManager = () => {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
-  useEffect(() => {
-    // Placeholder cho API call
-    // fetchPurchaseOrders().then(data => setPurchaseOrders(data));
-  }, []);
+  const [formData, setFormData] = useState({
+    code: "",
+    supplier: "",
+    user:"",
+    date: "",
+    total: "",
+    status: "",
+  });
 
-  const openModal = (type, item = null) => {
-    setModalType(type);
-    setCurrentItem(item);
-    setFormData(item || {});
-    setShowModal(true);
-    setError('');
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setFormData({});
-    setCurrentItem(null);
-    setError('');
-  };
+  const modalType = modalMode;
+  const showModal = modalVisible;
 
   const openSearchModal = () => setShowSearchModal(true);
   const openFilterModal = () => setShowFilterModal(true);
   const closeSearchModal = () => setShowSearchModal(false);
   const closeFilterModal = () => setShowFilterModal(false);
+  // Fetch danh sách phiếu nhập từ backend
+  useEffect(() => {
+    fetchPurchaseOrders();
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const fetchPurchaseOrders = async () => {
+    try {
+      const res = await orderApi.getAllOrders();
+      if (res.status === "success") {
+        setPurchaseOrders(res.data);
+      } else {
+        alert("Lỗi khi tải dữ liệu!");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert(error.message);
+    }
   };
 
-  const handleSearchInputChange = (e) => {
+  // Xử lý mở modal
+  function openModal(mode, order = null) {
+    setModalMode(mode);
+    setSelectedOrder(order);
+    setModalVisible(true);
+
+    if (order) {
+      setFormData({
+        code: order.MaPN,
+        supplier: order.MaNCC,
+        user: order.UserID,
+        date: order.NgayNhap?.slice(0, 10),
+        total: order.TongTien,
+        status: order.TrangThai,
+      });
+    } else {
+      setFormData({
+        code: "",
+        supplier: "",
+        user: "",
+        date: "",
+        total: "",
+        status: "",
+      });
+    }
+  }
+
+  // Đóng modal
+  function closeModal() {
+    setModalVisible(false);
+    setSelectedOrder(null);
+  }
+
+  // Sau khi form thêm/sửa thành công
+  function handleSuccess() {
+    closeModal();
+    fetchPurchaseOrders();
+  }
+
+  // Xử lý input form
+  function handleInputChange(e) {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+    const handleSearchInputChange = (e) => {
     const { name, value } = e.target;
     setSearchFormData({ ...searchFormData, [name]: value });
   };
@@ -95,41 +148,67 @@ const PurchaseOrderManager = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const validateForm = () => {
-    if (!formData.orderCode || !formData.supplierId || !formData.date || !formData.total || !formData.status) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc.');
-      return false;
-    }
-    if (parseFloat(formData.total) <= 0) {
-      setError('Tổng tiền phải lớn hơn 0.');
-      return false;
-    }
-    if (!initialSuppliers.find(s => s.id === parseInt(formData.supplierId))) {
-      setError('ID nhà cung cấp không hợp lệ.');
-      return false;
-    }
-    return true;
-  };
 
-  const handleSubmit = (e) => {
+  // Submit form
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!validateForm()) return;
 
-    const newItem = { ...formData, id: Date.now(), total: parseFloat(formData.total), supplierId: parseInt(formData.supplierId) };
-    if (modalType === 'add') {
-      setPurchaseOrders([...purchaseOrders, newItem]);
-    } else if (modalType === 'edit' && currentItem) {
-      setPurchaseOrders(purchaseOrders.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
+    try {
+      const data = {
+        
+        MaNCC: formData.supplier,
+        UserID: formData.user,
+        NgayNhap: formData.date,
+        TongTien: parseFloat(formData.total),
+        TrangThai: formData.status,
+      };
+
+      if (modalMode === "add") {
+        const res = await orderApi.addOrder(data);
+        if (res.status === "success") {
+          alert("Thêm phiếu nhập thành công!");
+          handleSuccess();
+        } else {
+          alert("Thêm thất bại: " + res.message);
+        }
+      } else if (modalMode === "edit") {
+        const res = await orderApi.updateOrder(data.MaPN, data);
+        if (res.status === "success") {
+          alert("Cập nhật phiếu nhập thành công!");
+          handleSuccess();
+        } else {
+          alert("Cập nhật thất bại: " + res.message);
+        }
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert(error.message);
     }
-    closeModal();
-  };
+  }
 
-  const handleDelete = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa phiếu nhập này?')) {
-      setPurchaseOrders(purchaseOrders.filter(item => item.id !== id));
+  // Xoá phiếu nhập
+  async function handleDelete(maPN) {
+    const confirmDelete = window.confirm("Bạn có chắc muốn xoá phiếu nhập này?");
+    if (confirmDelete) {
+      try {
+        const res = await orderApi.deleteOrder(maPN);
+        if (res.status === "success") {
+          alert("Xoá thành công!");
+          fetchPurchaseOrders();
+        } else {
+          alert("Xoá thất bại: " + res.message);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Không kết nối được server!");
+      }
     }
-  };
+  }
 
+  // Xuất PDF
+  function exportPDF(maPN) {
+    orderApi.exportOrderPDF(maPN);
+  }
   const handleSearchSubmit = () => {
     // Placeholder cho API call
     closeSearchModal();
@@ -148,46 +227,43 @@ const PurchaseOrderManager = () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý phiếu nhập</h2>
-        <div>
-          <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
-          <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-          <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
-          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
-        </div>
+        <h2 className="table-title">Quản lý nhập hàng</h2>
+        <button onClick={() => openModal("add")} className="action-button">
+          <Plus className="icon" /> Thêm phiếu nhập
+        </button>
       </div>
+
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('orderCode')}>Mã phiếu nhập <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('supplierId')}>Nhà cung cấp <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('date')}>Ngày nhập <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('total')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
+              <th>ID</th>
+              <th>Nhà cung cấp</th>
+              <th>Người lập</th>
+              <th>Ngày nhập</th>
+              <th>Tổng tiền</th>
+              <th>Trạng thái</th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {purchaseOrders.map((po) => (
-              <tr key={po.id}>
-                <td>{po.id}</td>
-                <td>{po.orderCode}</td>
-                <td>{getSupplierName(po.supplierId)}</td>
-                <td>{po.date}</td>
-                <td>${po.total.toFixed(2)}</td>
+              <tr key={po.MaPN}>
+                <td>{po.MaPN}</td>
+                <td>{po.TenNCC || po.MaNCC}</td>
+                <td>{po.UserID}</td>
+                <td>{po.NgayNhap}</td>
+                <td>{formatCurrency(po.TongTien)}</td>
+                <td>{po.TrangThai}</td>
                 <td>
-                  <span className={po.status === 'Đã xử lý' ? 'status-instock' : 'status-lowstock'}>
-                    {po.status}
-                  </span>
-                </td>
-                <td>
-                  <button onClick={() => openModal('edit', po)} className="action-icon edit">
+                  <button onClick={() => openModal("edit", po)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(po.id)} className="action-icon delete">
+                  <button onClick={() => handleDelete(po.MaPN)} className="action-icon delete">
                     <Trash className="icon" />
+                  </button>
+                  <button onClick={() => exportPDF(po.MaPN)} className="action-icon export">
+                    Xuất PDF
                   </button>
                 </td>
               </tr>
@@ -196,16 +272,20 @@ const PurchaseOrderManager = () => {
         </table>
       </div>
 
-      <GeneralModalForm
-        showModal={showModal}
-        closeModal={closeModal}
-        modalType={modalType}
-        currentSection="purchaseOrders"
-        formData={formData}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmit}
-        error={error}
-      />
+      {modalVisible && (
+        <GeneralModalForm
+          showModal={showModal}
+          closeModal={closeModal}
+          modalType={modalType}
+          currentSection="purchaseOrders"
+          formData={formData}
+          initialData={selectedOrder}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          onClose={closeModal}
+          onSuccess={handleSuccess}
+        />
+      )}
       <SearchModal
         showSearchModal={showSearchModal}
         closeSearchModal={closeSearchModal}
@@ -224,121 +304,65 @@ const PurchaseOrderManager = () => {
       />
     </div>
   );
-};
+}
 
-export default PurchaseOrderManager;
-
-
-
-/*
-import React, { useState } from "react";
-import { Edit, Trash } from "lucide-react";
-import GeneralModalForm from "../components/GeneralModalForm"; // điều chỉnh path nếu cần
-
-const initialPurchaseOrders = [
-  { id: 1, code: "PN001", supplier: "Supplier A", date: "2024-05-01", total: 10000.00, status: "Đã nhập" },
-  { id: 2, code: "PN002", supplier: "Supplier B", date: "2024-05-02", total: 5000.00, status: "Đang xử lý" },
-];
-
-
-function PurchaseOrderManager() {
-  const [purchaseOrders, setPurchaseOrders] = useState(initialPurchaseOrders);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState("add"); // "add" | "edit"
-  const [selectedOrder, setSelectedOrder] = useState(null);
-
-  // Mở modal
-  function openModal(mode, order = null) {
-    setModalMode(mode);
-    setSelectedOrder(order);
-    setModalVisible(true);
-  }
-
-  // Đóng modal
-  function closeModal() {
-    setModalVisible(false);
-    setSelectedOrder(null);
-  }
-
-  // Gửi form
-  function handleSubmit(data) {
-    if (modalMode === "add") {
-      const newOrder = { ...data, id: Date.now() };
-      setPurchaseOrders([...purchaseOrders, newOrder]);
-    } else if (modalMode === "edit" && selectedOrder) {
-      const updatedOrders = purchaseOrders.map((po) =>
-        po.id === selectedOrder.id ? { ...po, ...data } : po
-      );
-      setPurchaseOrders(updatedOrders);
-    }
-    closeModal();
-  }
-
-  // Xoá
-  function handleDelete(id) {
-    const confirmDelete = window.confirm("Bạn có chắc muốn xoá phiếu nhập này?");
-    if (confirmDelete) {
-      setPurchaseOrders(purchaseOrders.filter((po) => po.id !== id));
-    }
-  }
-
-  return (
-    <div className="table-card">
-      <div className="table-header">
-        <h2 className="table-title">Quản lý nhập hàng</h2>
-        <button onClick={() => openModal("add")} className="action-button">
-          Thêm phiếu nhập
-        </button>
-      </div>
-
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Mã phiếu</th>
-              <th>Nhà cung cấp</th>
-              <th>Ngày nhập</th>
-              <th>Tổng tiền</th>
-              <th>Trạng thái</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {purchaseOrders.map((po) => (
-              <tr key={po.id}>
-                <td>{po.id}</td>
-                <td>{po.code}</td>
-                <td>{po.supplier}</td>
-                <td>{po.date}</td>
-                <td>${Number(po.total).toFixed(2)}</td>
-                <td>{po.status}</td>
-                <td>
-                  <button onClick={() => openModal("edit", po)} className="action-icon edit">
-                    <Edit className="icon" />
-                  </button>
-                  <button onClick={() => handleDelete(po.id)} className="action-icon delete">
-                    <Trash className="icon" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {modalVisible && (
-        <GeneralModalForm
-          section="purchaseOrders"
-          mode={modalMode}
-          initialData={selectedOrder}
-          onClose={closeModal}
-          onSubmit={handleSubmit}
-        />
-      )}
-    </div>
-  );
+// Hàm format tiền
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(value);
 }
 
 export default PurchaseOrderManager;
-*/
+
+//  return (
+//     <div className="table-card">
+//       <div className="table-header">
+//         <h2 className="table-title">Quản lý phiếu nhập</h2>
+//         <div>
+//           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
+//           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
+//           <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
+//           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+//         </div>
+//       </div>
+//       <div className="table-container">
+//         <table className="data-table">
+//           <thead>
+//             <tr>
+//               <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
+//               <th onClick={() => sortData('orderCode')}>Mã phiếu nhập <ArrowUpDown className="sort-icon" /></th>
+//               <th onClick={() => sortData('supplierId')}>Nhà cung cấp <ArrowUpDown className="sort-icon" /></th>
+//               <th onClick={() => sortData('date')}>Ngày nhập <ArrowUpDown className="sort-icon" /></th>
+//               <th onClick={() => sortData('total')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
+//               <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
+//               <th>Hành động</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {purchaseOrders.map((po) => (
+//               <tr key={po.id}>
+//                 <td>{po.id}</td>
+//                 <td>{po.orderCode}</td>
+//                 <td>{getSupplierName(po.supplierId)}</td>
+//                 <td>{po.date}</td>
+//                 <td>${po.total.toFixed(2)}</td>
+//                 <td>
+//                   <span className={po.status === 'Đã xử lý' ? 'status-instock' : 'status-lowstock'}>
+//                     {po.status}
+//                   </span>
+//                 </td>
+//                 <td>
+//                   <button onClick={() => openModal('edit', po)} className="action-icon edit">
+//                     <Edit className="icon" />
+//                   </button>
+//                   <button onClick={() => handleDelete(po.id)} className="action-icon delete">
+//                     <Trash className="icon" />
+//                   </button>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>

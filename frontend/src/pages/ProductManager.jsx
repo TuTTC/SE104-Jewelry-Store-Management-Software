@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
-import { initialProducts } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import * as productApi from "../services/productApi";
 
 const ProductManager = () => {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("");
   const [currentItem, setCurrentItem] = useState(null);
@@ -19,9 +19,17 @@ const ProductManager = () => {
   const [filterFormData, setFilterFormData] = useState({});
 
   useEffect(() => {
-    // Placeholder for backend API call
-    // fetchProducts().then(data => setProducts(data));
+    fetchProducts();
   }, []);
+
+const fetchProducts = () => {
+  productApi.getAllProducts()
+    .then(data => {
+      console.log("DATA TRẢ VỀ TỪ API:", data);
+      setProducts(data.data);
+    })
+    .catch(err => alert(err.message));
+};
 
   const openModal = (type, item = null) => {
     setModalType(type);
@@ -74,6 +82,7 @@ const ProductManager = () => {
   };
 
   const exportToCSV = () => {
+    if (products.length === 0) return;
     const headers = Object.keys(products[0]).join(',');
     const rows = products.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
     const csv = `${headers}\n${rows}`;
@@ -91,7 +100,7 @@ const ProductManager = () => {
       setError("Vui lòng điền đầy đủ các trường bắt buộc.");
       return false;
     }
-    if (isNaN(parseFloat(formData.price.replace("$", ""))) || parseFloat(formData.price.replace("$", "")) <= 0) {
+    if (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) <= 0) {
       setError("Giá phải là số dương.");
       return false;
     }
@@ -106,43 +115,47 @@ const ProductManager = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const newItem = { ...formData, id: Date.now() };
     if (modalType === "add") {
-      setProducts([...products, newItem]);
-      // Placeholder for backend API call
-      // postProduct(newItem);
+      productApi.addProduct(formData)
+        .then(() => {
+          fetchProducts();
+          closeModal();
+        })
+        .catch(err => setError(err.message));
     } else if (modalType === "edit" && currentItem) {
-      setProducts(products.map((item) => (item.id === currentItem.id ? { ...formData, id: item.id } : item)));
-      // Placeholder for backend API call
-      // updateProduct(currentItem.id, formData);
+      productApi.updateProduct(currentItem.id, formData)
+        .then(() => {
+          fetchProducts();
+          closeModal();
+        })
+        .catch(err => setError(err.message));
     }
-    closeModal();
   };
 
   const handleDelete = (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa mục này?")) {
-      setProducts(products.filter((item) => item.id !== id));
-      // Placeholder for backend API call
-      // deleteProduct(id);
+      productApi.deleteProduct(id)
+        .then(() => fetchProducts())
+        .catch(err => alert(err.message));
     }
   };
 
   const handleSearchSubmit = () => {
-    // Placeholder for backend API call with search params
-    // fetchProducts(searchFormData).then(data => setProducts(data));
+    // Nếu backend có hỗ trợ params tìm kiếm thì truyền vào đây
+    fetchProducts();
     closeSearchModal();
   };
 
   const handleFilterSubmit = () => {
-    // Placeholder for backend API call with filter params
-    // fetchProducts(filterFormData).then(data => setProducts(data));
+    // Nếu backend có hỗ trợ params lọc thì truyền vào đây
+    fetchProducts();
     closeFilterModal();
   };
 
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý sản phẩm</h2>
+        <h2 className="table-title"></h2>
         <div>
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
@@ -155,40 +168,36 @@ const ProductManager = () => {
           <thead>
             <tr>
               <th onClick={() => sortData("id")}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData("code")}>Mã <ArrowUpDown className="sort-icon" /></th>
+              {/* <th onClick={() => sortData("code")}>Mã <ArrowUpDown className="sort-icon" /></th> */}
               <th onClick={() => sortData("name")}>Tên <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData("price")}>Giá <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData("category")}>Danh mục <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData("quantity")}>Số lượng <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData("status")}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
+              {/* <th onClick={() => sortData("status")}>Trạng thái <ArrowUpDown className="sort-icon" /></th> */}
+              <th>Nhà cung cấp</th>
               <th>Hình ảnh</th>
-              <th onClick={() => sortData("note")}>Ghi chú <ArrowUpDown className="sort-icon" /></th>
+              <th>Ghi chú</th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {products.map((p) => (
-              <tr key={p.id}>
-                <td>{p.id}</td>
-                <td>{p.code}</td>
-                <td>{p.name}</td>
-                <td>{p.price}</td>
-                <td>{p.category}</td>
-                <td>{p.quantity}</td>
+              <tr key={p.MaSP}>
+                <td>{p.MaSP}</td>
+                <td>{p.TenSP}</td>
+                <td>{p.GiaBan.toLocaleString()} VND</td>
+                <td>{p.MaDM}</td>
+                <td>{p.SoLuongTon}</td>
+                <td>{p.MaNCC}</td>
                 <td>
-                  <span className={p.status === "In Stock" ? "status-instock" : "status-lowstock"}>
-                    {p.status}
-                  </span>
+                  <img src={p.HinhAnh} alt={p.TenSP} className="product-image" />
                 </td>
-                <td>
-                  <img src={p.image} alt={p.name} className="product-image" />
-                </td>
-                <td>{p.note}</td>
+                <td>{p.MoTa}</td>
                 <td>
                   <button onClick={() => openModal("edit", p)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(p.id)} className="action-icon delete">
+                  <button onClick={() => handleDelete(p.MaSP)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                 </td>

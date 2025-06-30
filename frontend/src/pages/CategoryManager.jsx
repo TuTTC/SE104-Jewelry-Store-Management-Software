@@ -1,27 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
-import { initialCategories } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
+import categoryApi from '../services/categoryApi';
 
 const CategoryManager = () => {
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [currentItem, setCurrentItem] = useState(null);
   const [formData, setFormData] = useState({});
   const [error, setError] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-  const [searchFormData, setSearchFormData] = useState({});
-  const [filterFormData, setFilterFormData] = useState({});
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
   useEffect(() => {
-    // Placeholder cho API call
-    // fetchCategories().then(data => setCategories(data));
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await categoryApi.getAll();
+      console.log("DATA TRẢ VỀ TỪ API:", res);
+      setCategories(res || []);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
   const openModal = (type, item = null) => {
     setModalType(type);
@@ -38,24 +45,49 @@ const CategoryManager = () => {
     setError('');
   };
 
-  const openSearchModal = () => setShowSearchModal(true);
-  const openFilterModal = () => setShowFilterModal(true);
-  const closeSearchModal = () => setShowSearchModal(false);
-  const closeFilterModal = () => setShowFilterModal(false);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSearchInputChange = (e) => {
-    const { name, value } = e.target;
-    setSearchFormData({ ...searchFormData, [name]: value });
+  const validateForm = () => {
+    if (!formData.name || !formData.description || !formData.status) {
+      setError('Vui lòng điền đầy đủ các trường bắt buộc.');
+      return false;
+    }
+    if (formData.name.length < 2) {
+      setError('Tên danh mục phải có ít nhất 2 ký tự.');
+      return false;
+    }
+    return true;
   };
 
-  const handleFilterInputChange = (e) => {
-    const { name, value } = e.target;
-    setFilterFormData({ ...filterFormData, [name]: value });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    try {
+      if (modalType === 'add') {
+        await categoryApi.add(formData);
+      } else if (modalType === 'edit' && currentItem) {
+        await categoryApi.update(currentItem.id, formData);
+      }
+      fetchCategories();
+      closeModal();
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+      try {
+        await categoryApi.delete(id);
+        fetchCategories();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
   };
 
   const sortData = (key) => {
@@ -90,54 +122,13 @@ const CategoryManager = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const validateForm = () => {
-    if (!formData.name || !formData.description || !formData.status) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc.');
-      return false;
-    }
-    if (formData.name.length < 2) {
-      setError('Tên danh mục phải có ít nhất 2 ký tự.');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    const newItem = { ...formData, id: Date.now() };
-    if (modalType === 'add') {
-      setCategories([...categories, newItem]);
-    } else if (modalType === 'edit' && currentItem) {
-      setCategories(categories.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
-    }
-    closeModal();
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
-      setCategories(categories.filter(item => item.id !== id));
-    }
-  };
-
-  const handleSearchSubmit = () => {
-    // Placeholder cho API call
-    closeSearchModal();
-  };
-
-  const handleFilterSubmit = () => {
-    // Placeholder cho API call
-    closeFilterModal();
-  };
-
   return (
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title">Quản lý danh mục</h2>
         <div>
-          <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
-          <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
+          <button onClick={() => setShowSearchModal(true)} className="action-button"><Search className="icon" /> Tìm kiếm</button>
+          <button onClick={() => setShowFilterModal(true)} className="action-button"><Filter className="icon" /> Lọc</button>
           <button onClick={() => openModal('add')} className="action-button">Thêm danh mục</button>
           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
         </div>
@@ -149,21 +140,21 @@ const CategoryManager = () => {
               <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData('name')}>Tên <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData('description')}>Mô tả <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
+              {/* <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th> */}
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {categories.map((category) => (
-              <tr key={category.id}>
-                <td>{category.id}</td>
-                <td>{category.name}</td>
-                <td>{category.description}</td>
-                <td>
+              <tr key={category.MaDM}>
+                <td>{category.MaDM}</td>
+                <td>{category.TenDM}</td>
+                <td>{category.MoTa}</td>
+                {/* <td>
                   <span className={category.status === 'Kích hoạt' ? 'status-instock' : 'status-inactive'}>
                     {category.status}
                   </span>
-                </td>
+                </td> */}
                 <td>
                   <button onClick={() => openModal('edit', category)} className="action-icon edit">
                     <Edit className="icon" />
@@ -188,21 +179,17 @@ const CategoryManager = () => {
         handleSubmit={handleSubmit}
         error={error}
       />
+
       <SearchModal
         showSearchModal={showSearchModal}
-        closeSearchModal={closeSearchModal}
+        closeSearchModal={() => setShowSearchModal(false)}
         currentSection="categories"
-        searchFormData={searchFormData}
-        handleSearchInputChange={handleSearchInputChange}
-        handleSearchSubmit={handleSearchSubmit}
       />
+
       <FilterModal
         showFilterModal={showFilterModal}
-        closeFilterModal={closeFilterModal}
+        closeFilterModal={() => setShowFilterModal(false)}
         currentSection="categories"
-        filterFormData={filterFormData}
-        handleFilterInputChange={handleFilterInputChange}
-        handleFilterSubmit={handleFilterSubmit}
       />
     </div>
   );

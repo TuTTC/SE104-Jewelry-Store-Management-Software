@@ -286,6 +286,7 @@ const GeneralModalForm = ({
           <>
             <input type="text" name="code" value={formData.code || ""} onChange={handleInputChange} placeholder="Mã phiếu nhập" required />
             <input type="text" name="supplier" value={formData.supplier || ""} onChange={handleInputChange} placeholder="Nhà cung cấp" required />
+            <input type="text" name="user" value={formData.user || ""} onChange={handleInputChange} placeholder="Người nhập" required />
             <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required />
             <input type="number" name="total" value={formData.total || ""} onChange={handleInputChange} placeholder="Tổng tiền" step="0.01" required />
             <select name="status" value={formData.status || ""} onChange={handleInputChange} required>

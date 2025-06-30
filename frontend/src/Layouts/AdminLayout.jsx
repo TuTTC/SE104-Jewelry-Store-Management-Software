@@ -1,30 +1,28 @@
-/*// src/layouts/AdminLayout.jsx
-import React from "react";
-import { Outlet } from "react-router-dom";
-import Sidebar from "../pages/Sidebar";
+/// src/layouts/AdminLayout.jsx
+// import React from "react";
+// import { Outlet } from "react-router-dom";
+// import Sidebar from "../pages/Sidebar";
 
-const AdminLayout = () => {
-  return (
-    <div className="app-container">
-      <Sidebar />
-      <div className="main-content">
-        <Outlet />
-      </div>
-    </div>
-  );
-};
+// const AdminLayout = () => {
+//   return (
+//     <div className="app-container">
+//       <Sidebar />
+//       <div className="main-content">
+//         <Outlet />
+//       </div>
+//     </div>
+//   );
+// };
 
-export default AdminLayout;
-*/
+// export default AdminLayout;
+
 import React from 'react';
 import { LayoutDashboard, ShoppingCart, Gem, Users, UserCircle, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Outlet } from 'react-router-dom'; // Import Outlet
+import { Outlet } from 'react-router-dom';
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = () => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
 
   const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, key: "dashboard" },
@@ -42,9 +40,12 @@ const AdminLayout = ({ children }) => {
   ];
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/");
   };
+
+  const user = JSON.parse(localStorage.getItem("user")) || {};
 
   return (
     <div className="container">
@@ -75,9 +76,9 @@ const AdminLayout = ({ children }) => {
           <h1 className="main-title">
             {menuItems.find(item => window.location.pathname.includes(item.key))?.label || "Dashboard"}
           </h1>
-          {user && <p>Chào, {user.name} ({user.role})</p>}
+          {user?.TenDangNhap && <p>Chào, {user.TenDangNhap}</p>}
         </div>
-        <Outlet /> {/* Thêm Outlet để hiển thị nội dung trang con */}
+        <Outlet />
       </main>
     </div>
   );

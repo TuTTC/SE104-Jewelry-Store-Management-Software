@@ -1,14 +1,14 @@
-import React from 'react';
+import React, {useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
-
+import Auth from '../Auth';
 function IntroPage() {
   const navigate = useNavigate();
 
   const handleLoginClick = () => {
     navigate('/login');
   };
-
+ 
   return (
     <div className="intro-page">
       <div className="intro-content">
@@ -20,6 +20,7 @@ function IntroPage() {
           nó cung cấp một nền tảng tập trung để đơn giản hóa hoạt động và nâng cao năng suất.
         </p>
         <button onClick={handleLoginClick} className="action-button">Đăng nhập</button>
+        
       </div>
     </div>
   );

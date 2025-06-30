@@ -1,8 +1,6 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import { AuthProvider } from './context/AuthContext';
 
 import Auth from './pages/auth/Auth';
 import PrivateRoute from './routes/PrivateRoute';
@@ -24,30 +22,29 @@ import IntroPage from './pages/IntroPage';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<IntroPage />} />
-          <Route path="/login" element={<Auth />} />
-          <Route path="/admin" element={<PrivateRoute />}>
-            <Route element={<AdminLayout />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="accounts" element={<AccountManager />} />
-              <Route path="products" element={<ProductManager />} />
-              <Route path="categories" element={<CategoryManager />} />
-              <Route path="orders" element={<OrderManager />} />
-              <Route path="services" element={<ServiceManager />} />
-              <Route path="purchaseOrders" element={<PurchaseOrderManager />} />
-              <Route path="purchaseOrderDetails" element={<PurchaseOrderDetails />} />
-              <Route path="serviceDetails" element={<ServiceDetails />} />
-              <Route path="suppliers" element={<SupplierManager />} />
-              <Route path="inventory" element={<InventoryManager />} />
-              <Route path="reports" element={<ReportDashboard />} />
-            </Route>
+    <Router>
+      <Routes>
+        <Route path="/" element={<IntroPage />} />
+        <Route path="/login" element={<Auth />} />
+        
+        <Route path="/admin" element={<PrivateRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="accounts" element={<AccountManager />} />
+            <Route path="products" element={<ProductManager />} />
+            <Route path="categories" element={<CategoryManager />} />
+            <Route path="orders" element={<OrderManager />} />
+            <Route path="services" element={<ServiceManager />} />
+            <Route path="purchaseOrders" element={<PurchaseOrderManager />} />
+            <Route path="purchaseOrderDetails" element={<PurchaseOrderDetails />} />
+            <Route path="serviceDetails" element={<ServiceDetails />} />
+            <Route path="suppliers" element={<SupplierManager />} />
+            <Route path="inventory" element={<InventoryManager />} />
+            <Route path="reports" element={<ReportDashboard />} />
           </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 

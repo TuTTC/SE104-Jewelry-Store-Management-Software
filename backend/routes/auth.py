@@ -198,3 +198,65 @@ def google_auth_callback():
         'token': access_token,
         'user': identity
     })
+
+
+forgot_password_requests = {}  # {email: {otp, expires}}
+
+@auth_bp.route('/send-otp-forgot-password', methods=['POST'])
+def send_otp_forgot_password():
+    data = request.get_json()
+    email = data.get('Email')
+
+    if not email:
+        return jsonify({'message': 'Email không được để trống'}), 400
+
+    user = NGUOIDUNG.query.filter_by(Email=email).first()
+    if not user:
+        return jsonify({'message': 'Email chưa được đăng ký'}), 404
+
+    otp = generate_otp()
+    expires = datetime.utcnow() + timedelta(minutes=5)
+
+    forgot_password_requests[email] = {
+        'otp': otp,
+        'expires': expires
+    }
+
+    # Gửi email thực tế
+    if send_otp_email(email, otp):
+        return jsonify({'message': 'Đã gửi OTP đến email'}), 200
+    else:
+        forgot_password_requests.pop(email, None)
+        return jsonify({'message': 'Không gửi được OTP'}), 500
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    email = data.get('Email')
+    otp_input = data.get('otp')
+    new_password = data.get('NewPassword')
+
+    if not all([email, otp_input, new_password]):
+        return jsonify({'message': 'Thiếu thông tin'}), 400
+
+    info = forgot_password_requests.get(email)
+    if not info:
+        return jsonify({'message': 'Không tìm thấy yêu cầu đặt lại mật khẩu'}), 400
+
+    if datetime.utcnow() > info['expires']:
+        forgot_password_requests.pop(email, None)
+        return jsonify({'message': 'OTP đã hết hạn'}), 400
+
+    if otp_input != info['otp']:
+        return jsonify({'message': 'OTP không đúng'}), 400
+
+    user = NGUOIDUNG.query.filter_by(Email=email).first()
+    if not user:
+        return jsonify({'message': 'Người dùng không tồn tại'}), 404
+
+    user.MatKhau = generate_password_hash(new_password)
+    db.session.commit()
+
+    forgot_password_requests.pop(email, None)
+    return jsonify({'message': 'Đặt lại mật khẩu thành công'}), 200

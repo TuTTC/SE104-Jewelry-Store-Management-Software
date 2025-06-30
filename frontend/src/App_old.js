@@ -11,10 +11,10 @@ const initialData = [
   { name: "Apr", revenue: 7000 },
 ];
 
-const initialProducts = [
-  { id: 1, code: "SP001", name: "Ruby Ring", price: "$1200", category: "Ring", quantity: 10, status: "In Stock", image: "https://via.placeholder.com/50", note: "Best Seller" },
-  { id: 2, code: "SP002", name: "Sapphire Necklace", price: "$2500", category: "Necklace", quantity: 5, status: "Low Stock", image: "https://via.placeholder.com/50", note: "Limited Edition" },
-];
+// const initialProducts = [
+//   { id: 1, code: "SP001", name: "Ruby Ring", price: "$1200", category: "Ring", quantity: 10, status: "In Stock", image: "https://via.placeholder.com/50", note: "Best Seller" },
+//   { id: 2, code: "SP002", name: "Sapphire Necklace", price: "$2500", category: "Necklace", quantity: 5, status: "Low Stock", image: "https://via.placeholder.com/50", note: "Limited Edition" },
+// ];
 
 const initialOrders = [
   { id: 101, orderCode: "ORD001", customer: "John Doe", date: "2024-04-01", total: "$3700", status: "Pending", paymentMethod: "Credit Card", deliveryAddress: "123 Main St, NY", note: "Gift wrap this order" },
@@ -66,7 +66,7 @@ function App() {
   const [userRole, setUserRole] = useState(null);
   const [user, setUser] = useState(null);
   const [selectedMenu, setSelectedMenu] = useState("dashboard");
-  const [products, setProducts] = useState(initialProducts);
+  // const [products, setProducts] = useState(initialProducts);
   const [orders, setOrders] = useState(initialOrders);
   const [customers, setCustomers] = useState(initialCustomers);
   const [accounts, setAccounts] = useState(initialAccounts);
