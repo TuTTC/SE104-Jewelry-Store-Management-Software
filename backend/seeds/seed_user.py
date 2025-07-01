@@ -9,10 +9,10 @@ def clear_users():
     try:
         num_rows_deleted = db.session.query(NGUOIDUNG).delete()
         db.session.commit()
-        print(f"✅ Đã xóa {num_rows_deleted} người dùng thành công.")
+        print(f"Đã xóa {num_rows_deleted} người dùng thành công.")
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Lỗi khi xóa người dùng: {e}")
+        print(f"Lỗi khi xóa người dùng: {e}")
 
 def remove_accents(text):
     return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
@@ -25,7 +25,7 @@ def seed_user():
         khachhang_role = VAITRO.query.filter_by(TenVaiTro="Khách hàng").first()
 
         if not admin_role or not nhanvien_role or not khachhang_role:
-            print("⚠️ Chưa có đầy đủ vai trò. Hãy seed VAITRO trước.")
+            print("Chưa có đầy đủ vai trò. Hãy seed VAITRO trước.")
             return
 
         ho_list = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Đặng", "Bùi", "Đỗ"]
@@ -57,8 +57,8 @@ def seed_user():
                     db.session.add(user)
 
             db.session.commit()
-            print("✅ Đã seed 10 người dùng thành công.")
+            print("Đã seed 10 người dùng thành công.")
 
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Lỗi khi seed người dùng: {e}")
+        print(f"Lỗi khi seed người dùng: {e}")

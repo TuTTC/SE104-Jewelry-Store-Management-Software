@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean
 from database import db
 
-class THAMSO(db.Model):
+class ThamSo(db.Model):
     __tablename__ = "THAMSO"
 
     MaThamSo = Column(Integer, primary_key=True, autoincrement=True)
@@ -18,5 +18,3 @@ class THAMSO(db.Model):
             "MoTa": self.MoTa,
             "KichHoat": self.KichHoat,
         }
-    
-    

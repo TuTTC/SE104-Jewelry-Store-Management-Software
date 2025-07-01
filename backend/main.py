@@ -10,6 +10,7 @@ from oauth import oauth
 from utils.roles import seed_roles
 from extensions import mail
 from flask_cors import CORS
+from seeds.seed_dichvu import seed_dichvu
 from seeds.seed_danhmuc import seed_danh_muc
 from seeds.seed_user import seed_user, clear_users
 from seeds.seed_nhacungcap import seed_nhacungcap
@@ -20,6 +21,7 @@ from seeds.seed_role_permissions import seed_role_permissions
 from seeds.update_giaban_sp import cap_nhat_gia_ban_cho_toan_bo_san_pham
 from seeds.seed_thamso import seed_thamso
 # Thêm dòng này để load biến môi trường từ .env
+
 from dotenv import load_dotenv
 load_dotenv()  # ← Tải biến môi trường từ file .env
 
@@ -28,6 +30,7 @@ app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 
 app.config.from_object(Config)
+CORS(app)
 mail.init_app(app)
 jwt = JWTManager(app)
 # Khởi tạo db và migrate
@@ -53,6 +56,9 @@ from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTie
 
 with app.app_context():
     db.create_all()
+    seed_roles()
+    seed_dichvu()
+    seed_thamso()
     # seed_roles()
     # seed_danh_muc()
     # seed_user()
@@ -64,6 +70,7 @@ with app.app_context():
     # seed_role_permissions()
     # cap_nhat_gia_ban_cho_toan_bo_san_pham()
     # seed_thamso()
+
 
 from Routes import register_routes
 register_routes(app)

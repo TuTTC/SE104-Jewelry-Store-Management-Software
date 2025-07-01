@@ -29,8 +29,10 @@ def register_routes(app):
     app.register_blueprint(nhaphang_bp, url_prefix='/api')
     app.register_blueprint(donhang_bp, url_prefix='/api')
     app.register_blueprint(baocao_bp, url_prefix='/api')
+#     app.register_blueprint(thamso_bp, url_prefix='/api') - Vuong sua lai route
     app.register_blueprint(supplier_bp, url_prefix='/api/suppliers')
     app.register_blueprint(permission_bp, url_prefix='/api/permissions')
     app.register_blueprint(tonkho_bp, url_prefix='/api/inventory')
     app.register_blueprint(thamso_bp, url_prefix='/api/parameter')
+
     # app.register_blueprint(thongke_bp, url_prefix='/api')

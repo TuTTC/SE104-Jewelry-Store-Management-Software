@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, DECIMAL
 from sqlalchemy.orm import relationship
 from database import db
 
-class CHITIETDONHANG(db.Model):
+class ChiTietDonHang(db.Model):
     __tablename__ = "CHITIETDONHANG"
 
     MaCTDH = Column(Integer, primary_key=True, autoincrement=True)
@@ -13,5 +13,5 @@ class CHITIETDONHANG(db.Model):
     ThanhTien = Column(DECIMAL(10, 2), nullable=False)
 
     # Quan hệ (nếu cần)
-    donhang = relationship("DONHANG", backref="chitietdonhang_list")
+    donhang = relationship("DonHang", backref="chitietdonhang_list")
     sanpham = relationship("SANPHAM", backref="chitietdonhang_list")

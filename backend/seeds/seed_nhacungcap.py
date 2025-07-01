@@ -37,10 +37,22 @@ def seed_nhacungcap():
             "nhacungcaphungthinh@gmail.com"
         ]
 
+
+        if NhaCungCap.query.first():
+            print("Bảng NHACUNGCAP đã có dữ liệu, không cần seed.")
+            return
+
+
+#         for i, ten_ncc in enumerate(ten_ncc_list):
+#             existing_ncc = NhaCungCap.query.filter_by(TenNCC=ten_ncc).first()
+#             if not existing_ncc:
+#                 ncc = NhaCungCap(
+
         for i, ten_ncc in enumerate(ten_ncc_list):
             existing_ncc = NHACUNGCAP.query.filter_by(TenNCC=ten_ncc).first()
             if not existing_ncc:
                 ncc = NHACUNGCAP(
+
                     TenNCC=ten_ncc,
                     DiaChi=random.choice([
                         "Quận 1, TP. Hồ Chí Minh",

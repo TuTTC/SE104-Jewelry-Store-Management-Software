@@ -48,7 +48,50 @@ def seed_permissions():
             db.session.commit()
             print("Seed quyền thành công!")
 
+
     except Exception as e:
         db.session.rollback()
         print(f"Lỗi khi seed quyền: {e}")
+
+
+
+
+# def gan_quyen_cho_vai_tro():
+#     try:
+#         # Tìm các vai trò
+#         admin_role = VAITRO.query.filter_by(TenVaiTro="Admin").first()
+#         nhanvien_role = VAITRO.query.filter_by(TenVaiTro="Nhân viên").first()
+#         khachhang_role = VAITRO.query.filter_by(TenVaiTro="Khách hàng").first()
+
+#         # Lấy tất cả quyền
+#         all_permissions = PERMISSIONS.query.all()
+#         permissions_dict = {p.TenQuyen: p for p in all_permissions}
+
+#         ### Gán quyền cho Admin - tất cả quyền
+#         admin_users = NGUOIDUNG.query.filter_by(VaiTroID=admin_role.VaiTroID).all()
+#         for user in admin_users:
+#             user.permissions = list(all_permissions)
+
+#         ### Gán quyền cho Nhân viên - view tất cả, edit sản phẩm & đơn hàng
+#         nhanvien_users = NGUOIDUNG.query.filter_by(VaiTroID=nhanvien_role.VaiTroID).all()
+#         for user in nhanvien_users:
+#             user.permissions = []
+#             for ten_quyen, quyen_obj in permissions_dict.items():
+#                 if ":view" in ten_quyen or ten_quyen.startswith("products:edit") or ten_quyen.startswith("orders:edit"):
+#                     user.permissions.append(quyen_obj)
+
+#         ### Gán quyền cho Khách hàng - chỉ được xem dashboard, sản phẩm, dịch vụ
+#         khachhang_users = NGUOIDUNG.query.filter_by(VaiTroID=khachhang_role.VaiTroID).all()
+#         for user in khachhang_users:
+#             user.permissions = []
+#             for ten_quyen in ["dashboard:view", "products:view", "services:view"]:
+#                 if ten_quyen in permissions_dict:
+#                     user.permissions.append(permissions_dict[ten_quyen])
+
+#         db.session.commit()
+#         print("✅ Đã gán quyền cho các vai trò")
+
+#     except Exception as e:
+#         db.session.rollback()
+#         print(f"❌ Lỗi khi gán quyền: {e}")
 

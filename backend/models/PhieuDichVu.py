@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, DateTime, DECIMAL, Text, Str
 from sqlalchemy.orm import relationship
 from database import db
 
-class PHIEUDICHVU(db.Model):
+class PhieuDichVu(db.Model):
     __tablename__ = "PHIEUDICHVU"
 
     MaPDV = Column(Integer, primary_key=True, autoincrement=True)

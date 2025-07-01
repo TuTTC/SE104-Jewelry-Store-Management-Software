@@ -158,6 +158,7 @@ const GeneralModalForm = ({
       default:
         return null;
     }
+
   };
 
   return (

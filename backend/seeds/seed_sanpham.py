@@ -5,12 +5,21 @@ import random
 def seed_sanpham():
     try:
         # Lấy danh sách nhà cung cấp từ DB
+
         from models.NhaCungCap import NHACUNGCAP
         nha_cung_cap_list = NHACUNGCAP.query.all()
+
 
         if not nha_cung_cap_list:
             print("Vui lòng seed nhà cung cấp trước!")
             return
+
+
+        if SANPHAM.query.first():
+            print("✅ Bảng SANPHAM đã có dữ liệu, không cần seed.")
+            return
+
+
 
         sanpham_data = [
             # Vòng tay
@@ -30,8 +39,10 @@ def seed_sanpham():
             {"TenSP": "Bông tai bạc đính đá", "MaDM": 4, "MoTa": "Bông tai bạc sang trọng", "HinhAnh": "https://example.com/bongtai2.jpg"},
             
             # Đá quý
+
             {"TenSP": "Đá quý Ruby thiên nhiên", "MaDM": 6, "MoTa": "Đá Ruby tự nhiên chất lượng cao", "HinhAnh": "https://example.com/daquy1.jpg"},
             {"TenSP": "Đá Sapphire xanh biển", "MaDM": 6, "MoTa": "Đá Sapphire xanh cao cấp", "HinhAnh": "https://example.com/daquy2.jpg"},
+
         ]
 
         if not SANPHAM.query.first():
@@ -53,3 +64,4 @@ def seed_sanpham():
     except Exception as e:
         db.session.rollback()
         print("Lỗi khi seed sản phẩm:", e)
+

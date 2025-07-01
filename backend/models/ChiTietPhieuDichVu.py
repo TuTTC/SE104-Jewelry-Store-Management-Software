@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, DECIMAL, Date, String
 from sqlalchemy.orm import relationship
 from database import db
 
-class CHITIETPHIEUDICHVU(db.Model):
+class ChiTietPhieuDichVu(db.Model):
     __tablename__ = "CHITIETPHIEUDICHVU"
 
     MaCT = Column(Integer, primary_key=True, autoincrement=True)
@@ -18,5 +18,5 @@ class CHITIETPHIEUDICHVU(db.Model):
     TinhTrang = Column(String(255))
 
     # Quan hệ
-    phieudichvu = relationship("PHIEUDICHVU", backref="chitietphieudichvu_list")
-    dichvu = relationship("DICHVU", backref="chitietphieudichvu_list")
+    phieudichvu = relationship("PhieuDichVu", backref="chitietphieudichvu_list")
+    dichvu = relationship("DichVu", backref="chitietphieudichvu_list")

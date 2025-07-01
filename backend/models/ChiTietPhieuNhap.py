@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, DECIMAL, CheckConstraint
 from sqlalchemy.orm import relationship
 from database import db
 
-class CHITIETPHIEUNHAP(db.Model):
+class ChiTietPhieuNhap(db.Model):
     __tablename__ = "CHITIETPHIEUNHAP"
 
     MaCTPN = Column(Integer, primary_key=True, autoincrement=True)
@@ -17,7 +17,7 @@ class CHITIETPHIEUNHAP(db.Model):
     )
 
     # Quan hệ
-    phieunhap = relationship("PHIEUNHAP", backref="chitietphieunhap_list")
+    phieunhap = relationship("PhieuNhap", backref="chitietphieunhap_list")
     sanpham = relationship("SANPHAM", backref="chitietphieunhap_list")
 
     

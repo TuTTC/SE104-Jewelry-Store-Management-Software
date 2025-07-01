@@ -1,8 +1,16 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
+from io import BytesIO
+from reportlab.pdfgen import canvas
 from models import DichVu
 from database import db
 
 dichvu_bp = Blueprint('dichvu', __name__)
+
+@dichvu_bp.route("/debug/dichvu")
+def debug_dv():
+    from models import DichVu
+    return jsonify([dv.TenDV for dv in DichVu.query.all()])
+
 
 # Thêm dịch vụ mới
 @dichvu_bp.route('/dichvu', methods=['POST'])
@@ -51,7 +59,7 @@ def update_dichvu(id):
 # Tìm kiếm dịch vụ theo từ khóa
 @dichvu_bp.route('/dichvu/search', methods=['GET'])
 def search_dichvu():
-    keyword = request.args.get('q', '')
+    keyword = request.args.get('keyword', '')
     results = DichVu.query.filter(DichVu.TenDV.ilike(f'%{keyword}%')).all()
     data = [
         {
@@ -80,3 +88,32 @@ def get_all_dichvu():
         for dv in results
     ]
     return jsonify({'status': 'success', 'data': data})
+
+
+@dichvu_bp.route('/dichvu/pdf', methods=['GET'])
+def export_dichvu_pdf():
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer)
+
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, 800, "Danh sach dich vu")
+
+    p.setFont("Helvetica", 12)
+    y = 770
+    services = DichVu.query.all()
+    for i, dv in enumerate(services):
+        p.drawString(100, y, f"{i+1}. {dv.TenDV} - {float(dv.DonGia):,.0f} VND")
+        y -= 20
+        if y < 50:
+            p.showPage()
+            y = 800
+
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        as_attachment=False,
+        download_name="danh_sach_dich_vu.pdf",
+        mimetype="application/pdf"
+    )
