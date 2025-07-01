@@ -35,6 +35,7 @@ const Sidebar = () => {
     { label: "Quản lý nhà cung cấp", icon: Users, path: "/admin/suppliers" },
     { label: "Quản lý tồn kho", icon: Gem, path: "/admin/inventory" },
     { label: "Báo cáo & Thống kê", icon: LayoutDashboard, path: "/admin/reports" },
+    { label: "Quản lý tham số", icon: LayoutDashboard, path: "/admin/parameter" },
   ], []);
 
   return (

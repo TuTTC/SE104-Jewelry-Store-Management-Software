@@ -53,17 +53,17 @@ from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTie
 
 with app.app_context():
     db.create_all()
-    seed_roles()
-    seed_danh_muc()
-    seed_user()
-    seed_nhacungcap()
-    # clear_users()
-    seed_sanpham()
-    seed_phieu_nhap()
-    seed_permissions()
-    seed_role_permissions()
-    cap_nhat_gia_ban_cho_toan_bo_san_pham()
-    seed_thamso()
+    # seed_roles()
+    # seed_danh_muc()
+    # seed_user()
+    # seed_nhacungcap()
+    # # clear_users()
+    # seed_sanpham()
+    # seed_phieu_nhap()
+    # seed_permissions()
+    # seed_role_permissions()
+    # cap_nhat_gia_ban_cho_toan_bo_san_pham()
+    # seed_thamso()
 
 from Routes import register_routes
 register_routes(app)

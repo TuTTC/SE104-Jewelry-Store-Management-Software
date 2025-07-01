@@ -11,38 +11,119 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-pdfmetrics.registerFont(TTFont('DejaVu', '../fonts/DejaVuSans.ttf'))
+
+pdfmetrics.registerFont(TTFont('DejaVu', '../fonts/times.ttf'))
 
 phieunhap_bp = Blueprint('phieunhap_bp', __name__)
 
 
 
-# Tạo phiếu nhập
+# # Tạo phiếu nhập
+# @phieunhap_bp.route('/phieunhap', methods=['POST'])
+# def create_phieu_nhap():
+#     data = request.get_json()
+#     try:
+#         ma_ncc = data['MaNCC']
+#         user_id = data['UserID']
+#         ghi_chu = data.get('GhiChu', '')
+#         trang_thai = data.get('TrangThai', 'Đang xử lý')
+#         chi_tiet = data.get('ChiTiet', [])
+#         # Kiểm tra nhà cung cấp có tồn tại chưa
+#         ncc = NHACUNGCAP.query.get(ma_ncc)
+#         if not ncc:
+#             # Nếu chưa có, tự thêm mới nhà cung cấp
+#             try:
+#                 ncc = NHACUNGCAP(
+#                     MaNCC=ma_ncc,
+#                     TenNCC=data.get('TenNCC', f'NCC-{ma_ncc}'),
+#                     DiaChi=data.get('DiaChi', ''),
+#                     SDT=data.get('SDT', '')
+#                 )
+#                 db.session.add(ncc)
+#                 db.session.flush()
+#             except Exception as e:
+#                 db.session.rollback()
+#                 return jsonify({'status': 'error', 'message': f'Lỗi thêm nhà cung cấp: {str(e)}'}), 400
+
+#         if not chi_tiet:
+#             return jsonify({'status': 'error', 'message': 'Danh sách chi tiết phiếu nhập trống'}), 400
+
+#         # Tính tổng tiền
+#         tong_tien = sum(item['SoLuong'] * item['DonGiaNhap'] for item in chi_tiet)
+
+#         # Tạo phiếu nhập
+#         phieu = PHIEUNHAP(
+#             MaNCC=ma_ncc,
+#             UserID=user_id,
+#             NgayNhap=datetime.now(),
+#             TongTien=tong_tien,
+#             TrangThai=trang_thai,
+#             GhiChu=ghi_chu
+#         )
+#         db.session.add(phieu)
+#         db.session.flush()  # Lấy MaPN sau khi insert
+
+#         # Tạo chi tiết phiếu nhập và cập nhật tồn kho
+#         for item in chi_tiet:
+#             ma_sp = item['MaSP']
+#             so_luong = item['SoLuong']
+#             don_gia_nhap = item['DonGiaNhap']
+
+#             # Kiểm tra sản phẩm tồn tại
+#             product = SANPHAM.query.get(ma_sp)
+#             if not product:
+#                 # Nếu chưa có sản phẩm, tự thêm sản phẩm mới vào bảng SANPHAM
+#                 try:
+#                     product = SANPHAM(
+#                         MaSP=ma_sp,
+#                         TenSP=item.get('TenSP', f'SP-{ma_sp}'),
+#                         MaDM=item.get('MaDM'),
+#                         MaNCC=ma_ncc,
+#                         GiaBan=item.get('GiaBan', 0),
+#                         SoLuongTon=so_luong,
+#                         MoTa=item.get('MoTa', ''),
+#                         HinhAnh=item.get('HinhAnh', '')
+#                     )
+#                     db.session.add(product)
+#                 except Exception as e:
+#                     db.session.rollback()
+#                     return jsonify({'status': 'error', 'message': f'Lỗi thêm sản phẩm mới: {str(e)}'}), 400
+#             else:
+#                 # Nếu đã có, chỉ cập nhật tồn kho
+#                 product.SoLuongTon += so_luong
+
+
+#             # Thêm chi tiết phiếu nhập
+#             ct = CHITIETPHIEUNHAP(
+#                 MaPN=phieu.MaPN,
+#                 MaSP=ma_sp,
+#                 SoLuong=so_luong,
+#                 DonGiaNhap=don_gia_nhap,
+#                 ThanhTien=so_luong * don_gia_nhap
+#             )
+#             db.session.add(ct)
+
+#         db.session.commit()
+#         return jsonify({'status': 'success', 'message': 'Tạo phiếu nhập thành công', 'MaPN': phieu.MaPN}), 201
+
+#     except Exception as e:
+#         db.session.rollback()
+#         return jsonify({'status': 'error', 'message': str(e)}), 400
+
 @phieunhap_bp.route('/phieunhap', methods=['POST'])
 def create_phieu_nhap():
     data = request.get_json()
     try:
         ma_ncc = data['MaNCC']
         user_id = data['UserID']
-        ghi_chu = data.get('GhiChu', '')
+        ngay_nhap = data.get('NgayNhap')
         trang_thai = data.get('TrangThai', 'Đang xử lý')
         chi_tiet = data.get('ChiTiet', [])
-        # Kiểm tra nhà cung cấp có tồn tại chưa
+
+        # Kiểm tra nhà cung cấp tồn tại
         ncc = NHACUNGCAP.query.get(ma_ncc)
         if not ncc:
-            # Nếu chưa có, tự thêm mới nhà cung cấp
-            try:
-                ncc = NHACUNGCAP(
-                    MaNCC=ma_ncc,
-                    TenNCC=data.get('TenNCC', f'NCC-{ma_ncc}'),
-                    DiaChi=data.get('DiaChi', ''),
-                    SDT=data.get('SDT', '')
-                )
-                db.session.add(ncc)
-                db.session.flush()
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'status': 'error', 'message': f'Lỗi thêm nhà cung cấp: {str(e)}'}), 400
+            return jsonify({'status': 'error', 'message': 'Nhà cung cấp không tồn tại'}), 400
 
         if not chi_tiet:
             return jsonify({'status': 'error', 'message': 'Danh sách chi tiết phiếu nhập trống'}), 400
@@ -54,43 +135,25 @@ def create_phieu_nhap():
         phieu = PHIEUNHAP(
             MaNCC=ma_ncc,
             UserID=user_id,
-            NgayNhap=datetime.now(),
+            NgayNhap=ngay_nhap,
             TongTien=tong_tien,
             TrangThai=trang_thai,
-            GhiChu=ghi_chu
         )
         db.session.add(phieu)
-        db.session.flush()  # Lấy MaPN sau khi insert
+        db.session.flush()
 
-        # Tạo chi tiết phiếu nhập và cập nhật tồn kho
+        # Xử lý chi tiết phiếu nhập và cập nhật tồn kho
         for item in chi_tiet:
             ma_sp = item['MaSP']
             so_luong = item['SoLuong']
             don_gia_nhap = item['DonGiaNhap']
 
-            # Kiểm tra sản phẩm tồn tại
             product = SANPHAM.query.get(ma_sp)
             if not product:
-                # Nếu chưa có sản phẩm, tự thêm sản phẩm mới vào bảng SANPHAM
-                try:
-                    product = SANPHAM(
-                        MaSP=ma_sp,
-                        TenSP=item.get('TenSP', f'SP-{ma_sp}'),
-                        MaDM=item.get('MaDM'),
-                        MaNCC=ma_ncc,
-                        GiaBan=item.get('GiaBan', 0),
-                        SoLuongTon=so_luong,
-                        MoTa=item.get('MoTa', ''),
-                        HinhAnh=item.get('HinhAnh', '')
-                    )
-                    db.session.add(product)
-                except Exception as e:
-                    db.session.rollback()
-                    return jsonify({'status': 'error', 'message': f'Lỗi thêm sản phẩm mới: {str(e)}'}), 400
-            else:
-                # Nếu đã có, chỉ cập nhật tồn kho
-                product.SoLuongTon += so_luong
+                return jsonify({'status': 'error', 'message': f'Sản phẩm {ma_sp} không tồn tại'}), 400
 
+            # Cập nhật tồn kho
+            product.SoLuongTon += so_luong
 
             # Thêm chi tiết phiếu nhập
             ct = CHITIETPHIEUNHAP(
@@ -108,7 +171,6 @@ def create_phieu_nhap():
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 400
-
 
 # Lấy danh sách phiếu nhập
 @phieunhap_bp.route('/phieunhap', methods=['GET'])
