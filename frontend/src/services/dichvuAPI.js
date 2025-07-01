@@ -30,7 +30,7 @@ export async function suaDichVu(id, data) {
 
 // Tra cứu dịch vụ theo từ khóa
 export async function traCuuDichVu(keyword) {
-  const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(keyword)}`);
+  const res = await fetch(`${API_URL}/search?keyword=${encodeURIComponent(keyword)}`);
   return await res.json();
 }
 
@@ -38,4 +38,12 @@ export async function traCuuDichVu(keyword) {
 export async function danhSachDichVu() {
   const res = await fetch(API_URL);
   return await res.json();
+}
+
+export async function inPhieuDichVu() {
+  const res = await fetch("http://localhost:5000/api/dichvu/pdf", {
+    method: "GET",
+  });
+  if (!res.ok) throw new Error("Lỗi khi lấy PDF");
+  return await res.blob(); // trả file PDF
 }
