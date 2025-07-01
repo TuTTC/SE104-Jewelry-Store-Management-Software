@@ -1,14 +1,12 @@
-// src/pages/InventoryManager.jsx
 import React, { useState, useEffect } from 'react';
-import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
-
+import { ArrowUpDown, Download, Search, Filter, Edit } from 'lucide-react';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
-import inventoryApi from "../services/inventoryApi";
+import parameterApi from 'services/parameterApi';
 
-const InventoryManager = () => {
-  const [inventory, setInventory] = useState([]);
+const ParameterManager = () => {
+  const [parameters, setParameters] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [currentItem, setCurrentItem] = useState(null);
@@ -21,38 +19,44 @@ const InventoryManager = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
 
   useEffect(() => {
-    // Placeholder for backend API call
-     fetchInventory();
-    // fetchInventory().then(data => setInventory(data));
+    loadParameters();
   }, []);
 
-
-  const fetchInventory = async () => {
-  try {
-    const data = await inventoryApi.getAll();
-    console.log("DATA TRẢ VỀ TỪ API:", data);
-    setInventory(
-      data.map((item) => ({
-        id: item.MaTK, // Dùng khóa chính thực tế làm key
-        productId: item.MaSP,
-        quantity: item.SoLuongTon,
-        lastUpdated: item.NgayCapNhat,
-        warning: item.MucCanhBao,
-      }))
-    );
-  } catch (err) {
-    console.error("Lỗi khi lấy dữ liệu tồn kho:", err);
-  }
-};
-
+  const loadParameters = async () => {
+    try {
+      const res = await parameterApi.getAll();
+      console.log("DATA TRẢ VỀ TỪ API:", res);
+      setParameters(res.data);
+    } catch (err) {
+      console.error(err);
+      setError('Không thể tải danh sách tham số.');
+    }
+  };
 
   const openModal = (type, item = null) => {
-    setModalType(type);
-    setCurrentItem(item);
-    setFormData(item || {});
-    setShowModal(true);
-    setError('');
-  };
+  setModalType(type);
+  setCurrentItem(item);
+
+  if (item) {
+    setFormData({
+      TenThamSo: item.TenThamSo || "",
+      GiaTri: item.GiaTri || "",
+      MoTa: item.MoTa || "",
+      KichHoat: item.KichHoat ?? true,  // Mặc định true nếu chưa có
+    });
+  } else {
+    setFormData({
+      TenThamSo: "",
+      GiaTri: "",
+      MoTa: "",
+      KichHoat: true,
+    });
+  }
+
+  setShowModal(true);
+  setError('');
+};
+
 
   const closeModal = () => {
     setShowModal(false);
@@ -80,26 +84,6 @@ const InventoryManager = () => {
     const { name, value } = e.target;
     setFilterFormData({ ...filterFormData, [name]: value });
   };
-  const handleUpdateAll = async () => {
-  try {
-    // Chuẩn bị dữ liệu gửi backend
-    const dataList = inventory.map((item) => ({
-      MaSP: item.productId, // Giả sử cột productId của em chính là MaSP
-      SoLuongTon: parseInt(item.quantity),
-
-    }));
-
-    await inventoryApi.updateAll(dataList);
-    alert("Cập nhật toàn bộ tồn kho thành công!");
-
-    // Reload lại dữ liệu tồn kho từ backend
-    const updatedData = await inventoryApi.getAll();
-    setInventory(updatedData);
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
-};
 
   const sortData = (key) => {
     let direction = 'asc';
@@ -107,76 +91,73 @@ const InventoryManager = () => {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-    const sortedData = [...inventory].sort((a, b) => {
+    const sortedData = [...parameters].sort((a, b) => {
       if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
       if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
       return 0;
     });
-    setInventory(sortedData);
+    setParameters(sortedData);
   };
 
   const exportToCSV = () => {
-    const headers = Object.keys(inventory[0]).join(',');
-    const rows = inventory.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
+    if (parameters.length === 0) return;
+    const headers = Object.keys(parameters[0]).join(',');
+    const rows = parameters.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
     const csv = `${headers}\n${rows}`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'inventory.csv';
+    a.download = 'parameters.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
   const validateForm = () => {
-    if (!formData.productId || !formData.quantity || !formData.lastUpdated) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc.');
-      return false;
-    }
-    if (parseInt(formData.quantity) < 0) {
-      setError('Số lượng không được âm.');
+    if (!formData.GiaTri) {
+      setError('Giá trị không được để trống.');
       return false;
     }
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const newItem = { ...formData, id: Date.now() };
-    if (modalType === 'add') {
-      setInventory([...inventory, newItem]);
-    } else if (modalType === 'edit' && currentItem) {
-      setInventory(inventory.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
-    }
-    closeModal();
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa mục này?')) {
-      setInventory(inventory.filter(item => item.id !== id));
+    try {
+      if (modalType === 'edit' && currentItem) {
+        await parameterApi.update(currentItem.TenThamSo, {
+          GiaTri: formData.GiaTri,
+          MoTa: formData.MoTa,
+          KichHoat: formData.KichHoat,
+        });
+        loadParameters();
+      }
+      closeModal();
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Cập nhật thất bại.');
     }
   };
 
   const handleSearchSubmit = () => {
-    // Placeholder for backend API call
+    // Optionally call API filter here
     closeSearchModal();
   };
 
   const handleFilterSubmit = () => {
-    // Placeholder for backend API call
+    // Optionally call API filter here
     closeFilterModal();
   };
 
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý tồn kho</h2>
+        <h2 className="table-title">Quản lý tham số</h2>
         <div>
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-          <button onClick={handleUpdateAll} className="action-button">Cập nhật tồn kho</button>
           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
         </div>
       </div>
@@ -184,28 +165,25 @@ const InventoryManager = () => {
         <table className="data-table">
           <thead>
             <tr>
-              <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('productId')}>Sản phẩm <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('quantity')}>Số lượng <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('lastUpdated')}>Cập nhật lần cuối <ArrowUpDown className="sort-icon" /></th>
-               <th onClick={() => sortData('warning')}>Mức cảnh báo <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('MaThamSo')}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('TenThamSo')}>Tên tham số <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('GiaTri')}>Giá trị <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('MoTa')}>Mô tả <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('KichHoat')}>Kích hoạt <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {inventory.map((i) => (
-              <tr key={i.id}>
-                <td>{i.id}</td>
-                <td>{i.productId}</td>
-                <td>{i.quantity}</td>
-                <td>{i.lastUpdated}</td>
-                <td>{i.warning}</td>
+            {parameters.map((i) => (
+              <tr key={i.MaThamSo}>
+                <td>{i.MaThamSo}</td>
+                <td>{i.TenThamSo}</td>
+                <td>{i.GiaTri}</td>
+                <td>{i.MoTa}</td>
+                <td>{i.KichHoat ? 'Có' : 'Không'}</td>
                 <td>
                   <button onClick={() => openModal('edit', i)} className="action-icon edit">
                     <Edit className="icon" />
-                  </button>
-                  <button onClick={() => handleDelete(i.id)} className="action-icon delete">
-                    <Trash className="icon" />
                   </button>
                 </td>
               </tr>
@@ -218,7 +196,7 @@ const InventoryManager = () => {
         showModal={showModal}
         closeModal={closeModal}
         modalType={modalType}
-        currentSection="inventory"
+        currentSection="parameter"
         formData={formData}
         handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
@@ -227,7 +205,7 @@ const InventoryManager = () => {
       <SearchModal
         showSearchModal={showSearchModal}
         closeSearchModal={closeSearchModal}
-        currentSection="inventory"
+        currentSection="parameter"
         searchFormData={searchFormData}
         handleSearchInputChange={handleSearchInputChange}
         handleSearchSubmit={handleSearchSubmit}
@@ -235,7 +213,7 @@ const InventoryManager = () => {
       <FilterModal
         showFilterModal={showFilterModal}
         closeFilterModal={closeFilterModal}
-        currentSection="inventory"
+        currentSection="parameter"
         filterFormData={filterFormData}
         handleFilterInputChange={handleFilterInputChange}
         handleFilterSubmit={handleFilterSubmit}
@@ -244,4 +222,4 @@ const InventoryManager = () => {
   );
 };
 
-export default InventoryManager;
+export default ParameterManager;

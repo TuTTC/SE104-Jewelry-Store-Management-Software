@@ -37,6 +37,7 @@ const AdminLayout = () => {
     { label: "Quản lý nhà cung cấp", icon: Users, key: "suppliers" },
     { label: "Quản lý tồn kho", icon: Gem, key: "inventory" },
     { label: "Báo cáo & Thống kê", icon: LayoutDashboard, key: "reports" },
+    { label: "Quản lý tham số", icon: LayoutDashboard, key: "parameter" },
   ];
 
   const handleLogout = () => {
@@ -51,7 +52,7 @@ const AdminLayout = () => {
     <div className="container">
       <aside className="sidebar">
         <h1 className="sidebar-title flex items-center gap-2 px-4 py-2">
-          Jewelry Admin
+          {/* Jewelry Admin */}
           <img src="/logoVTP.svg" alt="Jewelry Admin Logo" className="sidebar-logo" />
         </h1>
         <nav className="sidebar-nav">

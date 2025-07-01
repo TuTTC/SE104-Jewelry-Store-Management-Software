@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Edit, Trash, Plus } from "lucide-react";
+import { ArrowUpDown, Download, Search, Filter, Edit, Trash, Plus  } from "lucide-react";
+import { LuEye, LuPrinter } from "react-icons/lu";
+import { FiEye } from "react-icons/fi";
 import GeneralModalForm from "../components/GeneralModalForm"; // Điều chỉnh path nếu cần
 import * as orderApi from "../services/purchaseOrderApi";
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
-
+import PurchaseOrderForm from "forms/AddPurchaseOrderForm";
 
 function PurchaseOrderManager() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -25,6 +27,7 @@ function PurchaseOrderManager() {
     date: "",
     total: "",
     status: "",
+    ChiTiet: [],
   });
 
   const modalType = modalMode;
@@ -52,13 +55,34 @@ function PurchaseOrderManager() {
       alert(error.message);
     }
   };
+  const handleEdit = async (maPN) => {
+  try {
+    const res = await orderApi.getOrderById(maPN);
+    if (res.status === "success") {
+      openModal("edit", res.data);
+    } else {
+      alert("Lấy chi tiết phiếu nhập thất bại!");
+    }
+  } catch (err) {
+    console.error("Lỗi khi lấy chi tiết phiếu nhập:", err);
+    alert(err.message);
+  }
+};
+
 
   // Xử lý mở modal
   function openModal(mode, order = null) {
+    console.log("Mở modal:", mode, order);
+
     setModalMode(mode);
     setSelectedOrder(order);
     setModalVisible(true);
 
+    const statusMap = {
+      "Đã nhập": "da_nhap",
+      "Đang xử lý": "dang_xu_ly",
+      "Hủy": "huy",
+    };
     if (order) {
       setFormData({
         code: order.MaPN,
@@ -66,7 +90,8 @@ function PurchaseOrderManager() {
         user: order.UserID,
         date: order.NgayNhap?.slice(0, 10),
         total: order.TongTien,
-        status: order.TrangThai,
+        status: statusMap[order.TrangThai] || "",
+        ChiTiet: order.ChiTiet || [],  // phải có dòng này
       });
     } else {
       setFormData({
@@ -76,8 +101,10 @@ function PurchaseOrderManager() {
         date: "",
         total: "",
         status: "",
+        ChiTiet: [],
       });
     }
+
   }
 
   // Đóng modal
@@ -126,19 +153,17 @@ function PurchaseOrderManager() {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID,Mã phiếu nhập,Tên nhà cung cấp,Ngày nhập,Tổng tiền,Trạng thái'];
-    const rows = purchaseOrders.map(item => {
-      const supplier = initialSuppliers.find(s => s.id === item.supplierId);
-      return [
-        item.id,
-        `"${item.orderCode}"`,
-        `"${supplier ? supplier.name : 'Không xác định'}"`,
-        `"${item.date}"`,
-        item.total.toFixed(2),
-        `"${item.status}"`
-      ].join(',');
-    });
+    const headers = ['Mã Phiếu Nhập,Mã NCC,Người lập,Ngày nhập,Tổng tiền,Trạng thái'];
+    const rows = purchaseOrders.map(item => [
+      item.MaPN,
+      item.TenNCC || item.MaNCC,
+      item.UserID,
+      item.NgayNhap,
+      item.TongTien?.toFixed(2),
+      item.TrangThai
+    ].join(','));
     const csv = `${headers}\n${rows.join('\n')}`;
+
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -155,13 +180,16 @@ function PurchaseOrderManager() {
 
     try {
       const data = {
-        
-        MaNCC: formData.supplier,
-        UserID: formData.user,
-        NgayNhap: formData.date,
-        TongTien: parseFloat(formData.total),
-        TrangThai: formData.status,
-      };
+          MaNCC: formData.supplier,
+          UserID: formData.user,
+          NgayNhap: formData.date,
+          TrangThai: formData.status,
+          ChiTiet: formData.ChiTiet.map(item => ({
+            MaSP: item.MaSP,
+            SoLuong: parseInt(item.SoLuong, 10),
+            DonGiaNhap: parseFloat(item.DonGiaNhap)
+          }))
+        };
 
       if (modalMode === "add") {
         const res = await orderApi.addOrder(data);
@@ -227,22 +255,26 @@ function PurchaseOrderManager() {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý nhập hàng</h2>
-        <button onClick={() => openModal("add")} className="action-button">
+        <h2 className="table-title"></h2>
+        {/* <button onClick={() => openModal("add")} className="action-button">
           <Plus className="icon" /> Thêm phiếu nhập
-        </button>
+        </button> */}
+        <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
+        <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
+        <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
+        <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
       </div>
 
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Nhà cung cấp</th>
-              <th>Người lập</th>
-              <th>Ngày nhập</th>
-              <th>Tổng tiền</th>
-              <th>Trạng thái</th>
+              <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('supplierId')}>Nhà cung cấp <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('userId')}>Người lập <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('date')}>Ngày nhập <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('total')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>
           </thead>
@@ -256,15 +288,16 @@ function PurchaseOrderManager() {
                 <td>{formatCurrency(po.TongTien)}</td>
                 <td>{po.TrangThai}</td>
                 <td>
-                  <button onClick={() => openModal("edit", po)} className="action-icon edit">
+                  <button onClick={() => handleEdit(po.MaPN)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
                   <button onClick={() => handleDelete(po.MaPN)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                   <button onClick={() => exportPDF(po.MaPN)} className="action-icon export">
-                    Xuất PDF
+                    <LuPrinter className="icon"/>
                   </button>
+                  
                 </td>
               </tr>
             ))}
@@ -272,7 +305,7 @@ function PurchaseOrderManager() {
         </table>
       </div>
 
-      {modalVisible && (
+      {/* {modalVisible && (
         <GeneralModalForm
           showModal={showModal}
           closeModal={closeModal}
@@ -285,7 +318,29 @@ function PurchaseOrderManager() {
           onClose={closeModal}
           onSuccess={handleSuccess}
         />
+      )} */}
+      {modalVisible && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button className="modal-close" onClick={closeModal}>×</button>
+
+            <PurchaseOrderForm
+              showModal={modalVisible}
+              closeModal={closeModal}
+              modalType={modalMode}
+              formData={formData}
+              initialData={selectedOrder}
+              handleInputChange={handleInputChange}
+              handleSubmit={handleSubmit}
+              onSuccess={handleSuccess}
+            />
+          </div>
+        </div>
       )}
+
+
+
+
       <SearchModal
         showSearchModal={showSearchModal}
         closeSearchModal={closeSearchModal}

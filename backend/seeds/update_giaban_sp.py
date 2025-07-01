@@ -4,6 +4,7 @@ from models.ChiTietPhieuNhap import CHITIETPHIEUNHAP
 from models.DanhMucSanPham import DANHMUC
 from database import db
 from sqlalchemy import desc
+from decimal import Decimal
 
 def cap_nhat_gia_ban_cho_toan_bo_san_pham():
     try:
@@ -42,14 +43,13 @@ def cap_nhat_gia_ban_cho_toan_bo_san_pham():
                 continue
 
             try:
-                phan_tram_loi_nhuan = float(tham_so.GiaTri)
-            except ValueError:
+                phan_tram_loi_nhuan = Decimal(tham_so.GiaTri)
+            except:
                 print(f"Tham số {ten_tham_so} có giá trị không hợp lệ: {tham_so.GiaTri}")
                 continue
 
-            # Tính giá bán
-            gia_ban = ct_pn.DonGiaNhap + (ct_pn.DonGiaNhap * phan_tram_loi_nhuan / 100)
-            sp.GiaBan = round(gia_ban)
+            gia_ban = ct_pn.DonGiaNhap + (ct_pn.DonGiaNhap * phan_tram_loi_nhuan / Decimal(100))
+            sp.GiaBan = gia_ban.quantize(Decimal('1'))  # Làm tròn đến số nguyên nếu cần
 
         db.session.commit()
         print("Cập nhật giá bán thành công!")

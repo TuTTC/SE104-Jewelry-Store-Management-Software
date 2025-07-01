@@ -19,6 +19,7 @@ import ReportDashboard from './pages/ReportDashboard';
 import PurchaseOrderDetails from './pages/PurchaseOrderDetails';
 import ServiceDetails from './pages/ServiceDetails';
 import IntroPage from './pages/IntroPage';
+import ParameterManager from 'pages/ParameterManager';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             <Route path="suppliers" element={<SupplierManager />} />
             <Route path="inventory" element={<InventoryManager />} />
             <Route path="reports" element={<ReportDashboard />} />
+            <Route path="parameter" element={<ParameterManager />} />
           </Route>
         </Route>
       </Routes>

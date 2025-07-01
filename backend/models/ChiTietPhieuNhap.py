@@ -19,3 +19,11 @@ class CHITIETPHIEUNHAP(db.Model):
     # Quan hệ
     phieunhap = relationship("PHIEUNHAP", backref="chitietphieunhap_list")
     sanpham = relationship("SANPHAM", backref="chitietphieunhap_list")
+
+    
+    def to_dict(self):
+        return {
+            "MaSP": self.MaSP,
+            "SoLuong": self.SoLuong,
+            "DonGiaNhap": float(self.DonGiaNhap)  # Đảm bảo trả về kiểu float
+        }

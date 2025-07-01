@@ -16,13 +16,20 @@ export const getOrderById = async (id) => {
 
 // Thêm mới phiếu nhập
 export const addOrder = async (data) => {
-  const res = await fetch(BASE_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Lỗi khi tạo phiếu nhập");
-  return res.json();
+  try {
+    const res = await fetch(BASE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || "Thêm phiếu nhập thất bại!");
+    return result;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
 };
 
 // Cập nhật phiếu nhập
