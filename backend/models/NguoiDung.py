@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship, validates
 from database import db
+from models.Relationships import user_permissions  # Import bảng liên kết từ file riêng
 
 class NGUOIDUNG(db.Model):
     __tablename__ = "NGUOIDUNG"
@@ -12,7 +13,15 @@ class NGUOIDUNG(db.Model):
     MaVaiTro = Column(Integer, ForeignKey("VAITRO.MaVaiTro"), nullable=False)
     TaoNgay = Column(DateTime, default=func.now())
 
+    # Quan hệ với vai trò
     vaitro = relationship("VAITRO", backref="nguoidungs")
+
+    # Quan hệ nhiều-nhiều với bảng PERMISSIONS
+    permissions = relationship(
+        "PERMISSIONS",
+        secondary=user_permissions,
+        back_populates="users"
+    )
 
     @validates('Email')
     def validate_email(self, key, email):

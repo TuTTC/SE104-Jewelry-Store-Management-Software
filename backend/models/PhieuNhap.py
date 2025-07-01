@@ -22,3 +22,14 @@ class PhieuNhap(db.Model):
     # Quan hệ
     nhacungcap = relationship("NhaCungCap", backref="phieunhaps")
     nguoitao = relationship("NGUOIDUNG", backref="phieunhaps")
+
+    def to_dict(self):
+        return {
+            "MaPN": self.MaPN,
+            "MaNCC": self.MaNCC,
+            "UserID": self.UserID,
+            "NgayNhap": self.NgayNhap.strftime("%Y-%m-%d") if self.NgayNhap else None,
+            "TongTien": self.TongTien,
+            "TrangThai": self.TrangThai.value if self.TrangThai else None,  # Convert Enum to string
+            "GhiChu": self.GhiChu
+        }

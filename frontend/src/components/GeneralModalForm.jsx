@@ -1,178 +1,183 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { X } from "lucide-react";
 
 const GeneralModalForm = ({
-  section,
-  mode,
-  initialData,
-  onClose,
-  onSubmit,
   showModal,
+  closeModal,
+  modalType,
+  currentSection,
+  formData,
+  handleInputChange,
+  handleSubmit,
+  error,
 }) => {
-  const [formData, setFormData] = useState({});
-
-  useEffect(() => {
-    // Reset formData when modal opens/closes or section changes
-    if (!initialData || mode === 'add') {
-      setFormData({});
-      return;
-    }
-
-    if (section === "services") {
-      setFormData({
-        name: initialData.TenDV || "",
-        price: initialData.DonGia || "",
-        description: initialData.MoTa || "",
-        status: initialData.TrangThai ? "true" : "false",
-        id: initialData.MaDV || null,
-      });
-    } else if (section === "orders") {
-      setFormData({
-        id: initialData.id || initialData.MaDH || null,
-        customerId: initialData.customerId || initialData.MaKH || "",
-        customer: initialData.customer || "",
-        date: initialData.date || initialData.NgayDat || "",
-        total: initialData.total || initialData.TongTien || "",
-        status: initialData.status || initialData.TrangThai || "Pending",
-        paymentMethod: initialData.paymentMethod || "",
-        deliveryAddress: initialData.deliveryAddress || "",
-      });
-    }
-  }, [initialData, section, mode]);
-
   if (!showModal) return null;
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  const renderSectionFields = () => {
+    switch (currentSection) {
+      case "products":
+        return (
+          <>
+            <input type="text" name="TenSP" value={formData.TenSP || ""} onChange={handleInputChange} placeholder="Tên sản phẩm" required />
 
-  const handleSubmit = () => {
-    onSubmit(formData);
+            <input type="number" name="GiaBan" value={formData.GiaBan || ""} onChange={handleInputChange} placeholder="Giá bán (VND)" required
+            />
+
+            <input type="number" name="MaDM" value={formData.MaDM || ""} onChange={handleInputChange} placeholder="Mã danh mục" required />
+
+            <input type="number" name="SoLuongTon" value={formData.SoLuongTon || ""} onChange={handleInputChange} placeholder="Số lượng tồn" required />
+
+            <input type="number" name="MaNCC" value={formData.MaNCC || ""} onChange={handleInputChange} placeholder="Mã nhà cung cấp" required/>
+
+            <input type="text" name="HinhAnh" value={formData.HinhAnh || ""} onChange={handleInputChange} placeholder="URL hình ảnh" required/>
+
+            <input type="text" name="MoTa" value={formData.MoTa || ""} onChange={handleInputChange} placeholder="Ghi chú"/>
+          </>
+
+        );
+      case "orders":
+        return (
+          <>
+            <input type="text" name="orderCode" value={formData.orderCode || ""} onChange={handleInputChange} placeholder="Mã đơn hàng" required />
+            <input type="text" name="customer" value={formData.customer || ""} onChange={handleInputChange} placeholder="Khách hàng" required />
+            <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required />
+            <input type="text" name="total" value={formData.total || ""} onChange={handleInputChange} placeholder="Tổng tiền (VD: $3700)" required />
+            <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
+              <option value="">Chọn trạng thái</option>
+              <option value="Pending">Chờ xử lý</option>
+              <option value="Shipped">Đã giao</option>
+            </select>
+            <input type="text" name="paymentMethod" value={formData.paymentMethod || ""} onChange={handleInputChange} placeholder="Phương thức thanh toán" required />
+            <input type="text" name="deliveryAddress" value={formData.deliveryAddress || ""} onChange={handleInputChange} placeholder="Địa chỉ giao hàng" required />
+            <input type="text" name="note" value={formData.note || ""} onChange={handleInputChange} placeholder="Ghi chú" />
+          </>
+        );
+      
+      case "accounts":
+        return (
+          <>
+            <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên" required />
+            {currentSection === "accounts" && (
+              <input type="text" name="accountCode" value={formData.accountCode || ""} onChange={handleInputChange} placeholder="Mã tài khoản" required />
+            )}
+            <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" required />
+            <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Điện thoại" required />
+            <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Địa chỉ" required />
+          
+            {currentSection === "accounts" && (
+              <input type="text" name="position" value={formData.position || ""} onChange={handleInputChange} placeholder="Chức vụ" required />
+            )}
+            
+            <select name="role" value={formData.role || ""} onChange={handleInputChange} required>
+              <option value="">Chọn vai trò</option>
+              <option value="Customer">Khách hàng</option>
+              <option value="Admin">Quản trị</option>
+              <option value="Employee">Nhân viên</option>
+            </select>
+          </>
+        );
+      case "categories":
+        return (
+          <>
+            <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên danh mục" required />
+            <input type="text" name="description" value={formData.description || ""} onChange={handleInputChange} placeholder="Mô tả" />
+          </>
+        );
+      case "services":
+        return (
+          <>
+            <input type="text" name="code" value={formData.code || ""} onChange={handleInputChange} placeholder="Mã dịch vụ" required />
+            <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên dịch vụ" required />
+            <input type="number" name="price" value={formData.price || ""} onChange={handleInputChange} placeholder="Giá" step="0.01" required />
+            <input type="text" name="description" value={formData.description || ""} onChange={handleInputChange} placeholder="Mô tả" required />
+            <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
+              <option value="">Chọn trạng thái</option>
+              <option value="true">Kích hoạt</option>
+              <option value="false">Không hoạt động</option>
+            </select>
+          </>
+        );
+      case "purchaseOrders":
+        return (
+          <>
+            {/* <input type="text" name="code" value={formData.code || ""} onChange={handleInputChange} placeholder="Mã phiếu nhập" required /> */}
+            <input type="text" name="supplier" value={formData.supplier || ""} onChange={handleInputChange} placeholder="Nhà cung cấp" required />
+            <input type="text" name="user" value={formData.user || ""} onChange={handleInputChange} placeholder="Người nhập" required />
+            <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required />
+            <input type="number" name="total" value={formData.total || ""} onChange={handleInputChange} placeholder="Tổng tiền" step="0.01" required />
+            <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
+              <option value="">Chọn trạng thái</option>
+              <option value="Đã nhập">Đã nhập</option>
+              <option value="Đang xử lý">Đang xử lý</option>
+              <option value="Hủy">Hủy</option>
+            </select>
+          </>
+        );
+      case "suppliers":
+        return (
+          <>
+            <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên nhà cung cấp" required />
+            <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Điện thoại" />
+            <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" />
+            <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Địa chỉ" required />
+            <input type="text" name="note" value={formData.note || ""} onChange={handleInputChange} placeholder="Ghi chú"/>
+          </>
+        );
+      case "inventory":
+        return (
+          <>
+            <input type="number" name="productId" value={formData.productId || ""} onChange={handleInputChange} placeholder="ID sản phẩm" required />
+            <input type="number" name="quantity" value={formData.quantity || ""} onChange={handleInputChange} placeholder="Số lượng" required />
+            <input type="date" name="lastUpdated" value={formData.lastUpdated || ""} onChange={handleInputChange} required />
+          </>
+        );
+      case "reports":
+        return (
+          <>
+            <select name="type" value={formData.type || ""} onChange={handleInputChange} required>
+              <option value="">Chọn loại</option>
+              <option value="Doanh thu">Doanh thu</option>
+              <option value="Tồn kho">Tồn kho</option>
+              <option value="Lợi nhuận">Lợi nhuận</option>
+            </select>
+            <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required />
+            <input type="text" name="data" value={formData.data || ""} onChange={handleInputChange} placeholder="Dữ liệu (JSON)" required />
+          </>
+        );
+      case "parameter":
+        return (
+          <>
+            <input type="number" name="parameterId" value={formData.parameterId || ""} onChange={handleInputChange} placeholder="ID sản phẩm" required />
+            <input type="text" name="paraName" value={formData.paraName || ""} onChange={handleInputChange} placeholder="Tên tham số" required />
+            <input type="number" name="paraValue" value={formData.paraValue || ""} onChange={handleInputChange} placeholder="Giá trị" required />
+            <input type="text" name="paraDescribe" value={formData.paraDescribe || ""} onChange={handleInputChange} placeholder="Mô tả" required />
+           <input type="number" name="paraKH" value={formData.paraKH || ""} onChange={handleInputChange} placeholder="Kích hoạt" required />
+
+          </>
+        )
+      default:
+        return null;
+    }
+
   };
 
   return (
     <div className="modal-overlay">
       <div className="modal">
         <div className="modal-header">
-          <h2>
-            {mode === "add"
-              ? `Thêm ${section === "services" ? "dịch vụ" : "đơn hàng"}`
-              : `Sửa ${section === "services" ? "dịch vụ" : "đơn hàng"}`}
-          </h2>
-          <button onClick={onClose} className="modal-close">
+          <h2>{modalType === "add" ? `Thêm ${currentSection}` : `Sửa ${currentSection}`}</h2>
+          <button onClick={closeModal} className="modal-close">
             <X className="icon" />
           </button>
         </div>
-
-        <div className="modal-form">
-          {section === "services" && (
-            <>
-              <input
-                type="text"
-                name="name"
-                value={formData.name || ""}
-                onChange={handleInputChange}
-                placeholder="Tên dịch vụ"
-                required
-              />
-              <input
-                type="number"
-                step="0.01"
-                name="price"
-                value={formData.price || ""}
-                onChange={handleInputChange}
-                placeholder="Giá"
-                required
-              />
-              <input
-                type="text"
-                name="description"
-                value={formData.description || ""}
-                onChange={handleInputChange}
-                placeholder="Mô tả"
-              />
-              <select
-                name="status"
-                value={formData.status || "true"}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="true">Kích hoạt</option>
-                <option value="false">Không hoạt động</option>
-              </select>
-            </>
-          )}
-
-          {section === "orders" && (
-            <>
-              <input
-                type="number"
-                name="customerId"
-                value={formData.customerId}
-                onChange={handleInputChange}
-                placeholder="Mã khách hàng (MaKH)"
-                required
-              />
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-              />
-              <input
-                type="number"
-                name="total"
-                value={formData.total}
-                onChange={handleInputChange}
-                placeholder="Tổng tiền"
-                required
-              />
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleInputChange}
-              >
-                <option value="Pending">Chờ xử lý</option>
-                <option value="Paid">Đã thanh toán</option>
-                <option value="Shipped">Đã giao</option>
-                <option value="Completed">Hoàn thành</option>
-              </select>
-              <input
-                type="text"
-                name="paymentMethod"
-                value={formData.paymentMethod}
-                onChange={handleInputChange}
-                placeholder="Phương thức thanh toán"
-              />
-              <input
-                type="text"
-                name="deliveryAddress"
-                value={formData.deliveryAddress}
-                onChange={handleInputChange}
-                placeholder="Địa chỉ giao hàng"
-              />
-            </>
-          )}
-
+        <form onSubmit={handleSubmit} className="modal-form">
+          {error && <p className="error-message">{error}</p>}
+          {renderSectionFields()}
           <div className="modal-actions">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="action-button"
-            >
-              Lưu
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="action-button cancel"
-            >
-              Hủy
-            </button>
+            <button type="submit" className="action-button">Lưu</button>
+            <button type="button" onClick={closeModal} className="action-button cancel">Hủy</button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

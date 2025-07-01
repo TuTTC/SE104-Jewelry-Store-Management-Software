@@ -1,1 +1,0 @@
-#Chứa các hàm thêm dữ liệu mẫu (seed) vào database (sản phẩm, khách hàng, dịch vụ ban đầu…).

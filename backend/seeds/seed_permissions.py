@@ -1,6 +1,7 @@
-from models.Permissions import Permissions
+from models.Permissions import PERMISSIONS
 from database import db
-from models.VaiTro import VaiTro
+from models.VaiTro import VAITRO
+from models.Permissions import PERMISSIONS
 from models.NguoiDung import NGUOIDUNG
 from models.Relationships import user_permissions
 
@@ -27,20 +28,31 @@ def seed_permissions():
             })
             permissions.append({
                 "TenQuyen": f"{m['prefix']}:edit",
-                "MoTa": f"Thêm, sửa, xóa {m['mo_ta']}"
+                "MoTa": f"Sửa {m['mo_ta']}"
+            })
+            permissions.append({
+                "TenQuyen": f"{m['prefix']}:delete",
+                "MoTa": f"Xóa {m['mo_ta']}"
+            })
+            permissions.append({
+                "TenQuyen": f"{m['prefix']}:add",
+                "MoTa": f"Thêm {m['mo_ta']}"
             })
 
         # Seed vào DB nếu chưa có
-        for p in permissions:
-            if not Permissions.query.filter_by(TenQuyen=p["TenQuyen"]).first():
-                db.session.add(Permissions(**p))
+        if not PERMISSIONS.query.first():
+            for p in permissions:
+                if not PERMISSIONS.query.filter_by(TenQuyen=p["TenQuyen"]).first():
+                    db.session.add(PERMISSIONS(**p))
 
-        db.session.commit()
-        print("Seed quyền thành công!")
+            db.session.commit()
+            print("Seed quyền thành công!")
+
 
     except Exception as e:
         db.session.rollback()
         print(f"Lỗi khi seed quyền: {e}")
+
 
 
 
@@ -82,3 +94,4 @@ def seed_permissions():
 #     except Exception as e:
 #         db.session.rollback()
 #         print(f"❌ Lỗi khi gán quyền: {e}")
+

@@ -1,5 +1,6 @@
 from database import db
-from models import ThamSo
+from models.ThamSo import THAMSO
+
 
 def seed_thamso():
     thamso_data = [
@@ -20,8 +21,11 @@ def seed_thamso():
         {"TenThamSo": "PhuThu_GanDaKimCuong", "GiaTri": "5", "MoTa": "Phụ thu (%) gắn đá kim cương"},
     ]
 
-    for ts in thamso_data:
-        existing = ThamSo.query.filter_by(TenThamSo=ts["TenThamSo"]).first()
-        if not existing:
-            db.session.add(ThamSo(**ts))
-    db.session.commit()
+    if not THAMSO.query.first():
+        for ts in thamso_data:
+            existing = THAMSO.query.filter_by(TenThamSo=ts["TenThamSo"]).first()
+            if not existing:
+                db.session.add(THAMSO(**ts))
+        db.session.commit()
+        print("Seed tham số thành công!")
+

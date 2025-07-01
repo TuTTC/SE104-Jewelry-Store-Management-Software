@@ -1,4 +1,4 @@
-from models.NhaCungCap import NhaCungCap
+from models.NhaCungCap import NHACUNGCAP
 from database import db
 import random
 from datetime import date, timedelta
@@ -8,8 +8,6 @@ def random_date(start_date, end_date):
     delta = end_date - start_date
     random_days = random.randint(0, delta.days)
     return start_date + timedelta(days=random_days)
-
-
 
 def seed_nhacungcap():
     try:
@@ -39,15 +37,22 @@ def seed_nhacungcap():
             "nhacungcaphungthinh@gmail.com"
         ]
 
+
         if NhaCungCap.query.first():
-            print("✅ Bảng NHACUNGCAP đã có dữ liệu, không cần seed.")
+            print("Bảng NHACUNGCAP đã có dữ liệu, không cần seed.")
             return
 
 
+#         for i, ten_ncc in enumerate(ten_ncc_list):
+#             existing_ncc = NhaCungCap.query.filter_by(TenNCC=ten_ncc).first()
+#             if not existing_ncc:
+#                 ncc = NhaCungCap(
+
         for i, ten_ncc in enumerate(ten_ncc_list):
-            existing_ncc = NhaCungCap.query.filter_by(TenNCC=ten_ncc).first()
+            existing_ncc = NHACUNGCAP.query.filter_by(TenNCC=ten_ncc).first()
             if not existing_ncc:
-                ncc = NhaCungCap(
+                ncc = NHACUNGCAP(
+
                     TenNCC=ten_ncc,
                     DiaChi=random.choice([
                         "Quận 1, TP. Hồ Chí Minh",
