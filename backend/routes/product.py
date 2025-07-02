@@ -20,6 +20,21 @@ product_bp = Blueprint('product_bp', __name__)
 # @permission_required("products:view")
 def get_products():
     try:
+        # Đồng bộ tồn kho trước khi trả về dữ liệu
+        danh_sach_sanpham = SANPHAM.query.all()
+        # Lấy danh sách danh mục
+        danh_muc_list = DANHMUC.query.all()
+        danh_muc_data = [{'MaDM': dm.MaDM, 'TenDM': dm.TenDM} for dm in danh_muc_list]
+
+        for sp in danh_sach_sanpham:
+            tonkho = TONKHO.query.filter_by(MaSP=sp.MaSP).first()
+            if tonkho:
+                tonkho.SoLuongTon = sp.SoLuongTon
+            else:
+                db.session.add(TONKHO(MaSP=sp.MaSP, SoLuongTon=sp.SoLuongTon))
+
+        db.session.commit()
+
         products = SANPHAM.query.all()
         result = []
 
@@ -37,7 +52,7 @@ def get_products():
                 'HinhAnh': p.HinhAnh
             })
 
-        return jsonify({'status': 'success', 'data': result}), 200
+        return jsonify({'status': 'success', 'data': result, 'categories': danh_muc_data}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
@@ -77,6 +92,7 @@ def add_product():
         )
         db.session.add(new_product)
         db.session.flush()  # Lấy MaSP sau khi thêm
+        db.session.add(TONKHO(MaSP=new_product.MaSP, SoLuongTon=new_product.SoLuongTon))
         db.session.commit()
 
         return jsonify({'status': 'success', 'message': 'Tạo sản phẩm thành công', 'MaSP': new_product.MaSP}), 201
@@ -115,6 +131,7 @@ def update_product(product_id):
 
     data = request.get_json()
     try:
+        so_luong_cu = product.SoLuongTon
         product.TenSP = data.get('TenSP', product.TenSP)
         product.MaDM = data.get('MaDM', product.MaDM)
         product.MaNCC = data.get('MaNCC', product.MaNCC)
@@ -122,8 +139,14 @@ def update_product(product_id):
         product.SoLuongTon = data.get('SoLuongTon', product.SoLuongTon)
         product.MoTa = data.get('MoTa', product.MoTa)
         product.HinhAnh = data.get('HinhAnh', product.HinhAnh)
-
-        db.session.commit()
+        # Đồng bộ tồn kho nếu số lượng tồn thay đổi
+        if product.SoLuongTon != so_luong_cu:
+            tonkho = TONKHO.query.filter_by(MaSP=product.MaSP).first()
+            if tonkho:
+                tonkho.SoLuongTon = product.SoLuongTon
+            else:
+                db.session.add(TONKHO(MaSP=product.MaSP, SoLuongTon=product.SoLuongTon))
+                db.session.commit()
         return jsonify({'status': 'success', 'message': 'Cập nhật sản phẩm thành công'}), 200
     except Exception as e:
         db.session.rollback()
@@ -236,3 +259,41 @@ def capnhat_gia_ban_toan_bo():
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
 
+def cap_nhat_gia_ban_cho_san_pham(ma_sp):
+    sp = SANPHAM.query.get(ma_sp)
+    if not sp:
+        return  # Không làm gì nếu sản phẩm không tồn tại
+
+    danh_muc = DANHMUC.query.get(sp.MaDM)
+    if not danh_muc:
+        return
+
+    # Map tham số
+    tham_so_map = {
+        "Vòng tay": "LoiNhuan_VongTay",
+        "Nhẫn": "LoiNhuan_Nhan",
+        "Vòng cổ": "LoiNhuan_DayChuyen",
+        "Bông tai": "LoiNhuan_KhuyenTai",
+        "Đá quý": "LoiNhuan_DaQuy",
+    }
+
+    ten_tham_so = tham_so_map.get(danh_muc.TenDM)
+    if not ten_tham_so:
+        return
+
+    tham_so = THAMSO.query.filter_by(TenThamSo=ten_tham_so).first()
+    if not tham_so or not tham_so.KichHoat:
+        return  # Không tính thêm nếu tham số chưa kích hoạt hoặc không tồn tại
+
+    # Lấy lần nhập gần nhất
+    ct_pn = CHITIETPHIEUNHAP.query.filter_by(MaSP=ma_sp).order_by(desc(CHITIETPHIEUNHAP.MaPN)).first()
+    if not ct_pn:
+        return
+
+    try:
+        phan_tram_loi_nhuan = Decimal(tham_so.GiaTri)
+        gia_ban = ct_pn.DonGiaNhap + (ct_pn.DonGiaNhap * phan_tram_loi_nhuan / Decimal(100))
+        sp.GiaBan = gia_ban.quantize(Decimal('1'))
+        db.session.commit()
+    except:
+        db.session.rollback()

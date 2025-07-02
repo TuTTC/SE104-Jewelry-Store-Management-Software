@@ -1,201 +1,286 @@
-// src/pages/ReportDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import { ArrowUpDown, Download, Search, Filter, Edit, Trash } from 'lucide-react';
-import { initialReports } from '../data/initialData';
-import GeneralModalForm from '../components/GeneralModalForm';
-import SearchModal from '../components/SearchModal';
-import FilterModal from '../components/FilterModal';
+import React, { useState, useEffect } from "react";
+import { ArrowUpDown, Download, Edit, Trash } from "lucide-react";
+import GeneralModalForm from "../components/GeneralModalForm-2.jsx";
+import {
+  layDanhSachBaoCao,
+  themBaoCao,
+  suaBaoCao,
+  xoaBaoCao,
+  inBaoCaoPDF,
+} from "../services/baocaoApi";
 
-const ReportDashboard = () => {
-  const [reports, setReports] = useState(initialReports);
+export default function ReportDashboard() {
+  const [reports, setReports] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: "", direction: "" });
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('');
+  const [modalType, setModalType] = useState("add");
   const [currentItem, setCurrentItem] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [error, setError] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-  const [searchFormData, setSearchFormData] = useState({});
-  const [filterFormData, setFilterFormData] = useState({});
-  const [showSearchModal, setShowSearchModal] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [formData, setFormData] = useState({
+    LoaiBaoCao: "Doanh thu",
+    TuNgay: "",
+    DenNgay: "",
+    MoTa: "",
+    NguoiTao: 1,
+  });
+  const [error, setError] = useState("");
 
+ // 1. Load danh sách
   useEffect(() => {
-    // Placeholder for backend API call
-    // fetchReports().then(data => setReports(data));
+    (async () => {
+      try {
+        const res = await layDanhSachBaoCao();
+        if (res.status === "success") setReports(res.data);
+      } catch (err) {
+        console.error("❌ Lỗi khi lấy báo cáo:", err);
+      }
+    })();
   }, []);
 
+  // 2. Sort
+  const sortData = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+    const sorted = [...reports].sort((a, b) => {
+      if (a[key] < b[key]) return direction === "asc" ? -1 : 1;
+      if (a[key] > b[key]) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+    setReports(sorted);
+  };
+
+ // 3. Mở / đóng modal
   const openModal = (type, item = null) => {
     setModalType(type);
     setCurrentItem(item);
-    setFormData(item || {});
+    if (type === "edit" && item) {
+      setFormData({
+        LoaiBaoCao: item.LoaiBaoCao,
+        TuNgay: item.TuNgay,
+        DenNgay: item.DenNgay,
+        MoTa: item.MoTa,
+      });
+    } else {
+      setFormData({
+        LoaiBaoCao: "",
+        TuNgay:      "",
+        DenNgay:     "",
+        MoTa:        "",
+      });
+    }
+    setError("");
     setShowModal(true);
-    setError('');
   };
-
   const closeModal = () => {
     setShowModal(false);
-    setFormData({});
-    setCurrentItem(null);
-    setError('');
+    setError("");
   };
 
-  const openSearchModal = () => setShowSearchModal(true);
-  const openFilterModal = () => setShowFilterModal(true);
-  const closeSearchModal = () => setShowSearchModal(false);
-  const closeFilterModal = () => setShowFilterModal(false);
-
+  // 4. Xử lý thay đổi input
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((f) => ({ ...f, [name]: value }));
   };
 
-  const handleSearchInputChange = (e) => {
-    const { name, value } = e.target;
-    setSearchFormData({ ...searchFormData, [name]: value });
-  };
 
-  const handleFilterInputChange = (e) => {
-    const { name, value } = e.target;
-    setFilterFormData({ ...filterFormData, [name]: value });
-  };
+// 5. Validate
+const validate = () => {
+  // Bắt buộc chọn loại, từ ngày, đến ngày
+  if (!formData.LoaiBaoCao || !formData.TuNgay || !formData.DenNgay) {
+    setError("Vui lòng chọn loại và khoảng thời gian báo cáo.");
+    return false;
+  }
+  return true;
+};
 
-  const sortData = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+ // 6. Submit (add / edit)
+  const handleSubmit = async (formData) => {
+    console.log("📤 Dữ liệu gửi đi:", formData);
+    const { LoaiBaoCao, TuNgay, DenNgay, MoTa } = formData;
+    // ✅ Kiểm tra form trước
+    if (!LoaiBaoCao || !TuNgay || !DenNgay) {
+      alert("⚠️ Vui lòng nhập đầy đủ thông tin báo cáo.");
+      return;
     }
-    setSortConfig({ key, direction });
-    const sortedData = [...reports].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setReports(sortedData);
+    
+    const payload = {
+      LoaiBaoCao,
+      TuNgay,
+      DenNgay,
+      MoTa,
+      NguoiTao: 1,  // hoặc userID hiện tại nếu có login
+    };
+
+    try {
+      const res =
+        modalType === "add"
+          ? await themBaoCao(formData)
+          : await suaBaoCao(currentItem.MaBC, formData);
+
+      if (res.status === "success") {
+        const reload = await layDanhSachBaoCao();
+        if (reload.status === "success") setReports(reload.data);
+        closeModal();
+      } else {
+        alert("❌ Thất bại: " + res.message);
+      }
+    } catch (err) {
+      alert("❌ Lỗi kết nối: " + err.message);
+    }
   };
 
-  const exportToCSV = () => {
-    const headers = Object.keys(reports[0]).join(',');
-    const rows = reports.map(item => Object.values(item).map(val => `"${val}"`).join(',')).join('\n');
-    const csv = `${headers}\n${rows}`;
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+  // The following block is a duplicate and should be removed to avoid syntax errors.
+
+  // 7. Xóa
+  const handleDelete = async (MaBC) => {
+    if (!window.confirm("Xác nhận xóa báo cáo này?")) return;
+    try {
+      const res = await xoaBaoCao(MaBC);
+      if (res.status === "success") {
+        setReports((prev) => prev.filter((r) => r.MaBC !== MaBC));
+      } else {
+        alert("❌ Xóa thất bại: " + res.message);
+      }
+    } catch {
+      alert("❌ Lỗi kết nối khi xóa.");
+    }
+  };
+
+  // 8a. Xuất CSV
+  const exportCSV = () => {
+    const headers = ["MaBC","LoaiBaoCao","TuNgay","DenNgay","MoTa","TaoNgay"];
+    const rows = reports.map(r =>
+      headers.map(h => `"${r[h]||""}"`).join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
     a.href = url;
-    a.download = 'reports.csv';
+    a.download = "reports.csv";
     a.click();
-    window.URL.revokeObjectURL(url);
   };
 
-  const validateForm = () => {
-    if (!formData.type || !formData.date || !formData.data) {
-      setError('Vui lòng điền đầy đủ các trường bắt buộc.');
-      return false;
-    }
-    return true;
-  };
+  // 8b. Xuất PDF
+ const exportPDF = () => {
+   if (!currentReport || !currentReport.MaBC) {
+     return alert("❌ Vui lòng chọn báo cáo để xuất PDF.");
+   }
+   inBaoCaoPDF(currentReport.MaBC)
+     .then((blob) => {
+       const url = URL.createObjectURL(blob);
+       window.open(url);
+     })
+     .catch((err) => alert("❌ Lỗi khi xuất PDF: " + err.message));
+ };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    const newItem = { ...formData, id: Date.now() };
-    if (modalType === 'add') {
-      setReports([...reports, newItem]);
-    } else if (modalType === 'edit' && currentItem) {
-      setReports(reports.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
-    }
-    closeModal();
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa mục này?')) {
-      setReports(reports.filter(item => item.id !== id));
-    }
-  };
-
-  const handleSearchSubmit = () => {
-    // Placeholder for backend API call
-    closeSearchModal();
-  };
-
-  const handleFilterSubmit = () => {
-    // Placeholder for backend API call
-    closeFilterModal();
-  };
-
+  const showReportModal  = showModal;
+  const modalMode        = modalType;
+  const currentReport    = currentItem;
+  const closeReportModal = closeModal;
+  const handleSaveReport = handleSubmit;
   return (
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title">Báo cáo & Thống kê</h2>
-        <div>
-          <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
-          <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-          <button onClick={() => openModal('add')} className="action-button">Thêm báo cáo</button>
-          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+        <div className="service-actions">
+          <button onClick={() => openModal("add")} className="action-button">
+            Thêm báo cáo
+          </button>
+          <button onClick={exportCSV} className="action-button">
+            <Download className="icon" /> Xuất CSV
+          </button>
+          <button onClick={exportPDF} className="action-button">
+            <Download className="icon" /> Xuất PDF
+          </button>
         </div>
       </div>
+
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('type')}>Loại <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('date')}>Ngày <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("MaBC")}>
+                ID <ArrowUpDown className="sort-icon" />
+              </th>
+              <th onClick={() => sortData("LoaiBaoCao")}>
+                Loại <ArrowUpDown className="sort-icon" />
+              </th>
+              <th onClick={() => sortData("TuNgay")}>
+                Từ ngày <ArrowUpDown className="sort-icon" />
+              </th>
+              <th onClick={() => sortData("DenNgay")}>
+                Đến ngày <ArrowUpDown className="sort-icon" />
+              </th>
               <th>Dữ liệu</th>
-              <th onClick={() => sortData('createdAt')}>Ngày tạo <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("TaoNgay")}>
+                Ngày tạo <ArrowUpDown className="sort-icon" />
+              </th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {reports.map((r) => (
-              <tr key={r.id}>
-                <td>{r.id}</td>
-                <td>{r.type}</td>
-                <td>{r.date}</td>
-                <td>{JSON.stringify(r.data)}</td>
-                <td>{r.createdAt}</td>
+              <tr key={r.MaBC}>
+                <td>{r.MaBC}</td>
+                <td>{r.LoaiBaoCao}</td>
+                <td>{r.TuNgay}</td> 
+                <td>{r.DenNgay}</td>
                 <td>
-                  <button onClick={() => openModal('edit', r)} className="action-icon edit">
+                  {r.LoaiBaoCao === "Doanh thu" ? (
+                    parseFloat(r.DuLieu).toLocaleString("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    })
+                  ) : r.LoaiBaoCao === "Tồn kho" && Array.isArray(r.DuLieu) ? (
+                    <ul style={{ paddingLeft: "1rem", margin: 0 }}>
+                      {r.DuLieu.map((item, index) => (
+                        <li key={index}>SP#{item.MaSP}: {item.SoLuongTon} sản phẩm</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    "Không rõ dữ liệu"
+                  )}
+                </td>
+                <td>{r.TaoNgay}</td>
+                <td>
+                  <button
+                    onClick={() => openModal("edit", r)}
+                    className="action-icon edit"
+                  >
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(r.id)} className="action-icon delete">
+                  <button
+                    onClick={() => handleDelete(r.MaBC)}
+                    className="action-icon delete"
+                  >
                     <Trash className="icon" />
                   </button>
                 </td>
               </tr>
             ))}
+            {reports.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ textAlign: "center" }}>
+                  Chưa có báo cáo nào.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       <GeneralModalForm
-        showModal={showModal}
-        closeModal={closeModal}
-        modalType={modalType}
-        currentSection="reports"
-        formData={formData}
-        handleInputChange={handleInputChange}
-        handleSubmit={handleSubmit}
-        error={error}
-      />
-      <SearchModal
-        showSearchModal={showSearchModal}
-        closeSearchModal={closeSearchModal}
-        currentSection="reports"
-        searchFormData={searchFormData}
-        handleSearchInputChange={handleSearchInputChange}
-        handleSearchSubmit={handleSearchSubmit}
-      />
-      <FilterModal
-        showFilterModal={showFilterModal}
-        closeFilterModal={closeFilterModal}
-        currentSection="reports"
-        filterFormData={filterFormData}
-        handleFilterInputChange={handleFilterInputChange}
-        handleFilterSubmit={handleFilterSubmit}
+        section="reports"
+        mode={modalMode}
+        initialData={currentReport} // hoặc {} với mode="add"
+        showModal={showReportModal}
+        onClose={closeReportModal}
+        onSubmit={handleSaveReport}
       />
     </div>
   );
-};
+}
 
-export default ReportDashboard;

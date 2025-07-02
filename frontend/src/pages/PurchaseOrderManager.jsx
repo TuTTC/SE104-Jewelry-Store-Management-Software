@@ -88,8 +88,8 @@ function PurchaseOrderManager() {
     if (order) {
       setFormData({
         code: order.MaPN,
-        supplier: order.TenNCC,
-        user: order.TenNguoiNhap,
+        supplier: order.MaNCC,
+        user: order.UserID,
         date: order.NgayNhap?.slice(0, 10),
         total: order.TongTien,
         status: statusMap[order.TrangThai] || "",
@@ -272,7 +272,7 @@ function PurchaseOrderManager() {
           <thead>
             <tr>
               <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('supplierId')}>Nhà cung cấp <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('supplierId')}>Nhà cung cấp <Filter className="sort-icon" /></th>
               <th onClick={() => sortData('userId')}>Người lập <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData('date')}>Ngày nhập <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData('total')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>

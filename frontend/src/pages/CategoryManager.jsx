@@ -13,6 +13,7 @@ const CategoryManager = () => {
   const [formData, setFormData] = useState({});
   const [error, setError] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [nameFilter, setNameFilter] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
@@ -23,7 +24,6 @@ const CategoryManager = () => {
   const fetchCategories = async () => {
     try {
       const res = await categoryApi.getAll();
-      console.log("DATA TRẢ VỀ TỪ API:", res);
       setCategories(res || []);
     } catch (error) {
       alert(error.message);
@@ -51,11 +51,11 @@ const CategoryManager = () => {
   };
 
   const validateForm = () => {
-    if (!formData.name || !formData.description || !formData.status) {
+    if (!formData.TenDM || !formData.MoTa) {
       setError('Vui lòng điền đầy đủ các trường bắt buộc.');
       return false;
     }
-    if (formData.name.length < 2) {
+    if (formData.TenDM.length < 2) {
       setError('Tên danh mục phải có ít nhất 2 ký tự.');
       return false;
     }
@@ -70,7 +70,7 @@ const CategoryManager = () => {
       if (modalType === 'add') {
         await categoryApi.add(formData);
       } else if (modalType === 'edit' && currentItem) {
-        await categoryApi.update(currentItem.id, formData);
+        await categoryApi.update(currentItem.MaDM, formData);
       }
       fetchCategories();
       closeModal();
@@ -96,21 +96,34 @@ const CategoryManager = () => {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
-    const sortedData = [...categories].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setCategories(sortedData);
+  };
+
+  const applyFilterAndSort = () => {
+    let filteredData = [...categories];
+
+    if (nameFilter.trim() !== '') {
+      filteredData = filteredData.filter(item =>
+        item.TenDM.toLowerCase().includes(nameFilter.toLowerCase())
+      );
+    }
+
+    if (sortConfig.key) {
+      filteredData.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filteredData;
   };
 
   const exportToCSV = () => {
-    const headers = ['ID,Tên,Mô tả,Trạng thái'];
+    const headers = ['ID,Tên,Mô tả'];
     const rows = categories.map(item => [
-      item.id,
-      `"${item.name}"`,
-      `"${item.description}"`,
-      `"${item.status}"`
+      item.MaDM,
+      `"${item.TenDM}"`,
+      `"${item.MoTa}"`
     ].join(','));
     const csv = `${headers}\n${rows.join('\n')}`;
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -126,40 +139,48 @@ const CategoryManager = () => {
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title">Quản lý danh mục</h2>
-        <div>
-          <button onClick={() => setShowSearchModal(true)} className="action-button"><Search className="icon" /> Tìm kiếm</button>
-          <button onClick={() => setShowFilterModal(true)} className="action-button"><Filter className="icon" /> Lọc</button>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Lọc theo tên danh mục..."
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            className="input-filter"
+          />
+          <button onClick={() => setShowSearchModal(true)} className="action-button">
+            <Search className="icon" /> Tìm kiếm
+          </button>
+          {/* <button onClick={() => setShowFilterModal(true)} className="action-button">
+            <Filter className="icon" /> Lọc
+          </button> */}
           <button onClick={() => openModal('add')} className="action-button">Thêm danh mục</button>
-          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+          <button onClick={exportToCSV} className="action-button">
+            <Download className="icon" /> Xuất CSV
+          </button>
         </div>
       </div>
+
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('name')}>Tên <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('description')}>Mô tả <ArrowUpDown className="sort-icon" /></th>
-              {/* <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th> */}
+              <th onClick={() => sortData('MaDM')}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('TenDM')}>Tên <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('MoTa')}>Mô tả <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {categories.map((category) => (
+            {applyFilterAndSort().map((category) => (
               <tr key={category.MaDM}>
                 <td>{category.MaDM}</td>
                 <td>{category.TenDM}</td>
                 <td>{category.MoTa}</td>
-                {/* <td>
-                  <span className={category.status === 'Kích hoạt' ? 'status-instock' : 'status-inactive'}>
-                    {category.status}
-                  </span>
-                </td> */}
                 <td>
                   <button onClick={() => openModal('edit', category)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(category.id)} className="action-icon delete">
+                  <button onClick={() => handleDelete(category.MaDM)} className="action-icon delete">
                     <Trash className="icon" />
                   </button>
                 </td>
@@ -196,6 +217,7 @@ const CategoryManager = () => {
 };
 
 export default CategoryManager;
+
 
 /*
 import React, { useState, useEffect } from "react";

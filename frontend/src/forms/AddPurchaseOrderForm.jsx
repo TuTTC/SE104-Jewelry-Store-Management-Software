@@ -167,51 +167,77 @@ function PurchaseOrderForm({
             ))}
           </select>
 
-          <h3>Danh sách sản phẩm</h3>
-          {productList.map((item, index) => (
-            <div key={index} className="product-row">
-              <select
-                value={item.MaSP}
-                onChange={(e) =>
-                  handleProductChange(index, "MaSP", e.target.value)
-                }
-                required
-              >
-                <option value="">Chọn sản phẩm</option>
-                {products.map((sp) => (
-                  <option key={sp.MaSP} value={sp.MaSP}>
-                    {sp.TenSP}
-                  </option>
-                ))}
-              </select>
+      <h3>Danh sách sản phẩm</h3>
+{productList.map((item, index) => (
+  <div key={index} className="product-row"> <br/>
+    
+    <div>
+      <strong>STT: {index + 1}</strong><br/>
+    </div>
 
-              <input
-                type="number"
-                placeholder="Số lượng"
-                value={item.SoLuong}
-                min={0}
-                onChange={(e) =>
-                  handleProductChange(index, "SoLuong", e.target.value)
-                }
-                required
-              />
+    <div>
+      <label>Sản phẩm</label><br />
+      <select
+        value={item.MaSP}
+        onChange={(e) =>
+          handleProductChange(index, "MaSP", e.target.value)
+        }
+        required
+      >
+        <option value="">Chọn sản phẩm</option>
+        {products.map((sp) => (
+          <option key={sp.MaSP} value={sp.MaSP}>
+            {sp.TenSP}
+          </option>
+        ))}
+      </select>
+    </div>
 
-              <input
-                type="number"
-                placeholder="Đơn giá nhập"
-                value={item.DonGiaNhap}
-                min={0}
-                onChange={(e) =>
-                  handleProductChange(index, "DonGiaNhap", e.target.value)
-                }
-                required
-              />
+    <div>
+      <label>Số lượng</label><br />
+      <input
+        type="number"
+        placeholder="Số lượng"
+        value={item.SoLuong}
+        min={0}
+        onChange={(e) =>
+          handleProductChange(index, "SoLuong", e.target.value)
+        }
+        required
+      />
+    </div>
 
-              <button type="button" onClick={() => removeProductRow(index)}>
-                <Trash size={16} />
-              </button>
-            </div>
-          ))}
+    <div>
+      <label>Đơn giá nhập</label><br />
+      <input
+        type="number"
+        placeholder="Đơn giá nhập"
+        value={item.DonGiaNhap}
+        min={0}
+        onChange={(e) =>
+          handleProductChange(index, "DonGiaNhap", e.target.value)
+        }
+        required
+      />
+    </div>
+
+    <button type="button" onClick={() => removeProductRow(index)}>
+      <Trash size={16} />
+    </button>
+  </div>
+))}
+
+          <p>
+            <strong>Tổng tiền toàn bộ:</strong>{" "}
+            {productList.reduce(
+              (sum, item) =>
+                sum +
+                (parseFloat(item.SoLuong) || 0) * (parseFloat(item.DonGiaNhap) || 0),
+              0
+            ).toLocaleString()}{" "}
+            VND
+          </p>
+
 
           <button type="button" onClick={addProductRow}>
             <Plus size={16} /> Thêm sản phẩm

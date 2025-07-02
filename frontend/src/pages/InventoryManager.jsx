@@ -197,7 +197,7 @@ const handleSubmit = async (e) => {
         <div>
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-          <button onClick={handleUpdateAll} className="action-button">Cập nhật tồn kho</button>
+          {/* <button onClick={handleUpdateAll} className="action-button">Cập nhật tồn kho</button> */}
           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
         </div>
       </div>

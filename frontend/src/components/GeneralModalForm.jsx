@@ -1,6 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 
+
 const GeneralModalForm = ({
   showModal,
   closeModal,
@@ -10,10 +11,12 @@ const GeneralModalForm = ({
   handleInputChange,
   handleSubmit,
   error,
-  modalMode
+  modalMode,
+  handleImageUpload,
+  categories
 }) => {
   if (!showModal) return null;
-
+  
   const renderSectionFields = () => {
     switch (currentSection) {
       case "products":
@@ -24,14 +27,37 @@ const GeneralModalForm = ({
             <input type="number" name="GiaBan" value={formData.GiaBan || ""} onChange={handleInputChange} placeholder="Giá bán (VND)" required
             />
 
-            <input type="number" name="MaDM" value={formData.MaDM || ""} onChange={handleInputChange} placeholder="Mã danh mục" required />
-
+            {/* <input type="text" name="TenDM" value={formData.TenDM || ""} onChange={handleInputChange} placeholder="Ten danh mục" required /> */}
+             <label>Danh mục</label>
+                <select
+                  name="MaDM"
+                  value={formData.MaDM || ""}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Chọn danh mục</option>
+                  {categories.map((dm) => (
+                    <option key={dm.MaDM} value={dm.MaDM}>
+                      {dm.TenDM}
+                    </option>
+                  ))}
+                </select>
             <input type="number" name="SoLuongTon" value={formData.SoLuongTon || ""} onChange={handleInputChange} placeholder="Số lượng tồn" required />
 
-            <input type="number" name="MaNCC" value={formData.MaNCC || ""} onChange={handleInputChange} placeholder="Mã nhà cung cấp" required/>
+            <input type="text" name="TenNCC" value={formData.TenNCC || ""} onChange={handleInputChange} placeholder="Tên nhà cung cấp" required/>
 
-            <input type="text" name="HinhAnh" value={formData.HinhAnh || ""} onChange={handleInputChange} placeholder="URL hình ảnh" required/>
+            {/* <input type="text" name="HinhAnh" value={formData.HinhAnh || ""} onChange={handleInputChange} placeholder="URL hình ảnh" required/> */}
+              {/* Upload ảnh */}
+            <input type="file" accept="image/*" onChange={handleImageUpload} />
 
+            {/* Hiển thị ảnh đã chọn nếu có */}
+            {formData.HinhAnh && (
+              <img
+                src={formData.HinhAnh}
+                alt="Ảnh sản phẩm"
+                style={{ width: "100px", marginTop: "10px" }}
+              />
+            )}
             <input type="text" name="MoTa" value={formData.MoTa || ""} onChange={handleInputChange} placeholder="Ghi chú"/>
           </>
 
@@ -163,11 +189,15 @@ const GeneralModalForm = ({
       case "parameter":
         return (
           <>
-            <input type="number" name="parameterId" value={formData.parameterId || ""} onChange={handleInputChange} placeholder="ID sản phẩm" required />
-            <input type="text" name="paraName" value={formData.paraName || ""} onChange={handleInputChange} placeholder="Tên tham số" required />
-            <input type="number" name="paraValue" value={formData.paraValue || ""} onChange={handleInputChange} placeholder="Giá trị" required />
-            <input type="text" name="paraDescribe" value={formData.paraDescribe || ""} onChange={handleInputChange} placeholder="Mô tả" required />
-           <input type="number" name="paraKH" value={formData.paraKH || ""} onChange={handleInputChange} placeholder="Kích hoạt" required />
+            {/* <input type="number" name="parameterId" value={formData.parameterId || ""} onChange={handleInputChange} placeholder="ID sản phẩm" required /> */}
+            <label>Tên tham số</label>
+            <input type="text" name="paraName" value={formData.TenThamSo || ""}  placeholder="Tên tham số" required disabled />
+            <label>Giá trị</label>
+            <input type="number" name="paraValue" value={formData.GiaTri || ""} onChange={handleInputChange} placeholder="Giá trị" required />
+            <label>Mô tả</label>
+            <input type="text" name="paraDescribe" value={formData.MoTa || ""}  placeholder="Mô tả" required disabled />
+            <label>Kích hoạt</label>
+            <input type="text" name="paraKH" value={formData.KichHoat ? "Có": "Không" || ""} onChange={handleInputChange} placeholder="Kích hoạt" required />
 
           </>
         )

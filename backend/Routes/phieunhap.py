@@ -10,7 +10,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-
+from Routes.product import cap_nhat_gia_ban_cho_san_pham
 
 pdfmetrics.registerFont(TTFont('DejaVu', '../fonts/times.ttf'))
 
@@ -164,7 +164,7 @@ def create_phieu_nhap():
                 ThanhTien=so_luong * don_gia_nhap
             )
             db.session.add(ct)
-
+        cap_nhat_gia_ban_cho_san_pham(ma_sp)
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Tạo phiếu nhập thành công', 'MaPN': phieu.MaPN}), 201
 
