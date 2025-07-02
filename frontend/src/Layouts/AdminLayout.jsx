@@ -1,49 +1,60 @@
-/*// src/layouts/AdminLayout.jsx
-import React from "react";
-import { Outlet } from "react-router-dom";
-import Sidebar from "../pages/Sidebar";
+import React, { useState, useEffect } from 'react';
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Gem,
+  Users,
+  UserCircle,
+  LogOut,
+  ChevronDown,
+} from 'lucide-react';
+import { useNavigate, Outlet, useLocation, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const AdminLayout = () => {
-  return (
-    <div className="app-container">
-      <Sidebar />
-      <div className="main-content">
-        <Outlet />
-      </div>
-    </div>
-  );
-};
-
-export default AdminLayout;
-*/
-import React from 'react';
-import { LayoutDashboard, ShoppingCart, Gem, Users, UserCircle, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Outlet } from 'react-router-dom'; // Import Outlet
-
-const AdminLayout = ({ children }) => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const location = useLocation();
+  const { logout, user } = useAuth() || { user: null, logout: () => {} };
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Điều hướng mặc định khi vào đúng /admin (và chỉ khi đó)
+  useEffect(() => {
+    if (user && location.pathname === '/admin') {
+      navigate('/admin/dashboard');
+    }
+  }, [user, location.pathname, navigate]);
 
   const menuItems = [
-    { label: "Dashboard", icon: LayoutDashboard, key: "dashboard" },
-    { label: "Quản lý tài khoản", icon: UserCircle, key: "accounts" },
-    { label: "Quản lý sản phẩm", icon: Gem, key: "products" },
-    { label: "Quản lý danh mục", icon: Gem, key: "categories" },
-    { label: "Quản lý đơn hàng", icon: ShoppingCart, key: "orders" },
-    { label: "Quản lý dịch vụ", icon: UserCircle, key: "services" },
-    { label: "Quản lý nhập hàng", icon: ShoppingCart, key: "purchaseOrders" },
-    { label: "Chi tiết phiếu nhập", icon: ShoppingCart, key: "purchaseOrderDetails" },
-    { label: "Chi tiết phiếu dịch vụ", icon: UserCircle, key: "serviceDetails" },
-    { label: "Quản lý nhà cung cấp", icon: Users, key: "suppliers" },
-    { label: "Quản lý tồn kho", icon: Gem, key: "inventory" },
-    { label: "Báo cáo & Thống kê", icon: LayoutDashboard, key: "reports" },
+    { label: 'Dashboard', icon: LayoutDashboard, key: 'dashboard' },
+    { label: 'Quản lý tài khoản', icon: UserCircle, key: 'accounts' },
+    { label: 'Quản lý sản phẩm', icon: Gem, key: 'products' },
+    { label: 'Quản lý danh mục', icon: Gem, key: 'categories' },
+    { label: 'Quản lý đơn hàng', icon: ShoppingCart, key: 'orders' },
+    { label: 'Quản lý dịch vụ', icon: UserCircle, key: 'services' },
+    { label: 'Quản lý nhập hàng', icon: ShoppingCart, key: 'purchaseOrders' },
+    { label: 'Chi tiết phiếu nhập', icon: ShoppingCart, key: 'purchaseOrderDetails' },
+    { label: 'Chi tiết phiếu dịch vụ', icon: UserCircle, key: 'serviceDetails' },
+    { label: 'Quản lý nhà cung cấp', icon: Users, key: 'suppliers' },
+    { label: 'Quản lý tồn kho', icon: Gem, key: 'inventory' },
+    { label: 'Báo cáo & Thống kê', icon: LayoutDashboard, key: 'reports' },
   ];
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    try {
+      logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Đăng xuất thất bại:', error);
+    }
+  };
+
+  const handleProfileClick = () => {
+    navigate('/admin/profile');
+    setIsDropdownOpen(false);
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen((prev) => !prev);
   };
 
   return (
@@ -58,26 +69,67 @@ const AdminLayout = ({ children }) => {
             <button
               key={key}
               onClick={() => navigate(`/admin/${key}`)}
-              className={window.location.pathname.includes(key) ? "sidebar-button active" : "sidebar-button"}
+              className={
+                location.pathname.includes(key)
+                  ? 'sidebar-button active'
+                  : 'sidebar-button'
+              }
             >
               <Icon className="icon" />
               <span>{label}</span>
             </button>
           ))}
-          <button onClick={handleLogout} className="sidebar-button">
-            <LogOut className="icon" />
-            <span>Đăng xuất</span>
-          </button>
+
+          {/* Dropdown tài khoản người dùng */}
+          <div className="account-dropdown-wrapper mt-auto relative">
+            <button
+              onClick={toggleDropdown}
+              className="sidebar-button flex items-center justify-between w-full"
+            >
+              <div className="flex items-center gap-2">
+                <UserCircle className="icon" />
+                <span>{user?.name || 'Tài khoản'}</span>
+              </div>
+              <ChevronDown className="icon" />
+            </button>
+
+            {isDropdownOpen && (
+              <div
+                className="dropdown-menu"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  width: '224px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  zIndex: 1000,
+                  padding: '4px 0',
+                }}
+              >
+                <button onClick={handleProfileClick} className="dropdown-item w-full text-left">
+                  Thông tin cá nhân
+                </button>
+                <button onClick={handleLogout} className="dropdown-item logout w-full text-left">
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
         </nav>
       </aside>
+
       <main className="main-content">
         <div className="header">
           <h1 className="main-title">
-            {menuItems.find(item => window.location.pathname.includes(item.key))?.label || "Dashboard"}
+            {menuItems.find((item) =>
+              location.pathname.includes(item.key)
+            )?.label || 'Dashboard'}
           </h1>
           {user && <p>Chào, {user.name} ({user.role})</p>}
         </div>
-        <Outlet /> {/* Thêm Outlet để hiển thị nội dung trang con */}
+        <Outlet />
       </main>
     </div>
   );

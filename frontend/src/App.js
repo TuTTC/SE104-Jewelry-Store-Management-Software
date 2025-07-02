@@ -21,6 +21,7 @@ import ReportDashboard from './pages/ReportDashboard';
 import PurchaseOrderDetails from './pages/PurchaseOrderDetails';
 import ServiceDetails from './pages/ServiceDetails';
 import IntroPage from './pages/IntroPage';
+import Profile from './pages/Profile';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/login" element={<Auth />} />
           <Route path="/admin" element={<PrivateRoute />}>
             <Route element={<AdminLayout />}>
+              <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="accounts" element={<AccountManager />} />
               <Route path="products" element={<ProductManager />} />
@@ -43,6 +45,7 @@ function App() {
               <Route path="suppliers" element={<SupplierManager />} />
               <Route path="inventory" element={<InventoryManager />} />
               <Route path="reports" element={<ReportDashboard />} />
+              <Route path="profile" element={<Profile />} />
             </Route>
           </Route>
         </Routes>
