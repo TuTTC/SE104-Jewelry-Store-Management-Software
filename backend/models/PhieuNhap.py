@@ -13,7 +13,7 @@ class PHIEUNHAP(db.Model):
 
     MaPN = Column(Integer, primary_key=True, autoincrement=True)
     MaNCC = Column(Integer, ForeignKey("NHACUNGCAP.MaNCC"), nullable=False)
-    UserID = Column(Integer, ForeignKey("NGUOIDUNG.UserID"), nullable=False)
+    UserID = Column(Integer, ForeignKey("NGUOIDUNG.UserID", ondelete="CASCADE"), nullable=False)
     NgayNhap = Column(DateTime, server_default=func.now())
     TongTien = Column(DECIMAL(18, 2), default=0)
     TrangThai = Column(Enum(TrangThaiPhieuNhapEnum), nullable=False)
@@ -27,9 +27,12 @@ class PHIEUNHAP(db.Model):
         return {
             "MaPN": self.MaPN,
             "MaNCC": self.MaNCC,
+            "TenNCC": self.nhacungcap.TenNCC if self.nhacungcap else "",
             "UserID": self.UserID,
+            "TenNguoiNhap": self.nguoitao.HoTen if self.nguoitao else "",
             "NgayNhap": self.NgayNhap.strftime("%Y-%m-%d") if self.NgayNhap else None,
-            "TongTien": self.TongTien,
-            "TrangThai": self.TrangThai.value if self.TrangThai else None,  # Convert Enum to string
+            "TongTien": float(self.TongTien),
+            "TrangThai": self.TrangThai.value if self.TrangThai else None,
             "GhiChu": self.GhiChu
         }
+

@@ -134,27 +134,24 @@ def delete_tonkho(id):
 @tonkho_bp.route("/capnhat_all", methods=["PUT"])
 def dong_bo_tonkho_tu_sanpham():
     """
-    Lấy toàn bộ dữ liệu từ bảng SANPHAM,
-    Đồng bộ sang bảng TONKHO (thêm mới hoặc cập nhật)
+    Đồng bộ số lượng tồn từ bảng SANPHAM sang bảng TONKHO
     """
-    danh_sach_sp = SANPHAM.query.all()
+    danh_sach_sanpham = SANPHAM.query.all()
 
-    for sp in danh_sach_sp:
-        masp = sp.MaSP
-        soluongton = sp.SoLuongTon
-
-        tonkho = TONKHO.query.filter_by(MaSP=masp).first()
+    for sp in danh_sach_sanpham:
+        tonkho = TONKHO.query.filter_by(MaSP=sp.MaSP).first()
+        
         if tonkho:
-            tonkho.SoLuongTon = soluongton
-            tonkho.NgayCapNhat = datetime.utcnow()
+            # Nếu đã có tồn kho -> cập nhật lại số lượng tồn
+            tonkho.SoLuongTon = sp.SoLuongTon
         else:
-            tonkho = TONKHO(
-                MaSP=masp,
-                SoLuongTon=soluongton,
-                NgayCapNhat=datetime.utcnow()
+            # Nếu chưa có tồn kho -> thêm mới
+            new_tonkho = TONKHO(
+                MaSP=sp.MaSP,
+                SoLuongTon=sp.SoLuongTon
             )
-            db.session.add(tonkho)
+            db.session.add(new_tonkho)
 
     db.session.commit()
 
-    return jsonify({"message": "Đồng bộ tồn kho thành công từ bảng sản phẩm"}), 200
+    return jsonify({"message": "Đồng bộ tồn kho từ sản phẩm thành công!"}), 200

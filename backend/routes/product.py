@@ -1,25 +1,41 @@
 from flask import Blueprint, request, jsonify
 from database import db
 from models.SanPham import SANPHAM
+from models.TonKho import TONKHO
+from flask_jwt_extended import jwt_required
+from seeds.update_giaban_sp import cap_nhat_gia_ban_cho_toan_bo_san_pham  # Giả sử hàm đó để trong services/product_service.py, điều chỉnh path nếu cần
+from models.ThamSo import THAMSO
+
+from models.ChiTietPhieuNhap import CHITIETPHIEUNHAP
+from models.DanhMucSanPham import DANHMUC
+from sqlalchemy import desc
+from decimal import Decimal
 
 product_bp = Blueprint('product_bp', __name__)
 
 
 # Lấy toàn bộ sản phẩm
 @product_bp.route('/', methods=['GET'])
+# @jwt_required()
+# @permission_required("products:view")
 def get_products():
     try:
         products = SANPHAM.query.all()
-        result = [{
-            'MaSP': p.MaSP,
-            'TenSP': p.TenSP,
-            'MaDM': p.MaDM,
-            'MaNCC': p.MaNCC,
-            'GiaBan': float(p.GiaBan),
-            'SoLuongTon': p.SoLuongTon,
-            'MoTa': p.MoTa,
-            'HinhAnh': p.HinhAnh
-        } for p in products]
+        result = []
+
+        for p in products:
+            result.append({
+                'MaSP': p.MaSP,
+                'TenSP': p.TenSP,
+                'MaDM': p.MaDM,
+                'TenDM': p.danhmuc.TenDM if p.danhmuc else None,
+                'MaNCC': p.MaNCC,
+                'TenNCC': p.nhacungcap.TenNCC if p.nhacungcap else None,
+                'GiaBan': float(p.GiaBan),
+                'SoLuongTon': p.SoLuongTon,
+                'MoTa': p.MoTa,
+                'HinhAnh': p.HinhAnh
+            })
 
         return jsonify({'status': 'success', 'data': result}), 200
     except Exception as e:
@@ -45,6 +61,8 @@ def get_products_by_category(ma_dm):
 
 # Thêm sản phẩm mới
 @product_bp.route('/', methods=['POST'])
+# @jwt_required()
+# @permission_required("products:add")
 def add_product():
     data = request.get_json()
     try:
@@ -88,6 +106,8 @@ def get_product(product_id):
 
 # Cập nhật sản phẩm
 @product_bp.route('/<int:product_id>', methods=['PUT'])
+# @jwt_required()
+# @permission_required("products:edit")
 def update_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:
@@ -112,6 +132,8 @@ def update_product(product_id):
 
 # Xóa sản phẩm
 @product_bp.route('/<int:product_id>', methods=['DELETE'])
+# @jwt_required()
+# @permission_required("products:delete")
 def delete_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:
@@ -123,3 +145,94 @@ def delete_product(product_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 400
+
+# API cập nhật số lượng tồn trong sản phẩm và đồng bộ sang bảng tồn kho
+@product_bp.route("/<int:masp>/capnhat_tonkho", methods=["PUT"])
+def capnhat_tonkho_theo_sanpham(masp):
+    """
+    Cập nhật SoLuongTon cho bảng SANPHAM và tự động đồng bộ qua bảng TONKHO
+    """
+    sp = SANPHAM.query.get_or_404(masp)
+    data = request.get_json()
+
+    if "SoLuongTon" not in data:
+        return jsonify({"error": "Thiếu thông tin SoLuongTon"}), 400
+
+    try:
+        soluongton_moi = int(data["SoLuongTon"])
+        if soluongton_moi < 0:
+            return jsonify({"error": "Số lượng tồn phải >= 0"}), 400
+    except ValueError:
+        return jsonify({"error": "Số lượng tồn phải là số nguyên"}), 400
+
+    # Cập nhật bảng SANPHAM
+    sp.SoLuongTon = soluongton_moi
+    db.session.commit()
+
+    # Kiểm tra bảng TONKHO đã có chưa
+    tonkho = TONKHO.query.filter_by(MaSP=masp).first()
+    if tonkho:
+        tonkho.SoLuongTon = soluongton_moi
+    else:
+        tonkho = TONKHO(MaSP=masp, SoLuongTon=soluongton_moi)
+        db.session.add(tonkho)
+
+    db.session.commit()
+
+    return jsonify({"message": "Cập nhật tồn kho thành công"}), 200
+
+
+@product_bp.route("/capnhat_giaban", methods=["PUT"])
+# @jwt_required()
+# @permission_required("products:edit")
+def capnhat_gia_ban_toan_bo():
+    """
+    API cập nhật giá bán toàn bộ sản phẩm dựa trên tham số lợi nhuận và lần nhập gần nhất
+    """
+   
+    try:
+        san_pham_list = SANPHAM.query.all()
+        danh_muc_map = {dm.MaDM: dm.TenDM for dm in DANHMUC.query.all()}
+
+        # Ánh xạ Tên Danh Mục sang Tên Tham Số lợi nhuận
+        tham_so_map = {
+            "Vòng tay": "LoiNhuan_VongTay",
+            "Nhẫn": "LoiNhuan_Nhan",
+            "Vòng cổ": "LoiNhuan_DayChuyen",
+            "Bông tai": "LoiNhuan_KhuyenTai",
+            "Đá quý": "LoiNhuan_DaQuy",
+        }
+
+        for sp in san_pham_list:
+            ten_dm = danh_muc_map.get(sp.MaDM)
+            if not ten_dm:
+                continue  # Bỏ qua nếu không xác định được danh mục
+
+            ten_tham_so = tham_so_map.get(ten_dm)
+            if not ten_tham_so:
+                continue  # Bỏ qua nếu thiếu ánh xạ tham số
+
+            tham_so = THAMSO.query.filter_by(TenThamSo=ten_tham_so).first()
+            if not tham_so:
+                continue  # Bỏ qua nếu không tìm thấy tham số
+
+            # Lấy lần nhập gần nhất của sản phẩm
+            ct_pn = CHITIETPHIEUNHAP.query.filter_by(MaSP=sp.MaSP).order_by(desc(CHITIETPHIEUNHAP.MaPN)).first()
+            if not ct_pn:
+                continue  # Bỏ qua nếu chưa từng nhập
+
+            try:
+                phan_tram_loi_nhuan = Decimal(tham_so.GiaTri)
+            except:
+                continue  # Bỏ qua nếu giá trị tham số không hợp lệ
+
+            gia_ban = ct_pn.DonGiaNhap + (ct_pn.DonGiaNhap * phan_tram_loi_nhuan / Decimal(100))
+            sp.GiaBan = gia_ban.quantize(Decimal('1'))  # Làm tròn tới số nguyên nếu cần
+
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Cập nhật giá bán cho toàn bộ sản phẩm thành công!"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+

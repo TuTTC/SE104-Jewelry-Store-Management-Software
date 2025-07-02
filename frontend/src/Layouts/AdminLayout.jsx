@@ -18,8 +18,10 @@
 
 import React from 'react';
 import { LayoutDashboard, ShoppingCart, Gem, Users, UserCircle, LogOut } from 'lucide-react';
+import { LuCircleUser } from "react-icons/lu";
 import { useNavigate } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
+import "../App.css"
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -73,11 +75,20 @@ const AdminLayout = () => {
         </nav>
       </aside>
       <main className="main-content">
-        <div className="header">
+        <div className="header flex items-center px-4 py-2 border-b bg-white">
           <h1 className="main-title">
             {menuItems.find(item => window.location.pathname.includes(item.key))?.label || "Dashboard"}
           </h1>
           {user?.TenDangNhap && <p>Chào, {user.TenDangNhap}</p>}
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginLeft: "auto" }} className="flex items-center gap-4 ml-auto">
+            <div className="flex items-center gap-2">
+              <LuCircleUser className="icon" />
+              <span>{user?.TenDangNhap}</span>
+            </div>
+            {/* <button onClick={handleLogout} className="logout-button flex items-center gap-1">
+              <LogOut className="icon" />
+            </button> */}
+          </div>
         </div>
         <Outlet />
       </main>

@@ -45,3 +45,16 @@ export const getProductsByCategory = async (maDM) => {
   if (!res.ok) throw new Error("Lỗi khi lấy sản phẩm theo danh mục");
   return res.json();
 };
+
+export const updateAllProductPrices = async () => {
+  const res = await fetch(`${BASE_URL}/capnhat_giaban`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      // Authorization: `Bearer ${yourAccessToken}` // Bỏ comment nếu bạn bật JWT
+    },
+  });
+  
+  if (!res.ok) throw new Error("Lỗi khi cập nhật giá bán toàn bộ sản phẩm");
+  return res.json();
+};

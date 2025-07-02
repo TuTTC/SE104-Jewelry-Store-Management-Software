@@ -30,8 +30,8 @@ def seed_sanpham():
             {"TenSP": "Bông tai bạc đính đá", "MaDM": 4, "MoTa": "Bông tai bạc sang trọng", "HinhAnh": "https://example.com/bongtai2.jpg"},
             
             # Đá quý
-            {"TenSP": "Đá quý Ruby thiên nhiên", "MaDM": 6, "MoTa": "Đá Ruby tự nhiên chất lượng cao", "HinhAnh": "https://example.com/daquy1.jpg"},
-            {"TenSP": "Đá Sapphire xanh biển", "MaDM": 6, "MoTa": "Đá Sapphire xanh cao cấp", "HinhAnh": "https://example.com/daquy2.jpg"},
+            {"TenSP": "Đá quý Ruby thiên nhiên", "MaDM": 5, "MoTa": "Đá Ruby tự nhiên chất lượng cao", "HinhAnh": "https://example.com/daquy1.jpg"},
+            {"TenSP": "Đá Sapphire xanh biển", "MaDM": 5, "MoTa": "Đá Sapphire xanh cao cấp", "HinhAnh": "https://example.com/daquy2.jpg"},
         ]
 
         if not SANPHAM.query.first():

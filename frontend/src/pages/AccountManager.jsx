@@ -242,8 +242,12 @@ function AccountManager() {
   const [selectedTab, setSelectedTab] = useState("userlists");
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [permissionAccount, setPermissionAccount] = useState(null);
-  const [allPermissions, setAllPermissions] = useState([]);
-  const [userPermissions, setUserPermissions] = useState([]);
+  
+  const [allPermissions, setAllPermissions] = useState([]);  // Toàn bộ quyền hệ thống
+  const [rolePermissions, setRolePermissions] = useState([]); // Quyền mặc định theo vai trò
+  const [userGrantedPermissions, setUserGrantedPermissions] = useState([]); // Quyền riêng được cấp thêm
+  const [userDeniedPermissions, setUserDeniedPermissions] = useState([]);  // Quyền riêng bị từ chối
+
 
   const [formData, setFormData] = useState({});
   const [error, setError] = useState("");
@@ -268,22 +272,36 @@ function AccountManager() {
   const openModal = (mode, data = null) => {
     setModalMode(mode);
     setSelectedAccount(data);
+
     if (mode === "edit" && data) {
       setFormData({
-        name: data.TenDangNhap || "",
-        accountCode: data.MaTaiKhoan || "",
+        username: data.TenDangNhap || "",
+        password: "", 
         email: data.Email || "",
-        phone: data.DienThoai || "",
+        fullName: data.HoTen || "",
+        phone: data.SoDienThoai || "",
         address: data.DiaChi || "",
-        position: data.ChucVu || "",
+        createdAt: data.TaoNgay ? data.TaoNgay.slice(0, 10) : "",
         role: data.VaiTro || "",
       });
+
     } else {
-      setFormData({});
+      setFormData({
+        username: "",
+        password: "",
+        email: "",
+        fullName: "",
+        phone: "",
+        address: "",
+        createdAt: "",
+        role: "",
+      });
     }
+
     setError("");
     setIsModalOpen(true);
   };
+
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -300,24 +318,31 @@ function AccountManager() {
     }));
   };
 
-  const submitForm = async () => {
-    if (!formData.name || !formData.email || !formData.role) {
-      setError("Vui lòng điền đầy đủ các trường bắt buộc!");
-      return;
+const submitForm = async (e) => {
+  e.preventDefault(); // Ngăn chặn reload trang khi bấm Lưu
+
+  // Kiểm tra bắt buộc các trường
+  if (!formData.username || !formData.email || !formData.role || (modalMode === "add" && !formData.password)) {
+    setError("Vui lòng điền đầy đủ các trường bắt buộc!");
+    return;
+  }
+
+  try {
+    if (modalMode === "add") {
+      await userApi.createUser(formData);
+    } else if (modalMode === "edit" && selectedAccount) {
+      await userApi.updateUser(selectedAccount.UserID, formData);
     }
-    try {
-      if (modalMode === "add") {
-        await userApi.createUser(formData);
-      } else if (modalMode === "edit" && selectedAccount) {
-        await userApi.updateUser(selectedAccount.UserID, formData);
-      }
-      fetchAccounts();
-      closeModal();
-    } catch (err) {
-      console.error(err);
-      setError("Đã xảy ra lỗi khi lưu dữ liệu.");
-    }
-  };
+
+    fetchAccounts();
+    closeModal();
+  } catch (err) {
+    console.error(err);
+    setError("Đã xảy ra lỗi khi lưu dữ liệu.");
+  }
+};
+
+
 
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc muốn xóa tài khoản này?")) {
@@ -331,32 +356,41 @@ function AccountManager() {
   };
 
   // Modal phân quyền
-  const openPermissionModal = async (account) => {
+ const openPermissionModal = async (account) => {
   try {
     console.log("Mở modal phân quyền cho:", account);
 
-    const res = await permissionApi.getUserPermissions(account.UserID);
-
-    console.log("Kết quả API getUserPermissions:", res);
+    const [detailRes, roleRes] = await Promise.all([
+      permissionApi.getUserPermissionsDetail(account.UserID),
+      permissionApi.getRolePermissions(account.UserID),
+    ]);
 
     setPermissionAccount(account);
-    setAllPermissions(res.TatCaQuyen);  // Mảng tất cả quyền
-    setUserPermissions(res.QuyenRiengIDs); // Danh sách ID quyền riêng
+    setAllPermissions(detailRes.AllPermissions);
+    setUserGrantedPermissions(detailRes.GrantedPermissionIDs);
+    setUserDeniedPermissions(detailRes.DeniedPermissionIDs);
+    setRolePermissions(roleRes.RolePermissionIDs);
     setIsPermissionModalOpen(true);
 
-    console.log("Danh sách tất cả quyền:", res.data.TatCaQuyen);
-    console.log("Danh sách quyền riêng:", res.data.QuyenRiengIDs);
+    console.log("Tất cả quyền:", detailRes.AllPermissions);
+    console.log("Quyền riêng được cấp:", detailRes.GrantedPermissionIDs);
+    console.log("Quyền riêng bị từ chối:", detailRes.DeniedPermissionIDs);
+    console.log("Quyền mặc định theo vai trò:", roleRes.RolePermissionIDs);
   } catch (err) {
-    console.error("Lỗi khi lấy quyền người dùng:", err);
+    console.error("Lỗi khi lấy dữ liệu phân quyền:", err);
   }
 };
 
+
   const closePermissionModal = () => {
-    setPermissionAccount(null);
-    setAllPermissions([]);
-    setUserPermissions([]);
-    setIsPermissionModalOpen(false);
-  };
+  setPermissionAccount(null);
+  setAllPermissions([]);
+  setUserGrantedPermissions([]);
+  setUserDeniedPermissions([]);
+  setRolePermissions([]);
+  setIsPermissionModalOpen(false);
+};
+
 
   const handleUpdatePermissions = async (selectedPermissionIDs) => {
     try {
@@ -366,11 +400,42 @@ function AccountManager() {
       console.error(error);
     }
   };
+  const handleOpenPermissionModal = async (account) => {
+    try {
+      setPermissionAccount(account);
+      setIsPermissionModalOpen(true);
+
+      // Gọi API song song
+      const [detailRes, roleRes] = await Promise.all([
+        permissionApi.getUserPermissionsDetail(account.UserID),
+        permissionApi.getRolePermissions(account.UserID),
+      ]);
+
+      setAllPermissions(detailRes.AllPermissions);
+      setUserGrantedPermissions(detailRes.GrantedPermissionIDs);
+      setUserDeniedPermissions(detailRes.DeniedPermissionIDs);
+      setRolePermissions(roleRes.RolePermissionIDs);
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi lấy dữ liệu phân quyền.");
+    }
+  };
+    const handleSavePermissions = async ({ granted, denied }) => {
+    try {
+      await permissionApi.updateUserPermissions(permissionAccount.UserID, { granted, denied });
+      alert("Cập nhật quyền thành công!");
+      setIsPermissionModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi cập nhật quyền.");
+    }
+  };
+
 
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý tài khoản</h2>
+        <h2 className="table-title"></h2>
         <button onClick={() => openModal("add")} className="action-button">
           Thêm tài khoản
         </button>
@@ -482,6 +547,7 @@ function AccountManager() {
               handleInputChange={handleInputChange}
               handleSubmit={submitForm}
               error={error}
+              modalMode={modalMode}
             />
             <div className="modal-actions">
               <button onClick={submitForm} className="action-button">
@@ -497,13 +563,17 @@ function AccountManager() {
       )}
 
       <PermissionModal
-      isOpen={isPermissionModalOpen}
-      onClose={closePermissionModal}
-      permissionAccount={permissionAccount}
-      allPermissions={allPermissions}
-      userPermissions={userPermissions}
-      onSubmit={handleUpdatePermissions}
-    />
+        isOpen={isPermissionModalOpen}
+        onClose={() => setIsPermissionModalOpen(false)}
+        permissionAccount={permissionAccount}
+        allPermissions={allPermissions}
+        rolePermissionIDs={rolePermissions}
+        grantedPermissionIDs={userGrantedPermissions}
+        deniedPermissionIDs={userDeniedPermissions}
+        onSubmit={handleSavePermissions}
+      />
+
+
 
     </div>
   );

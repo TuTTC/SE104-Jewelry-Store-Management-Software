@@ -2,7 +2,7 @@ from models.VaiTro import VAITRO
 from database import db
 
 def seed_roles():
-    roles_to_add = ["Khách hàng", "Admin", "Nhân viên", "Quản lý kho"]  # Thêm vai trò mới vào đây
+    roles_to_add = ["Khách hàng", "Admin", "Nhân viên"]  # Thêm vai trò mới vào đây
 
     for role_name in roles_to_add:
         existing_role = VAITRO.query.filter_by(TenVaiTro=role_name).first()

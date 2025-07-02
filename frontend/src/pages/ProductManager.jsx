@@ -151,7 +151,15 @@ const fetchProducts = () => {
     fetchProducts();
     closeFilterModal();
   };
-
+  const handleUpdateAllPrices = async () => {
+  try {
+    const result = await productApi.updateAllProductPrices();
+    alert(result.message);
+    fetchProducts();  // Hàm load lại danh sách sản phẩm nếu cần
+  } catch (err) {
+    alert(err.message);
+  }
+};
   return (
     <div className="table-card">
       <div className="table-header">
@@ -160,6 +168,7 @@ const fetchProducts = () => {
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
           <button onClick={() => openModal("add")} className="action-button">Thêm sản phẩm</button>
+           <button onClick={() => handleUpdateAllPrices} className="action-button">Cập nhật giá</button>
           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
         </div>
       </div>
@@ -186,9 +195,9 @@ const fetchProducts = () => {
                 <td>{p.MaSP}</td>
                 <td>{p.TenSP}</td>
                 <td>{p.GiaBan.toLocaleString()} VND</td>
-                <td>{p.MaDM}</td>
+                <td>{p.TenDM}</td>
                 <td>{p.SoLuongTon}</td>
-                <td>{p.MaNCC}</td>
+                <td>{p.TenNCC}</td>
                 <td>
                   <img src={p.HinhAnh} alt={p.TenSP} className="product-image" />
                 </td>

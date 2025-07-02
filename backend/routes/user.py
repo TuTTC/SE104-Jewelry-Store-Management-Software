@@ -7,7 +7,7 @@ from models.VaiTro import VAITRO
 from database import db
 from werkzeug.security import generate_password_hash
 from utils.permissions_utils import get_user_permissions
-
+from sqlalchemy.exc import IntegrityError
 user_bp = Blueprint('user', __name__)
 
 # 1. Lấy thông tin cá nhân
@@ -54,10 +54,15 @@ def get_all_users():
             'TenDangNhap': user.TenDangNhap,
             'Email': user.Email,
             'VaiTro': user.vaitro.TenVaiTro if user.vaitro else None,
-            'TaoNgay': user.TaoNgay
+            'HoTen': user.HoTen,
+            'SoDienThoai': user.SoDienThoai,
+            'DiaChi': user.DiaChi,
+            'TaoNgay': user.TaoNgay.strftime("%Y-%m-%d %H:%M:%S") if user.TaoNgay else None
         }
         result.append(item)
+    
     return jsonify(result), 200
+
 
 
 # 4. Lấy thông tin chi tiết theo ID (kèm quyền)
@@ -131,3 +136,47 @@ def update_user_permissions(user_id):
     user.permissions = new_permissions
     db.session.commit()
     return jsonify({'message': 'Cập nhật quyền riêng thành công'}), 200
+
+@user_bp.route('/add', methods=['POST'])
+def create_user():
+    data = request.get_json()
+
+    ten_dang_nhap = data.get('username')
+    email = data.get('email')
+    mat_khau = data.get('password')
+    ho_ten = data.get('fullName')
+    so_dien_thoai = data.get('phone')
+    dia_chi = data.get('address')
+    ma_vai_tro = data.get('role')  # role ở đây truyền MaVaiTro dạng số
+
+    # Kiểm tra thông tin bắt buộc
+    if not all([ten_dang_nhap, email, mat_khau, ho_ten, so_dien_thoai, ma_vai_tro]):
+        return jsonify({'message': 'Vui lòng cung cấp đầy đủ thông tin'}), 400
+
+    # Kiểm tra email hợp lệ
+    if '@' not in email:
+        return jsonify({'message': 'Email không hợp lệ'}), 400
+
+    # Kiểm tra tài khoản đã tồn tại chưa
+    if NGUOIDUNG.query.filter((NGUOIDUNG.TenDangNhap == ten_dang_nhap) | (NGUOIDUNG.Email == email)).first():
+        return jsonify({'message': 'Tên đăng nhập hoặc email đã tồn tại'}), 400
+
+    # Tạo tài khoản mới
+    hashed_password = generate_password_hash(mat_khau)
+    new_user = NGUOIDUNG(
+        TenDangNhap=ten_dang_nhap,
+        Email=email,
+        MatKhau=hashed_password,
+        HoTen=ho_ten,
+        SoDienThoai=so_dien_thoai,
+        DiaChi=dia_chi,
+        MaVaiTro=ma_vai_tro
+    )
+
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({'message': 'Tạo tài khoản thành công'}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'Lỗi hệ thống, vui lòng thử lại'}), 500

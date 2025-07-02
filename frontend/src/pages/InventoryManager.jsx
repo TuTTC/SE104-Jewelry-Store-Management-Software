@@ -38,6 +38,7 @@ const InventoryManager = () => {
         quantity: item.SoLuongTon,
         lastUpdated: item.NgayCapNhat,
         warning: item.MucCanhBao,
+        productName: item.TenSP
       }))
     );
   } catch (err) {
@@ -80,26 +81,25 @@ const InventoryManager = () => {
     const { name, value } = e.target;
     setFilterFormData({ ...filterFormData, [name]: value });
   };
-  const handleUpdateAll = async () => {
+  
+const handleUpdateAll = async () => {
   try {
-    // Chuẩn bị dữ liệu gửi backend
     const dataList = inventory.map((item) => ({
-      MaSP: item.productId, // Giả sử cột productId của em chính là MaSP
+      MaSP: item.productId,
       SoLuongTon: parseInt(item.quantity),
-
     }));
 
     await inventoryApi.updateAll(dataList);
     alert("Cập nhật toàn bộ tồn kho thành công!");
 
-    // Reload lại dữ liệu tồn kho từ backend
-    const updatedData = await inventoryApi.getAll();
-    setInventory(updatedData);
+    // Gọi lại getAll tự động sau khi cập nhật thành công
+    fetchInventory();
   } catch (err) {
     console.error(err);
     alert(err.message);
   }
 };
+
 
   const sortData = (key) => {
     let direction = 'asc';
@@ -140,18 +140,39 @@ const InventoryManager = () => {
     return true;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    const newItem = { ...formData, id: Date.now() };
+  try {
     if (modalType === 'add') {
-      setInventory([...inventory, newItem]);
+      const addedItem = await inventoryApi.add(formData); // giả sử API trả về item mới kèm MaTK
+      setInventory([...inventory, {
+        id: addedItem.MaTK,
+        productId: addedItem.MaSP,
+        quantity: addedItem.SoLuongTon,
+        productName: addedItem.TenSP,
+        lastUpdated: addedItem.NgayCapNhat,
+        warning: addedItem.MucCanhBao
+      }]);
     } else if (modalType === 'edit' && currentItem) {
-      setInventory(inventory.map(item => (item.id === currentItem.id ? { ...newItem, id: item.id } : item)));
+      const updatedItem = await inventoryApi.update(formData); // giả sử API update trả về bản ghi mới
+      setInventory(inventory.map(item =>
+        item.id === currentItem.id ? {
+          ...item,
+          quantity: updatedItem.SoLuongTon,
+          warning: updatedItem.MucCanhBao
+        } : item
+      ));
     }
     closeModal();
-  };
+
+  } catch (err) {
+    console.error(err);
+    alert("Có lỗi xảy ra khi thêm/cập nhật tồn kho!");
+  }
+};
+
 
   const handleDelete = (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa mục này?')) {
@@ -196,7 +217,7 @@ const InventoryManager = () => {
             {inventory.map((i) => (
               <tr key={i.id}>
                 <td>{i.id}</td>
-                <td>{i.productId}</td>
+                <td>{i.productName}</td>
                 <td>{i.quantity}</td>
                 <td>{i.lastUpdated}</td>
                 <td>{i.warning}</td>

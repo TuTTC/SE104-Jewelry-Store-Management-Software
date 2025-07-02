@@ -6,7 +6,7 @@ class NGUOIQUANLY(db.Model):
     __tablename__ = "NGUOIQUANLY"
 
     MaQL = Column(Integer, primary_key=True, autoincrement=True)
-    UserID = Column(Integer, ForeignKey("NGUOIDUNG.UserID"), nullable=False)
+    UserID = Column(Integer, ForeignKey("NGUOIDUNG.UserID", ondelete="CASCADE"), nullable=False)
     HoTen = Column(String(100), nullable=False)
     SoDienThoai = Column(String(15), nullable=False)
     DiaChi = Column(Text)

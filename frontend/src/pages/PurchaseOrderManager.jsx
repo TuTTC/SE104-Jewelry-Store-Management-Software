@@ -45,7 +45,9 @@ function PurchaseOrderManager() {
   const fetchPurchaseOrders = async () => {
     try {
       const res = await orderApi.getAllOrders();
+     
       if (res.status === "success") {
+         console.log(res.data)
         setPurchaseOrders(res.data);
       } else {
         alert("Lỗi khi tải dữ liệu!");
@@ -86,12 +88,12 @@ function PurchaseOrderManager() {
     if (order) {
       setFormData({
         code: order.MaPN,
-        supplier: order.MaNCC,
-        user: order.UserID,
+        supplier: order.TenNCC,
+        user: order.TenNguoiNhap,
         date: order.NgayNhap?.slice(0, 10),
         total: order.TongTien,
         status: statusMap[order.TrangThai] || "",
-        ChiTiet: order.ChiTiet || [],  // phải có dòng này
+        ChiTiet: order.ChiTiet || [],
       });
     } else {
       setFormData({
@@ -283,7 +285,7 @@ function PurchaseOrderManager() {
               <tr key={po.MaPN}>
                 <td>{po.MaPN}</td>
                 <td>{po.TenNCC || po.MaNCC}</td>
-                <td>{po.UserID}</td>
+                <td>{po.TenNguoiNhap}</td>
                 <td>{po.NgayNhap}</td>
                 <td>{formatCurrency(po.TongTien)}</td>
                 <td>{po.TrangThai}</td>

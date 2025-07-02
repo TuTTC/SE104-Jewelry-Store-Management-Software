@@ -14,62 +14,62 @@ auth_bp = Blueprint('auth_bp', __name__)
 
 pending_register = {}  # {email: {TenDangNhap, MatKhau, VaiTro, otp, expires}}
 
-@auth_bp.route('/send-otp-register', methods=['POST'])
-def send_otp_register():
-    data = request.get_json()
-    print("Received data:", data)
-    ten_dang_nhap = data.get('TenDangNhap')
-    email = data.get('Email')
-    mat_khau = data.get('MatKhau')
-    # vai_tro = data.get('VaiTro', 'Khách hàng')
-    role_map = {
-    'customer': 'Khách hàng',
-    'admin': 'Admin'
-    }
-    vai_tro_raw = data.get('VaiTro', 'customer')
-    vai_tro = role_map.get(vai_tro_raw.lower())
-    if not all([ten_dang_nhap, email, mat_khau]):
-        return jsonify({'message': 'Thiếu thông tin đăng ký'}), 400
+# @auth_bp.route('/send-otp-register', methods=['POST'])
+# def send_otp_register():
+#     data = request.get_json()
+#     print("Received data:", data)
+#     ten_dang_nhap = data.get('TenDangNhap')
+#     email = data.get('Email')
+#     mat_khau = data.get('MatKhau')
+#     # vai_tro = data.get('VaiTro', 'Khách hàng')
+#     role_map = {
+#     'customer': 'Khách hàng',
+#     'admin': 'Admin'
+#     }
+#     vai_tro_raw = data.get('VaiTro', 'customer')
+#     vai_tro = role_map.get(vai_tro_raw.lower())
+#     if not all([ten_dang_nhap, email, mat_khau]):
+#         return jsonify({'message': 'Thiếu thông tin đăng ký'}), 400
 
-    if '@' not in email:    
-        return jsonify({'message': 'Email không hợp lệ'}), 400
+#     if '@' not in email:    
+#         return jsonify({'message': 'Email không hợp lệ'}), 400
 
-    if vai_tro not in ['Khách hàng', 'Admin']:
-        return jsonify({'message': 'Vai trò không hợp lệ'}), 400
+#     if vai_tro not in ['Khách hàng', 'Admin']:
+#         return jsonify({'message': 'Vai trò không hợp lệ'}), 400
 
-    otp = generate_otp()
-    expires = datetime.utcnow() + timedelta(minutes=5)
+#     otp = generate_otp()
+#     expires = datetime.utcnow() + timedelta(minutes=5)
 
-    # Lưu thông tin tạm
-    pending_register[email] = {
-        'TenDangNhap': ten_dang_nhap,
-        'MatKhau': generate_password_hash(mat_khau),
-        'VaiTro': vai_tro,
-        'otp': otp,
-        'expires': expires
-    }
-    info = pending_register.get(email)
-    if not info:
-        return jsonify({'message': 'Không tìm thấy yêu cầu đăng ký'}), 400
-    try:
-        role = VAITRO.query.filter_by(TenVaiTro=info['VaiTro']).first()
-        if not role:
-            return jsonify({'message': 'Vai trò chưa được cấu hình'}), 500
+#     # Lưu thông tin tạm
+#     pending_register[email] = {
+#         'TenDangNhap': ten_dang_nhap,
+#         'MatKhau': generate_password_hash(mat_khau),
+#         'VaiTro': vai_tro,
+#         'otp': otp,
+#         'expires': expires
+#     }
+#     info = pending_register.get(email)
+#     if not info:
+#         return jsonify({'message': 'Không tìm thấy yêu cầu đăng ký'}), 400
+#     try:
+#         role = VAITRO.query.filter_by(TenVaiTro=info['VaiTro']).first()
+#         if not role:
+#             return jsonify({'message': 'Vai trò chưa được cấu hình'}), 500
 
-        user = NGUOIDUNG(
-            TenDangNhap=info['TenDangNhap'],
-            Email=email,
-            MatKhau=info['MatKhau'],
-            MaVaiTro=role.MaVaiTro
-        )
-        db.session.add(user)
-        db.session.commit()
+#         user = NGUOIDUNG(
+#             TenDangNhap=info['TenDangNhap'],
+#             Email=email,
+#             MatKhau=info['MatKhau'],
+#             MaVaiTro=role.MaVaiTro
+#         )
+#         db.session.add(user)
+#         db.session.commit()
 
-        pending_register.pop(email, None)
-        return jsonify({'message': 'Đăng ký thành công'}), 201
-    except IntegrityError:
-        db.session.rollback()
-        return jsonify({'message': 'Tên đăng nhập hoặc email đã tồn tại'}), 400
+#         pending_register.pop(email, None)
+#         return jsonify({'message': 'Đăng ký thành công'}), 201
+#     except IntegrityError:
+#         db.session.rollback()
+#         return jsonify({'message': 'Tên đăng nhập hoặc email đã tồn tại'}), 400
     
     # if send_otp_email(email, otp):
     #     return jsonify({'message': 'Đã gửi OTP đến email'}), 200
@@ -78,7 +78,58 @@ def send_otp_register():
     #     return jsonify({'message': 'Không gửi được OTP'}), 500
     
     
-    
+@auth_bp.route('/send-otp-register', methods=['POST'])
+def send_otp_register():
+    data = request.get_json()
+    print("Received data:", data)
+
+    ten_dang_nhap = data.get('TenDangNhap')
+    email = data.get('Email')
+    mat_khau = data.get('MatKhau')
+
+    role_map = {
+        'customer': 'Khách hàng',
+        'admin': 'Admin',
+
+    }
+    vai_tro_raw = data.get('VaiTro', 'customer')
+    vai_tro = role_map.get(vai_tro_raw.lower())
+
+    if not all([ten_dang_nhap, email, mat_khau]):
+        return jsonify({'message': 'Thiếu thông tin đăng ký'}), 400
+
+    if '@' not in email:
+        return jsonify({'message': 'Email không hợp lệ'}), 400
+
+    if vai_tro not in ['Khách hàng', 'Admin']:
+        return jsonify({'message': 'Vai trò không hợp lệ'}), 400
+
+    if NGUOIDUNG.query.filter((NGUOIDUNG.TenDangNhap == ten_dang_nhap) | (NGUOIDUNG.Email == email)).first():
+        return jsonify({'message': 'Tên đăng nhập hoặc email đã tồn tại'}), 400
+
+    try:
+        role = VAITRO.query.filter_by(TenVaiTro=vai_tro).first()
+        if not role:
+            return jsonify({'message': 'Vai trò chưa được cấu hình'}), 500
+
+        user = NGUOIDUNG(
+            TenDangNhap=ten_dang_nhap,
+            Email=email,
+            MatKhau=generate_password_hash(mat_khau),
+            MaVaiTro=role.MaVaiTro,
+            HoTen="",  # hoặc lấy từ request nếu muốn
+            SoDienThoai="",
+            DiaChi=""
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        return jsonify({'message': 'Đăng ký thành công'}), 201
+
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': 'Tên đăng nhập hoặc email đã tồn tại'}), 400
+
     
 
 

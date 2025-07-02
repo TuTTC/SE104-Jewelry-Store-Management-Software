@@ -10,6 +10,7 @@ const GeneralModalForm = ({
   handleInputChange,
   handleSubmit,
   error,
+  modalMode
 }) => {
   if (!showModal) return null;
 
@@ -56,23 +57,38 @@ const GeneralModalForm = ({
       case "accounts":
         return (
           <>
-            <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên" required />
-            {currentSection === "accounts" && (
-              <input type="text" name="accountCode" value={formData.accountCode || ""} onChange={handleInputChange} placeholder="Mã tài khoản" required />
+          <label>Tên đăng nhập</label>
+          <input type="text" name="username" value={formData.username || ""} onChange={handleInputChange} placeholder="Tên đăng nhập" required />
+          {modalMode === "add" && (
+              <>
+                <label>Mật khẩu</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password || ""}
+                  onChange={handleInputChange}
+                  placeholder="Mật khẩu"
+                  required
+                />
+              </>
             )}
-            <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" required />
-            <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Điện thoại" required />
-            <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Địa chỉ" required />
-          
-            {currentSection === "accounts" && (
-              <input type="text" name="position" value={formData.position || ""} onChange={handleInputChange} placeholder="Chức vụ" required />
-            )}
-            
-            <select name="role" value={formData.role || ""} onChange={handleInputChange} required>
+
+          <label>Email</label>
+          <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" required />
+          <label>Họ và tên</label>
+          <input type="text" name="fullName" value={formData.fullName || ""} onChange={handleInputChange} placeholder="Họ và tên" required />
+          <label>SĐT</label>
+          <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Điện thoại" required />
+          <label>Địa chỉ</label>
+          <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Địa chỉ" required />
+          <label>Ngày đăng ký</label>
+          <input type="date" name="createdAt" value={formData.createdAt ? formData.createdAt.slice(0, 10) : ""} onChange={handleInputChange} required />
+          <label>Vai trò</label>
+          <select name="role" value={formData.role || ""} onChange={handleInputChange} required>
               <option value="">Chọn vai trò</option>
-              <option value="Customer">Khách hàng</option>
-              <option value="Admin">Quản trị</option>
-              <option value="Employee">Nhân viên</option>
+              <option value="1">Khách hàng</option>
+              <option value="2">Quản trị</option>
+              <option value="3">Nhân viên</option>
             </select>
           </>
         );
