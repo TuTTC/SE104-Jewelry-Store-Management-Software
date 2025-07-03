@@ -233,6 +233,7 @@ import GeneralModalForm from "../components/GeneralModalForm";
 import PermissionModal from "../components/PermissionModal";
 import userApi from "../services/userApi";
 import permissionApi from "../services/permissionApi";
+import Pagination from '../components/Pagination';
 
 function AccountManager() {
   const [accounts, setAccounts] = useState([]);
@@ -531,7 +532,7 @@ const submitForm = async (e) => {
             </tbody>
           </table>
         )}
-
+      <Pagination />
       </div>
 
       {isModalOpen && (

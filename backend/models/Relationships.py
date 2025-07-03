@@ -5,7 +5,7 @@ from database import db
 role_permissions = Table(
     "ROLE_PERMISSIONS",
     db.Model.metadata,
-    Column("MaVaiTro", Integer, ForeignKey("VAITRO.MaVaiTro"), primary_key=True),
+    Column("MaVaiTro", Integer, ForeignKey("VAITRO.MaVaiTro", ondelete="CASCADE"), primary_key=True),
     Column("PermissionID", Integer, ForeignKey("PERMISSIONS.PermissionID"), primary_key=True)
 )
 
@@ -13,7 +13,7 @@ role_permissions = Table(
 user_permissions = Table(
     "USER_PERMISSIONS",
     db.Model.metadata,
-    Column("UserID", Integer, ForeignKey("NGUOIDUNG.UserID"), primary_key=True),
+    Column("UserID", Integer, ForeignKey("NGUOIDUNG.UserID", ondelete="CASCADE"), primary_key=True),
     Column("PermissionID", Integer, ForeignKey("PERMISSIONS.PermissionID"), primary_key=True),
     Column("IsGranted", db.Boolean, nullable=False, default=True)  # Cột mới
 )

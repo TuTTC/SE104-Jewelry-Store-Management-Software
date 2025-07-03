@@ -14,7 +14,7 @@ import {
   inChiTietDonHang
 } from "../services/donhangApi";
 import GeneralModalForm from "../components/GeneralModalForm-2";
-
+import Pagination from '../components/Pagination';
 const OrdersManager = () => {
   const [orders, setOrders] = useState([]);
   const [selectedTab, setSelectedTab] = useState("list");
@@ -568,6 +568,7 @@ const payload = {
           </table>
         </>
       )}
+      <Pagination />
       </div>
 
       {/* Modal Form */}

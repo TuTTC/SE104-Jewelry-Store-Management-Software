@@ -116,6 +116,7 @@ import React, { useState, useEffect } from "react";
 import { Edit, Trash } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm";
 import * as supplierApi from "../services/supplierApi";
+import Pagination from '../components/Pagination';
 
 const SupplierManager = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -267,6 +268,7 @@ const SupplierManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       {modalVisible && (

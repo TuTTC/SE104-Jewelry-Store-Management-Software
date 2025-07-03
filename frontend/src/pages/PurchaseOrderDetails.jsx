@@ -5,7 +5,7 @@ import { initialPurchaseOrderDetails } from '../data/initialData';
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
-
+import Pagination from '../components/Pagination';
 const PurchaseOrderDetails = () => {
   const [details, setDetails] = useState(initialPurchaseOrderDetails);
   const [showModal, setShowModal] = useState(false);
@@ -175,6 +175,7 @@ const PurchaseOrderDetails = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

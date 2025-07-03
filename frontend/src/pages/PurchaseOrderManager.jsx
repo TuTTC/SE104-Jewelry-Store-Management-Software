@@ -7,7 +7,7 @@ import * as orderApi from "../services/purchaseOrderApi";
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 import PurchaseOrderForm from "forms/AddPurchaseOrderForm";
-
+import Pagination from '../components/Pagination';
 function PurchaseOrderManager() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -305,6 +305,7 @@ function PurchaseOrderManager() {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       {/* {modalVisible && (

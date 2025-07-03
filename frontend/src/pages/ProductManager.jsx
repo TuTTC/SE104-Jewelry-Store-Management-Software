@@ -6,7 +6,7 @@ import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 import * as productApi from "../services/productApi";
 import { uploadImage } from "../services/upload_imgApi";
-
+import Pagination from '../components/Pagination';
 const ProductManager = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -317,6 +317,7 @@ const ProductManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
       {showImageModal && (
           <div

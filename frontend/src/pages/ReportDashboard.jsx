@@ -8,6 +8,7 @@ import {
   xoaBaoCao,
   inBaoCaoPDF,
 } from "../services/baocaoApi";
+import Pagination from '../components/Pagination';
 
 export default function ReportDashboard() {
   const [reports, setReports] = useState([]);
@@ -270,6 +271,7 @@ const validate = () => {
             )}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

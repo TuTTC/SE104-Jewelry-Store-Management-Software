@@ -47,6 +47,8 @@ def seed_permissions():
 
             db.session.commit()
             print("Seed quyền thành công!")
+        else:
+            print("Dữ liệu quyền đã tồn tại, bỏ qua seed.")
 
     except Exception as e:
         db.session.rollback()

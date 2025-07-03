@@ -90,7 +90,7 @@ def send_otp_register():
     role_map = {
         'customer': 'Khách hàng',
         'admin': 'Admin',
-
+        
     }
     vai_tro_raw = data.get('VaiTro', 'customer')
     vai_tro = role_map.get(vai_tro_raw.lower())

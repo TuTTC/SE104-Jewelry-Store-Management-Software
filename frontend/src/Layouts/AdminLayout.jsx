@@ -16,15 +16,16 @@
 
 // export default AdminLayout;
 
-import React from 'react';
-import { LayoutDashboard, ShoppingCart, Gem, Users, UserCircle, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutDashboard, ShoppingCart, Gem, Users, UserCircle, LogOut, ChevronDown } from 'lucide-react';
 import { LuCircleUser } from "react-icons/lu";
-import { useNavigate } from 'react-router-dom';
-import { Outlet } from 'react-router-dom';
+import { useNavigate, Outlet, useLocation, Navigate } from 'react-router-dom';
 import "../App.css"
 
 const AdminLayout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const menuItems = [
     { label: "Dashboard", icon: LayoutDashboard, key: "dashboard" },
@@ -49,12 +50,19 @@ const AdminLayout = () => {
   };
 
   const user = JSON.parse(localStorage.getItem("user")) || {};
+  const handleProfileClick = () => {
+    navigate('/admin/profile');
+    setIsDropdownOpen(false);
+  };
 
+  const toggleDropdown = () => {
+    setIsDropdownOpen((prev) => !prev);
+  };
   return (
     <div className="container">
       <aside className="sidebar">
         <h1 className="sidebar-title flex items-center gap-2 px-4 py-2">
-          {/* Jewelry Admin */}
+          PTV Jewelry
           <img src="/logoVTP.svg" alt="Jewelry Admin Logo" className="sidebar-logo" />
         </h1>
         <nav className="sidebar-nav">
@@ -62,16 +70,52 @@ const AdminLayout = () => {
             <button
               key={key}
               onClick={() => navigate(`/admin/${key}`)}
-              className={window.location.pathname.includes(key) ? "sidebar-button active" : "sidebar-button"}
+              className={location.pathname.includes(key) ? "sidebar-button active" : "sidebar-button"}
             >
               <Icon className="icon" />
               <span>{label}</span>
             </button>
           ))}
-          <button onClick={handleLogout} className="sidebar-button">
-            <LogOut className="icon" />
-            <span>Đăng xuất</span>
-          </button>
+          
+
+          {/* Dropdown tài khoản người dùng */}
+          <div className="account-dropdown-wrapper mt-auto relative">
+            <button
+              onClick={toggleDropdown}
+              className="sidebar-button flex items-center justify-between w-full"
+            >
+              <div className="flex items-center gap-2">
+                <UserCircle className="icon" />
+                <span>{user?.name || 'Tài khoản'}</span>
+              </div>
+              <ChevronDown className="icon" />
+            </button>
+
+            {isDropdownOpen && (
+              <div
+                className="dropdown-menu"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  width: '224px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                  zIndex: 1000,
+                  padding: '4px 0',
+                }}
+              >
+                <button onClick={handleProfileClick} className="dropdown-item w-full text-left">
+                  Thông tin cá nhân
+                </button>
+                <button onClick={handleLogout} className="dropdown-item logout w-full text-left">
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
+
         </nav>
       </aside>
       <main className="main-content">

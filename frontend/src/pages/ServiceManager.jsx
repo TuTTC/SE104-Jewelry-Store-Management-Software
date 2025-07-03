@@ -9,6 +9,8 @@ import {
   xoaDichVu,
   traCuuDichVu
 } from "../services/dichvuApi";
+import Pagination from '../components/Pagination';
+
 const mapTenDVHienThi = (ma) => {
   const mapping = {
     CanThuVang: "Cân thử vàng",
@@ -351,6 +353,7 @@ const handleLuuPhieuDichVu = async (payload) => {
           Thêm phiếu dịch vụ
           </button>
         </div>
+        <Pagination />
       </div>
     )}
 

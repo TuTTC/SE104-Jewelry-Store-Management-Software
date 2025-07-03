@@ -6,7 +6,7 @@ class NHANVIEN(db.Model):
     __tablename__ = "NHANVIEN"
 
     MaNV = Column(Integer, primary_key=True, autoincrement=True)
-    UserID = Column(Integer, ForeignKey("NGUOIDUNG.UserID"), nullable=False)
+    UserID = Column(Integer, ForeignKey("NGUOIDUNG.UserID", ondelete="CASCADE"), nullable=False)
     TenNV = Column(String(100), nullable=False)
     SoDienThoai = Column(String(15), nullable=False)
     DiaChi = Column(Text, nullable=True)

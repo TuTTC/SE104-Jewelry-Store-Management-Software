@@ -59,7 +59,7 @@ with app.app_context():
     # seed_nhacungcap()
     # clear_users()
     # seed_sanpham()
-    seed_phieu_nhap()
+    # seed_phieu_nhap()
     # seed_permissions()
     # seed_role_permissions()
     # cap_nhat_gia_ban_cho_toan_bo_san_pham()

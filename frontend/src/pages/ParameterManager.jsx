@@ -4,6 +4,7 @@ import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 import parameterApi from 'services/parameterApi';
+import Pagination from '../components/Pagination';
 
 const ParameterManager = () => {
   const [parameters, setParameters] = useState([]);
@@ -190,6 +191,7 @@ const ParameterManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

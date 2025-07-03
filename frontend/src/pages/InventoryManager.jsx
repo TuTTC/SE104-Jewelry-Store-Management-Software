@@ -6,6 +6,7 @@ import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 import inventoryApi from "../services/inventoryApi";
+import Pagination from '../components/Pagination';
 
 const InventoryManager = () => {
   const [inventory, setInventory] = useState([]);
@@ -233,6 +234,7 @@ const handleSubmit = async (e) => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm

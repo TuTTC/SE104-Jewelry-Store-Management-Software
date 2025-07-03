@@ -4,6 +4,7 @@ import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 import categoryApi from '../services/categoryApi';
+import Pagination from '../components/Pagination';
 
 const CategoryManager = () => {
   const [categories, setCategories] = useState([]);
@@ -188,6 +189,7 @@ const CategoryManager = () => {
             ))}
           </tbody>
         </table>
+        <Pagination />
       </div>
 
       <GeneralModalForm
