@@ -1,11 +1,15 @@
 from flask import Blueprint, request, jsonify
 from database import db
 from models import DANHMUC
-
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
 category_bp = Blueprint('category_bp', __name__)
 
 # Lấy tất cả danh mục
 @category_bp.route('/', methods=['GET'])
+@jwt_required()
+@permission_required("categories:view")
 def get_categories():
     categories = DANHMUC.query.all()
     result = [{
@@ -17,6 +21,8 @@ def get_categories():
 
 # Thêm danh mục mới
 @category_bp.route('/', methods=['POST'])
+@jwt_required()
+@permission_required("categories:add")
 def add_category():
     data = request.json
     try:
@@ -33,6 +39,8 @@ def add_category():
 
 # Cập nhật danh mục
 @category_bp.route('/<int:category_id>', methods=['PUT'])
+@jwt_required()
+@permission_required("categories:edit")
 def update_category(category_id):
     category = DANHMUC.query.get(category_id)
     if not category:
@@ -49,6 +57,8 @@ def update_category(category_id):
 
 # Xóa danh mục
 @category_bp.route('/<int:category_id>', methods=['DELETE'])
+@jwt_required()
+@permission_required("categories:delete")
 def delete_category(category_id):
     category = DANHMUC.query.get(category_id)
     if not category:

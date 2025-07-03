@@ -19,6 +19,10 @@ function PurchaseOrderManager() {
   const [filterFormData, setFilterFormData] = useState({});
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   const [formData, setFormData] = useState({
     code: "",
@@ -53,8 +57,16 @@ function PurchaseOrderManager() {
         alert("Lỗi khi tải dữ liệu!");
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert(error.message);
+      if (error.status === 403) {
+          alert("Bạn không có quyền xem!");
+      } else if (error.status === 401) {
+          alert("Vui lòng đăng nhập!");
+      } else {
+          console.error("Lỗi khi lấy dữ liệu:", error);
+          console.error("Error:", error);
+          alert(error.message);
+      }
+      
     }
   };
   const handleEdit = async (maPN) => {
@@ -140,19 +152,41 @@ function PurchaseOrderManager() {
     setFilterFormData({ ...filterFormData, [name]: value });
   };
 
-  const sortData = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+const sortData = (key) => {
+  let direction = 'asc';
+  if (sortConfig.key === key && sortConfig.direction === 'asc') {
+    direction = 'desc';
+  }
+  setSortConfig({ key, direction });
+
+  const sortedData = [...purchaseOrders].sort((a, b) => {
+    let valA = a[key];
+    let valB = b[key];
+
+    // So sánh số
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return direction === 'asc' ? valA - valB : valB - valA;
     }
-    setSortConfig({ key, direction });
-    const sortedData = [...purchaseOrders].sort((a, b) => {
-      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
-      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-    setPurchaseOrders(sortedData);
-  };
+
+    // So sánh ngày
+    if (key === 'NgayNhap' && valA && valB) {
+      const dateA = new Date(valA);
+      const dateB = new Date(valB);
+      return direction === 'asc' ? dateA - dateB : dateB - dateA;
+    }
+
+    // So sánh chuỗi (coi null/undefined là rỗng)
+    valA = valA ? valA.toString().toLowerCase() : '';
+    valB = valB ? valB.toString().toLowerCase() : '';
+    
+    if (valA < valB) return direction === 'asc' ? -1 : 1;
+    if (valA > valB) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  setPurchaseOrders(sortedData);
+};
+
 
   const exportToCSV = () => {
     const headers = ['Mã Phiếu Nhập,Mã NCC,Người lập,Ngày nhập,Tổng tiền,Trạng thái'];
@@ -202,9 +236,9 @@ function PurchaseOrderManager() {
           alert("Thêm thất bại: " + res.message);
         }
       } else if (modalMode === "edit") {
-        const res = await orderApi.updateOrder(data.MaPN, data);
+        const res = await orderApi.updateOrder(formData.code, data);
         if (res.status === "success") {
-          alert("Cập nhật phiếu nhập thành công!");
+          alert("Cập nhật phiếu nhập thành công!"); 
           handleSuccess();
         } else {
           alert("Cập nhật thất bại: " + res.message);
@@ -249,10 +283,15 @@ function PurchaseOrderManager() {
     closeFilterModal();
   };
 
-  const getSupplierName = (supplierId) => {
-    const supplier = initialSuppliers.find(s => s.id === supplierId);
-    return supplier ? supplier.name : 'Không xác định';
-  };
+  // const getSupplierName = (supplierId) => {
+  //   const supplier = initialSuppliers.find(s => s.id === supplierId);
+  //   return supplier ? supplier.name : 'Không xác định';
+  // };
+  const filteredPurchaseOrders = purchaseOrders.filter(po => {
+  const matchDate = selectedDate ? po.NgayNhap === selectedDate : true;
+  const matchStatus = selectedStatus ? po.TrangThai === selectedStatus : true;
+  return matchDate && matchStatus;
+  });
 
   return (
     <div className="table-card">
@@ -261,22 +300,50 @@ function PurchaseOrderManager() {
         {/* <button onClick={() => openModal("add")} className="action-button">
           <Plus className="icon" /> Thêm phiếu nhập
         </button> */}
-        <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
-        <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-        <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
-        <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+        {/* <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
+        <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button> */}
+    <div className="action-buttons">
+      <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
+      <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+    </div>
       </div>
 
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('supplierId')}>Nhà cung cấp <Filter className="sort-icon" /></th>
-              <th onClick={() => sortData('userId')}>Người lập <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('date')}>Ngày nhập <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('total')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('MaPN')}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('MaNCC')}>Nhà cung cấp <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('TenNguoiNhap')}>Người lập <ArrowUpDown className="sort-icon" /></th>
+              <th className="relative">
+                Ngày nhập
+                <Filter className="sort-icon" onClick={() => setShowDateFilter(!showDateFilter)} style={{ cursor: "pointer" }} />
+                {showDateFilter && (
+                  <div className="filter-popup">
+                    <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
+                      <option value="">Tất cả</option>
+                      {Array.from(new Set(purchaseOrders.map(p => p.NgayNhap))).map((date, index) => (
+                        <option key={index} value={date}>{date}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </th>
+             <th onClick={() => sortData('TongTien')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
+              <th className="relative">
+                Trạng thái 
+                <Filter className="sort-icon" onClick={() => setShowStatusFilter(!showStatusFilter)} style={{ cursor: "pointer" }} />
+                {showStatusFilter && (
+                  <div className="filter-popup">
+                    <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
+                      <option value="">Tất cả</option>
+                      {Array.from(new Set(purchaseOrders.map(p => p.TrangThai))).map((status, index) => (
+                        <option key={index} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </th>
               <th>Hành động</th>
             </tr>
           </thead>
@@ -374,53 +441,3 @@ function formatCurrency(value) {
 
 export default PurchaseOrderManager;
 
-//  return (
-//     <div className="table-card">
-//       <div className="table-header">
-//         <h2 className="table-title">Quản lý phiếu nhập</h2>
-//         <div>
-//           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
-//           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-//           <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
-//           <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
-//         </div>
-//       </div>
-//       <div className="table-container">
-//         <table className="data-table">
-//           <thead>
-//             <tr>
-//               <th onClick={() => sortData('id')}>ID <ArrowUpDown className="sort-icon" /></th>
-//               <th onClick={() => sortData('orderCode')}>Mã phiếu nhập <ArrowUpDown className="sort-icon" /></th>
-//               <th onClick={() => sortData('supplierId')}>Nhà cung cấp <ArrowUpDown className="sort-icon" /></th>
-//               <th onClick={() => sortData('date')}>Ngày nhập <ArrowUpDown className="sort-icon" /></th>
-//               <th onClick={() => sortData('total')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
-//               <th onClick={() => sortData('status')}>Trạng thái <ArrowUpDown className="sort-icon" /></th>
-//               <th>Hành động</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {purchaseOrders.map((po) => (
-//               <tr key={po.id}>
-//                 <td>{po.id}</td>
-//                 <td>{po.orderCode}</td>
-//                 <td>{getSupplierName(po.supplierId)}</td>
-//                 <td>{po.date}</td>
-//                 <td>${po.total.toFixed(2)}</td>
-//                 <td>
-//                   <span className={po.status === 'Đã xử lý' ? 'status-instock' : 'status-lowstock'}>
-//                     {po.status}
-//                   </span>
-//                 </td>
-//                 <td>
-//                   <button onClick={() => openModal('edit', po)} className="action-icon edit">
-//                     <Edit className="icon" />
-//                   </button>
-//                   <button onClick={() => handleDelete(po.id)} className="action-icon delete">
-//                     <Trash className="icon" />
-//                   </button>
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>

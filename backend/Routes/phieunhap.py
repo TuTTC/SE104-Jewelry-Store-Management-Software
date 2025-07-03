@@ -11,6 +11,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from Routes.product import cap_nhat_gia_ban_cho_san_pham
+from flask_jwt_extended import jwt_required
+from utils.permissions import permission_required
 
 pdfmetrics.registerFont(TTFont('DejaVu', '../fonts/times.ttf'))
 
@@ -111,6 +113,8 @@ phieunhap_bp = Blueprint('phieunhap_bp', __name__)
 #         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 @phieunhap_bp.route('/phieunhap', methods=['POST'])
+@jwt_required()
+@permission_required("purchaseOrders:add")
 def create_phieu_nhap():
     data = request.get_json()
     try:
@@ -174,6 +178,8 @@ def create_phieu_nhap():
 
 # Lấy danh sách phiếu nhập
 @phieunhap_bp.route('/phieunhap', methods=['GET'])
+@jwt_required()
+@permission_required("purchaseOrders:view")
 def list_phieu_nhap():
     phieu = PHIEUNHAP.query.all()
     data = [p.to_dict() for p in phieu]
@@ -181,6 +187,8 @@ def list_phieu_nhap():
 
 # Xem chi tiết một phiếu nhập
 @phieunhap_bp.route('/phieunhap/<int:id>', methods=['GET'])
+@jwt_required()
+@permission_required("purchaseOrders:add")
 def detail_phieu_nhap(id):
     p = PHIEUNHAP.query.get_or_404(id)
     details = CHITIETPHIEUNHAP.query.filter_by(MaPN=id).all()
@@ -190,6 +198,8 @@ def detail_phieu_nhap(id):
 
 # Cập nhật phiếu nhập
 @phieunhap_bp.route('/phieunhap/<int:id>', methods=['PUT'])
+@jwt_required()
+@permission_required("purchaseOrders:edit")
 def update_phieu_nhap(id):
     data = request.get_json()
     phieu = PHIEUNHAP.query.get_or_404(id)
@@ -205,6 +215,8 @@ def update_phieu_nhap(id):
 
 # Xoá phiếu nhập
 @phieunhap_bp.route('/phieunhap/<int:id>', methods=['DELETE'])
+@jwt_required()
+@permission_required("purchaseOrders:delete")
 def delete_phieu_nhap(id):
     phieu = PHIEUNHAP.query.get_or_404(id)
     try:
@@ -219,6 +231,8 @@ def delete_phieu_nhap(id):
 
 
 @phieunhap_bp.route('/phieunhap/<int:id>/export', methods=['GET'])
+@jwt_required()
+@permission_required("purchaseOrders:view")
 def export_phieu_nhap(id):
     phieu = PHIEUNHAP.query.get_or_404(id)
     chi_tiet = CHITIETPHIEUNHAP.query.filter_by(MaPN=id).all()

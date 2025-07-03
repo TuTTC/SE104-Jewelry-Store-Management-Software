@@ -1,59 +1,81 @@
 const BASE_URL = "http://localhost:5000/api/phieunhap"; // Đặt đúng route backend của bạn
 
+function getAuthHeader() {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+}
+
+const handleResponse = async (res) => {
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const data = await res.json();
+    if (!res.ok) {
+      const error = new Error(data.error || "Có lỗi xảy ra");
+      error.status = res.status;
+      throw error;
+    }
+    return data;
+  } else {
+    // Trường hợp khác, có thể trả file hay text
+    if (!res.ok) {
+      throw new Error("Có lỗi xảy ra");
+    }
+    return res;
+  }
+};
+
 // Lấy tất cả phiếu nhập
 export const getAllOrders = async () => {
-  const res = await fetch(BASE_URL);
-  if (!res.ok) throw new Error("Lỗi khi lấy danh sách phiếu nhập");
-  return res.json();
+  const res = await fetch(BASE_URL, {
+    headers: getAuthHeader(),
+  });
+  return handleResponse(res);
 };
 
 // Lấy phiếu nhập theo ID
 export const getOrderById = async (id) => {
-  const res = await fetch(`${BASE_URL}/${id}`);
-  if (!res.ok) throw new Error("Phiếu nhập không tồn tại");
-  return res.json();
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    headers: getAuthHeader(),
+  });
+  return handleResponse(res);
 };
 
 // Thêm mới phiếu nhập
 export const addOrder = async (data) => {
-  try {
-    const res = await fetch(BASE_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.message || "Thêm phiếu nhập thất bại!");
-    return result;
-  } catch (err) {
-    console.error(err);
-    throw err;
-  }
+  const res = await fetch(BASE_URL, {
+    method: "POST",
+    headers: getAuthHeader(),
+    body: JSON.stringify(data),
+  });
+  return handleResponse(res);
 };
 
 // Cập nhật phiếu nhập
 export const updateOrder = async (id, data) => {
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeader(),
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Lỗi khi cập nhật phiếu nhập");
-  return res.json();
+  return handleResponse(res);
 };
 
 // Xoá phiếu nhập
 export const deleteOrder = async (id) => {
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",
+    headers: getAuthHeader(),
   });
-  if (!res.ok) throw new Error("Lỗi khi xoá phiếu nhập");
-  return res.json();
+  return handleResponse(res);
 };
 
-// Xuất file PDF
+// Xuất file PDF (mở tab mới)
 export const exportOrderPDF = (id) => {
-  const url = `${BASE_URL}/${id}/export`;
+  const token = localStorage.getItem("token");
+  const headers = token ? `?token=${token}` : "";
+  const url = `${BASE_URL}/${id}/export${headers}`;
   window.open(url, "_blank");
 };

@@ -12,13 +12,19 @@ from sqlalchemy import func
 from decimal import Decimal
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+
 donhang_bp = Blueprint("donhang", __name__, url_prefix="/api")
 
 # GET /api/donhang - Lấy danh sách đơn hàng
 @donhang_bp.route("/donhang", methods=["GET"])
+@jwt_required()
+@permission_required("orders:view")
 def get_danh_sach_donhang():
     try:
-        donhangs = THAMSO.query.all()
+        donhangs = DONHANG.query.all()
         data = []
         for dh in donhangs:
             # Compute true total from the order's detail lines
@@ -51,6 +57,8 @@ def get_danh_sach_donhang():
 
 # POST /api/donhang - Tạo đơn hàng mới
 @donhang_bp.route("/donhang", methods=["POST"])
+@jwt_required()
+@permission_required("orders:add")
 def tao_don_hang():
     try:
         data = request.get_json()
@@ -73,6 +81,8 @@ def tao_don_hang():
         return jsonify({"status": "error", "message": str(e)}), 500
 # PUT /api/donhang/<id>/trangthai - Cập nhật trạng thái đơn hàng
 @donhang_bp.route("/donhang/<int:id>/trangthai", methods=["PUT"])
+@jwt_required()
+@permission_required("orders:edit")
 def cap_nhat_trang_thai(id):
     try:
         data = request.get_json()
@@ -88,6 +98,8 @@ def cap_nhat_trang_thai(id):
 
 # POST /api/donhang/<id>/thanhtoan - Xác nhận thanh toán
 @donhang_bp.route("/donhang/<int:id>/thanhtoan", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def xac_nhan_thanh_toan(id):
     try:
         donhang = THAMSO.query.get(id)
@@ -102,6 +114,8 @@ def xac_nhan_thanh_toan(id):
 
 # POST /api/donhang/<id>/giaohang - Đóng gói và giao hàng
 @donhang_bp.route("/donhang/<int:id>/giaohang", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def dong_goi_giao_hang(id):
     try:
         donhang = THAMSO.query.get(id)
@@ -116,6 +130,8 @@ def dong_goi_giao_hang(id):
 
 # POST /api/donhang/<id>/doitra - Tạo yêu cầu trả/đổi hàng
 @donhang_bp.route("/donhang/<int:id>/doitra", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def doi_tra_don_hang(id):
     try:
         donhang = THAMSO.query.get(id)
@@ -130,6 +146,8 @@ def doi_tra_don_hang(id):
 
 # DELETE /api/donhang/<id> - Xóa đơn hàng
 @donhang_bp.route("/donhang/<int:id>", methods=["DELETE"])
+@jwt_required()
+@permission_required("orders:delete")
 def xoa_don_hang(id):
     try:
         donhang = THAMSO.query.get(id)
@@ -145,6 +163,8 @@ def xoa_don_hang(id):
 # Sửa thông tin đơn hàng
 # PUT /api/donhang/<id> - Cập nhật thông tin đơn hàng
 @donhang_bp.route("/donhang/<int:id>", methods=["PUT"])
+@jwt_required()
+@permission_required("orders:edit")
 def sua_don_hang(id):
     try:
         data = request.get_json()
@@ -173,6 +193,8 @@ def sua_don_hang(id):
 
 # GET /api/donhang/<id>/chitiet - Lấy chi tiết đơn hàng
 @donhang_bp.route("/donhang/<int:id>/chitiet", methods=["GET"])
+@jwt_required()
+@permission_required("orders:edit")
 def chi_tiet_don_hang(id):
     try:
         ctdh_list = CHITIETDONHANG.query.filter_by(MaDH=id).all()
@@ -191,6 +213,8 @@ def chi_tiet_don_hang(id):
     
 # POST /api/donhang/<id>/chitiet - Cập nhật chi tiết đơn hàng
 @donhang_bp.route("/donhang/<int:id>/chitiet", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def cap_nhat_chi_tiet_don_hang(id):
     try:
         data = request.get_json()  # list of { MaCTDH?, MaSP, SoLuong, GiaBan }
@@ -255,6 +279,8 @@ def cap_nhat_chi_tiet_don_hang(id):
         return jsonify({"status": "error", "message": str(e)}), 500
 # GET /api/donhang/<id>/chitiet/pdf - Xuất chi tiết đơn hàng ra PDF
 @donhang_bp.route("/donhang/<int:id>/chitiet/pdf", methods=["GET"])
+@jwt_required()
+@permission_required("orders:view")
 def xuat_pdf_chi_tiet_don(id):
     try:
         ctdh_list = CHITIETDONHANG.query.filter_by(MaDH=id).all()

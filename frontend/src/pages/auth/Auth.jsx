@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import "../../App.css";
-import { X } from "lucide-react";
 import LoginForm from "./Login";
 import RegisterForm from "./Register";
 import { sendOtpRegister, login } from "./authApi";
@@ -51,6 +50,7 @@ function Auth() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (selectedPage === "register" && validateRegister()) {
       try {
         const res = await sendOtpRegister({
@@ -75,6 +75,8 @@ function Auth() {
           TenDangNhap: formData.txt_username,
           MatKhau: formData.txt_password,
         });
+        console.log("Phản hồi từ login API:", res);
+
         if (res.token) {
           localStorage.setItem("token", res.token);
           localStorage.setItem("user", JSON.stringify(res.user));
@@ -99,7 +101,7 @@ function Auth() {
         <div className="modal-header">
           <h2>{selectedPage === "login" ? "Đăng nhập" : "Đăng ký"}</h2>
         </div>
-        <form onSubmit={handleSubmit} className="modal-form">
+        <div className="modal-form">
           {selectedPage === "login" && (
             <LoginForm
               formData={formData}
@@ -120,7 +122,7 @@ function Auth() {
               onGoogleLogin={handleGoogleLogin}
             />
           )}
-        </form>
+        </div>
       </div>
     </div>
   );

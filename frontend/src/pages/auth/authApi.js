@@ -19,10 +19,23 @@ export const confirmOtpRegister = async (email, otp) => {
 };
 
 export const login = async (data) => {
-  const res = await fetch(`${API_BASE}/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  return await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Lỗi server: ${res.status}`);
+    }
+
+    const result = await res.json();
+    console.log("Kết quả từ API login:", result);
+    return result;
+  } catch (error) {
+    console.error("Lỗi gọi API login:", error);
+    return { success: false, message: "Không thể kết nối tới server." };
+  }
 };
+

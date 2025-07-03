@@ -50,6 +50,7 @@ const AdminLayout = () => {
   };
 
   const user = JSON.parse(localStorage.getItem("user")) || {};
+  
   const handleProfileClick = () => {
     navigate('/admin/profile');
     setIsDropdownOpen(false);
@@ -126,7 +127,7 @@ const AdminLayout = () => {
           {user?.TenDangNhap && <p>Chào, {user.TenDangNhap}</p>}
           <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginLeft: "auto" }} className="flex items-center gap-4 ml-auto">
             <div className="flex items-center gap-2">
-              <LuCircleUser className="icon" />
+              
               <span>{user?.TenDangNhap}</span>
             </div>
             {/* <button onClick={handleLogout} className="logout-button flex items-center gap-1">

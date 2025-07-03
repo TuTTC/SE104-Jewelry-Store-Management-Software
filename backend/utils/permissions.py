@@ -11,8 +11,9 @@ def permission_required(permission_name):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            current_user_id = get_jwt_identity()
-            user = NGUOIDUNG.query.get(current_user_id)
+            user_id = get_jwt_identity()  # bây giờ user_id là số hoặc chuỗi
+
+            user = NGUOIDUNG.query.get(user_id)
 
             if not user:
                 return jsonify({"msg": "Người dùng không tồn tại."}), 401
@@ -46,7 +47,6 @@ def permission_required(permission_name):
             # Tính quyền cuối cùng:
             final_permissions = (role_permissions | granted) - revoked
 
-            # Admin luôn được phép làm mọi thứ
             if user.vaitro.TenVaiTro == "Admin" or permission_name in final_permissions:
                 return f(*args, **kwargs)
             else:

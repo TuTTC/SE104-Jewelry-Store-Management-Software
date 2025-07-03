@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, send_file
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from models import DichVu
+from models.DichVu import DICHVU
 from models.PhieuDichVu import PHIEUDICHVU
 from models.ChiTietPhieuDichVu import CHITIETPHIEUDICHVU
 from datetime import datetime
@@ -21,8 +21,8 @@ SURCHARGE_MAP = {
 
 @dichvu_bp.route("/debug/dichvu")
 def debug_dv():
-    from models import DichVu
-    return jsonify([dv.TenDV for dv in DichVu.query.all()])
+    from models.DichVu import DICHVU
+    return jsonify([dv.TenDV for dv in DICHVU.query.all()])
 
 
 # Thêm dịch vụ mới
@@ -30,7 +30,7 @@ def debug_dv():
 def create_dichvu():
     data = request.get_json()
     try:
-        new_dv = DichVu(
+        new_dv = DICHVU(
             TenDV=data['TenDV'],
             DonGia=data['DonGia'],
             MoTa=data.get('MoTa'),
@@ -46,7 +46,7 @@ def create_dichvu():
 # Xóa dịch vụ theo ID
 @dichvu_bp.route('/dichvu/<int:id>', methods=['DELETE'])
 def delete_dichvu(id):
-    dv = DichVu.query.get(id)
+    dv = DICHVU.query.get(id)
     if not dv:
         return jsonify({'status': 'error', 'message': 'Dịch vụ không tồn tại'}), 404
     db.session.delete(dv)
@@ -57,7 +57,7 @@ def delete_dichvu(id):
 @dichvu_bp.route('/dichvu/<int:id>', methods=['PUT'])
 def update_dichvu(id):
     data = request.get_json()
-    dv = DichVu.query.get(id)
+    dv = DICHVU.query.get(id)
     if not dv:
         return jsonify({'status': 'error', 'message': 'Dịch vụ không tồn tại'}), 404
 
@@ -73,7 +73,7 @@ def update_dichvu(id):
 @dichvu_bp.route('/dichvu/search', methods=['GET'])
 def search_dichvu():
     keyword = request.args.get('keyword', '')
-    results = DichVu.query.filter(DichVu.TenDV.ilike(f'%{keyword}%')).all()
+    results = DICHVU.query.filter(DICHVU.TenDV.ilike(f'%{keyword}%')).all()
     data = [
         {
             'MaDV': dv.MaDV,
@@ -89,7 +89,7 @@ def search_dichvu():
 # Lấy danh sách tất cả dịch vụ
 @dichvu_bp.route('/dichvu', methods=['GET'])
 def get_all_dichvu():
-    services = DichVu.query.filter_by(TrangThai=True).all()
+    services = DICHVU.query.filter_by(TrangThai=True).all()
     data = []
 
     for dv in services:
@@ -142,7 +142,7 @@ def export_dichvu_pdf():
 
     p.setFont("Helvetica", 12)
     y = 770
-    services = DichVu.query.all()
+    services = DICHVU.query.all()
     for i, dv in enumerate(services):
         p.drawString(100, y, f"{i+1}. {dv.TenDV} - {float(dv.DonGia):,.0f} VND")
         y -= 20

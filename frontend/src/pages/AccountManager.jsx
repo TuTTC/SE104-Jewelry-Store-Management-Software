@@ -228,7 +228,7 @@
 
 
 import React, { useState, useEffect } from "react";
-import { Edit, Trash, ShieldCheck } from "lucide-react";
+import { Edit, Trash, ShieldCheck, Filter, ArrowUpDown } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm";
 import PermissionModal from "../components/PermissionModal";
 import userApi from "../services/userApi";
@@ -248,8 +248,10 @@ function AccountManager() {
   const [rolePermissions, setRolePermissions] = useState([]); // Quyền mặc định theo vai trò
   const [userGrantedPermissions, setUserGrantedPermissions] = useState([]); // Quyền riêng được cấp thêm
   const [userDeniedPermissions, setUserDeniedPermissions] = useState([]);  // Quyền riêng bị từ chối
-
-
+  const [data, setData] = useState([]);// State lưu dữ liệu hiển thị (có thể lấy từ props hoặc API)
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" }); // State để lưu cột đang sắp xếp và chiều sắp xếp (asc/desc)
+  const [showRoleFilter, setShowRoleFilter] = useState(false);  // State để hiện/ẩn filter vai trò
+  const [selectedRole, setSelectedRole] = useState("");  // State để lưu vai trò đang chọn để lọc
   const [formData, setFormData] = useState({});
   const [error, setError] = useState("");
 
@@ -257,16 +259,21 @@ function AccountManager() {
   useEffect(() => {
     fetchAccounts();
   }, []);
+  useEffect(() => {
+   setData(accounts);
+    }, [accounts]);
 
-  const fetchAccounts = async () => {
-    try {
-      const data = await userApi.getAllUsers();
-      console.log("DATA FROM API:", data);
-      setAccounts(data);  // Hoặc lưu state gì đó
-    } catch (error) {
-      console.error(error);
-    }
-  };
+const fetchAccounts = async () => {
+  try {
+    const fetchedData = await userApi.getAllUsers();
+    console.log("DATA FROM API:", fetchedData);
+    setAccounts(fetchedData);
+    setData(fetchedData);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 
 
   // Modal tài khoản
@@ -432,6 +439,46 @@ const submitForm = async (e) => {
     }
   };
 
+  const sortData = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+
+    const sortedData = [...data].sort((a, b) => {
+      if (a[key] === null) return 1;
+      if (b[key] === null) return -1;
+      if (a[key] === null && b[key] === null) return 0;
+
+      if (typeof a[key] === "string") {
+        // so sánh không phân biệt hoa thường
+        const nameA = a[key].toLowerCase();
+        const nameB = b[key].toLowerCase();
+        if (nameA < nameB) return direction === "asc" ? -1 : 1;
+        if (nameA > nameB) return direction === "asc" ? 1 : -1;
+        return 0;
+      } else {
+        // so sánh số
+        return direction === "asc" ? a[key] - b[key] : b[key] - a[key];
+      }
+    });
+    setData(sortedData);
+  };
+
+  // Hàm xử lý khi người dùng chọn vai trò lọc
+const handleRoleChange = (e) => {
+  const value = e.target.value;
+  setSelectedRole(value);
+
+  if (value === "") {
+    setData(accounts);
+  } else {
+    const filteredData = accounts.filter((item) => item.VaiTro === value);
+    setData(filteredData);
+  }
+};
+
 
   return (
     <div className="table-card">
@@ -462,16 +509,29 @@ const submitForm = async (e) => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Tên đăng nhập</th>
-                <th>Email</th>
-                <th>Vai trò</th>
-                <th>Ngày tạo</th>
+              <th onClick={() => sortData("UserID")}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("TenDangNhap")}>Tên đăng nhập<ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("Email")}>Email<ArrowUpDown className="sort-icon" /></th>
+               <th className="relative">
+                              Vai Trò 
+                              <Filter className="sort-icon" onClick={() => setShowRoleFilter(!showRoleFilter)} style={{ cursor: "pointer" }} />
+                              {showRoleFilter && (
+                                <div className="filter-popup">
+                                  <select value={selectedRole} onChange={handleRoleChange}>
+                                    <option value="">Tất cả</option>
+                                    {Array.from(new Set(accounts.map(p => p.VaiTro))).map((cat, index) => (
+                                      <option key={index} value={cat}>{cat}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </th>
+              <th onClick={() => sortData("NgayTao")}>Ngày tạo<ArrowUpDown className="sort-icon" /></th>
                 <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {accounts.map((a) => (
+              {data.map((a) => (
                 <tr key={a.UserID}>
                   <td>{a.UserID}</td>
                   <td>{a.TenDangNhap}</td>
@@ -499,16 +559,29 @@ const submitForm = async (e) => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Tên đăng nhập</th>
-                <th>Email</th>
-                <th>Vai trò</th>
-                <th>Ngày tạo</th>
+              <th onClick={() => sortData("UserID")}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("TenDangNhap")}>Tên đăng nhập<ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("Email")}>Email<ArrowUpDown className="sort-icon" /></th>
+               <th className="relative">
+                              Vai Trò 
+                              <Filter className="sort-icon" onClick={() => setShowRoleFilter(!showRoleFilter)} style={{ cursor: "pointer" }} />
+                              {showRoleFilter && (
+                                <div className="filter-popup">
+                                  <select value={selectedRole} onChange={handleRoleChange}>
+                                    <option value="">Tất cả</option>
+                                    {Array.from(new Set(accounts.map(p => p.VaiTro))).map((cat, index) => (
+                                      <option key={index} value={cat}>{cat}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              )}
+                            </th>
+                <th onClick={() => sortData("NgayTao")}>Ngày tạo<ArrowUpDown className="sort-icon" /></th>
                 <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
-              {accounts.map((a) => (
+              {data.map((a) => (
                 <tr key={a.UserID}>
                   <td>{a.UserID}</td>
                   <td>{a.TenDangNhap}</td>

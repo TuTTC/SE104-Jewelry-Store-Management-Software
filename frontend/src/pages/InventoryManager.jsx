@@ -43,7 +43,13 @@ const InventoryManager = () => {
       }))
     );
   } catch (err) {
-    console.error("Lỗi khi lấy dữ liệu tồn kho:", err);
+    if (err.status === 403) {
+      alert("Bạn không có quyền xem!");
+    } else if (err.status === 401) {
+      alert("Vui lòng đăng nhập!");
+    } else {
+      console.error("Lỗi khi lấy dữ liệu tồn kho:", err);
+    }
   }
 };
 

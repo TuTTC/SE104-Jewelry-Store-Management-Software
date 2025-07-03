@@ -10,6 +10,9 @@ from sqlalchemy import func, desc
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
 
 baocao_bp = Blueprint("baocao", __name__, url_prefix="/api")
 
@@ -57,6 +60,8 @@ def tao_bao_cao():
 
 # Cập nhật báo cáo
 @baocao_bp.route('/baocao/<int:id>', methods=['PUT'])
+@jwt_required()
+@permission_required("reports:edit")
 def update_baocao(id):
     try:
         data = request.get_json()
@@ -82,6 +87,8 @@ def update_baocao(id):
 
 # Xóa báo cáo
 @baocao_bp.route('/baocao/<int:id>', methods=['DELETE'])
+@jwt_required()
+@permission_required("reports:delete")
 def delete_baocao(id):
     bc = BAOCAO.query.get_or_404(id)
     db.session.delete(bc)
@@ -91,6 +98,8 @@ def delete_baocao(id):
 # Lấy danh sách tất cả báo cáo
 
 @baocao_bp.route('/baocao', methods=['GET'])
+@jwt_required()
+@permission_required("reports:view")
 def list_baocao():
     reports = BAOCAO.query.order_by(BAOCAO.TuNgay.desc()).all()
     result = []
@@ -175,6 +184,8 @@ def list_baocao():
 
 # Báo cáo tồn kho
 @baocao_bp.route('/baocao/tonkho', methods=['GET'])
+@jwt_required()
+@permission_required("reports:view")
 def baocao_ton_kho():
     reports = BAOCAO.query.filter(BAOCAO.LoaiBaoCao == 'Tồn kho').all()
     data = [r.to_dict() for r in reports]
@@ -182,6 +193,8 @@ def baocao_ton_kho():
 
 # Xem/print báo cáo ra PDF
 @baocao_bp.route("/baocao/<int:id>/print", methods=["GET"])
+@jwt_required()
+@permission_required("reports:view")
 def print_bao_cao(id):
     reports = BAOCAO.query.order_by(BAOCAO.TuNgay.desc()).all()
 

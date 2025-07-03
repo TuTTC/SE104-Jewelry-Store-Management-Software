@@ -36,15 +36,24 @@ const ProductManager = () => {
   }, []);
  
   const fetchProducts = () => {
-    productApi.getAllProducts()
-      .then(data => {
-        console.log(data)
-        setProducts(data.data);
-        setCategories(data.categories);
-        applyFilterAndSort(data.data, selectedCategory, selectedSupplier, selectedName, sortConfig);
+    try {
+      productApi.getAllProducts()
+        .then(data => {
+          console.log(data)
+          setProducts(data.data);
+          setCategories(data.categories);
+          applyFilterAndSort(data.data, selectedCategory, selectedSupplier, selectedName, sortConfig);
 
-      })
-      .catch(err => alert(err.message));
+        })
+    } catch (err) { 
+      if (err.status === 403) {
+      alert("Bạn không có quyền xem!");
+    } else if (err.status === 401) {
+      alert("Vui lòng đăng nhập!");
+    } else {
+      console.error("Lỗi khi lấy dữ liệu:", err);
+    }
+  }
   };
 
   const applyFilterAndSort = (data, category, supplier, name, sortCfg) => {
@@ -231,7 +240,7 @@ const ProductManager = () => {
           <thead>
             <tr>
               <th onClick={() => sortData("MaSP")}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th className="relative">
+              {/* <th className="relative">
                 Tên
               <Filter className="sort-icon" onClick={() => setShowNameFilter(!showNameFilter)} style={{ cursor: "pointer" }} />
               
@@ -245,8 +254,8 @@ const ProductManager = () => {
                   </select>
                 </div>
               )}
-            </th>
-
+            </th> */}
+               <th onClick={() => sortData("TenSP")}>Tên <ArrowUpDown className="sort-icon" /></th>
               <th onClick={() => sortData("GiaBan")}>Giá <ArrowUpDown className="sort-icon" /></th>
               
               <th className="relative">
@@ -291,7 +300,7 @@ const ProductManager = () => {
               <tr key={p.MaSP}>
                 <td>{p.MaSP}</td>
                 <td>{p.TenSP}</td>
-                <td>{p.GiaBan.toLocaleString()} VND</td>
+                <td>{formatCurrency(p.GiaBan)}</td>
                 <td>{p.TenDM}</td>
                 <td>{p.SoLuongTon}</td>
                 <td>{p.TenNCC}</td>
@@ -366,7 +375,16 @@ const ProductManager = () => {
         categories={categories}
       />
     </div>
+    
   );
+  // Hàm format tiền
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(value);}
 };
+
+
 
 export default ProductManager;

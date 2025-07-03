@@ -28,7 +28,8 @@ const OrdersManager = () => {
   const [selectedOrderId, setSelectedOrderId] = useState(null); // đơn đang thao tác
   const [chiTietList, setChiTietList] = useState([]);
 
-  const fetchOrders = async () => {
+const fetchOrders = async () => {
+  try {
     const res = await danhSachDonHang();
     if (res.status === "success") {
       // đảm bảo mỗi object có customerId
@@ -36,10 +37,24 @@ const OrdersManager = () => {
         ...o,
         customerId: o.customerId ?? o.MaKH  // nếu API chỉ trả MaKH
       }));
-      console.log("▶️ Mapped orders:", data);
+      console.log("Mapped orders:", data);
       setOrders(data);
+    } else {
+      // Nếu API trả về status không thành công
+      alert(res.message || "Lấy dữ liệu đơn hàng thất bại");
     }
-  };
+  } catch (err) {
+    if (err.status === 403) {
+      alert("Bạn không có quyền xem!");
+    } else if (err.status === 401) {
+      alert("Vui lòng đăng nhập!");
+    } else {
+      console.error("Lỗi khi lấy dữ liệu tồn kho:", err);
+      alert("Có lỗi xảy ra khi lấy dữ liệu. Vui lòng thử lại.");
+    }
+  }
+};
+
 
   useEffect(() => {
     fetchOrders();

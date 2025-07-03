@@ -17,8 +17,10 @@ const CategoryManager = () => {
   const [nameFilter, setNameFilter] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-
-  useEffect(() => {
+  const [showNameFilter, setShowNameFilter] = useState(false);
+  const [selectedName, setSelectedName] = useState('');
+  
+  useEffect(() => { 
     fetchCategories();
   }, []);
 
@@ -27,8 +29,14 @@ const CategoryManager = () => {
       const res = await categoryApi.getAll();
       setCategories(res || []);
     } catch (error) {
-      alert(error.message);
+      if (error.status === 403) {
+      alert("Bạn không có quyền xem!");
+    } else if (error.status === 401) {
+      alert("Vui lòng đăng nhập!");
+    } else {
+      console.error("Lỗi khi lấy dữ liệu:", error);
     }
+  }
   };
 
   const openModal = (type, item = null) => {
@@ -99,25 +107,32 @@ const CategoryManager = () => {
     setSortConfig({ key, direction });
   };
 
-  const applyFilterAndSort = () => {
-    let filteredData = [...categories];
+const applyFilterAndSort = () => {
+  let filteredData = [...categories];
 
-    if (nameFilter.trim() !== '') {
-      filteredData = filteredData.filter(item =>
-        item.TenDM.toLowerCase().includes(nameFilter.toLowerCase())
-      );
-    }
+  // Lọc theo tên nếu có chọn
+  if (selectedName.trim() !== '') {
+    filteredData = filteredData.filter(item => item.TenDM === selectedName);
+  }
 
-    if (sortConfig.key) {
-      filteredData.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
+  // Sắp xếp nếu có key
+  if (sortConfig.key) {
+    filteredData.sort((a, b) => {
+      const aValue = a[sortConfig.key] || '';
+      const bValue = b[sortConfig.key] || '';
 
-    return filteredData;
-  };
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortConfig.direction === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+    });
+  }
+
+  return filteredData;
+};
 
   const exportToCSV = () => {
     const headers = ['ID,Tên,Mô tả'];
@@ -148,9 +163,9 @@ const CategoryManager = () => {
             onChange={(e) => setNameFilter(e.target.value)}
             className="input-filter"
           />
-          <button onClick={() => setShowSearchModal(true)} className="action-button">
+          {/* <button onClick={() => setShowSearchModal(true)} className="action-button">
             <Search className="icon" /> Tìm kiếm
-          </button>
+          </button> */}
           {/* <button onClick={() => setShowFilterModal(true)} className="action-button">
             <Filter className="icon" /> Lọc
           </button> */}
@@ -166,7 +181,21 @@ const CategoryManager = () => {
           <thead>
             <tr>
               <th onClick={() => sortData('MaDM')}>ID <ArrowUpDown className="sort-icon" /></th>
-              <th onClick={() => sortData('TenDM')}>Tên <ArrowUpDown className="sort-icon" /></th>
+             <th className="relative">
+                Tên
+                <Filter className="sort-icon" onClick={() => setShowNameFilter(!showNameFilter)} style={{ cursor: "pointer" }} />
+                {showNameFilter && (
+                  <div className="filter-popup">
+                    <select value={selectedName} onChange={(e) => setSelectedName(e.target.value)}>
+                      <option value="">Tất cả</option>
+                      {Array.from(new Set(categories.map(c => c.TenDM))).map((name, index) => (
+                        <option key={index} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </th>
+
               <th onClick={() => sortData('MoTa')}>Mô tả <ArrowUpDown className="sort-icon" /></th>
               <th>Hành động</th>
             </tr>

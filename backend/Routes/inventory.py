@@ -3,13 +3,20 @@ from models.TonKho import TONKHO
 from models.SanPham import SANPHAM
 from database import db
 from datetime import datetime
-
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
 tonkho_bp = Blueprint("tonkho_bp", __name__)
 
 
 # Lấy toàn bộ danh sách tồn kho
 @tonkho_bp.route("/", methods=["GET"])
+@jwt_required()
+@permission_required("inventory:view")
 def get_all_tonkho():
+    current_user = get_jwt_identity()
+    print("Thông tin user:", current_user)  # Phải in ra dict như {"id": 1, "role": "Admin"}
+
     tonkho_list = TONKHO.query.all()
     result = []
     for tk in tonkho_list:
@@ -40,6 +47,8 @@ def get_tonkho_by_id(id):
 
 # Thêm mới tồn kho
 @tonkho_bp.route("/", methods=["POST"])
+@jwt_required()
+@permission_required("inventory:add")
 def create_tonkho():
     data = request.get_json()
 
@@ -64,6 +73,8 @@ def create_tonkho():
 
 # Cập nhật tồn kho
 @tonkho_bp.route("/<int:id>", methods=["PUT"])
+@jwt_required()
+@permission_required("inventory:edit")
 def update_tonkho(id):
     tk = TONKHO.query.get_or_404(id)
     data = request.get_json()
@@ -79,6 +90,8 @@ def update_tonkho(id):
 
 # Xóa tồn kho
 @tonkho_bp.route("/<int:id>", methods=["DELETE"])
+@jwt_required()
+@permission_required("inventory:delete")
 def delete_tonkho(id):
     tk = TONKHO.query.get_or_404(id)
     db.session.delete(tk)
@@ -132,6 +145,8 @@ def delete_tonkho(id):
 # API cập nhật số lượng tồn kho hàng loạt và đồng bộ bảng TONKHO
 # API đồng bộ tồn kho từ bảng SANPHAM
 @tonkho_bp.route("/capnhat_all", methods=["PUT"])
+@jwt_required()
+@permission_required("inventory:edit")
 def dong_bo_tonkho_tu_sanpham():
     """
     Đồng bộ số lượng tồn từ bảng SANPHAM sang bảng TONKHO

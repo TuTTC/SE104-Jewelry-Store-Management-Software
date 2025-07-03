@@ -133,6 +133,7 @@ def send_otp_register():
     
 
 
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -145,15 +146,26 @@ def login():
     user = NGUOIDUNG.query.filter_by(TenDangNhap=ten_dang_nhap).first()
 
     if user and user.vaitro and check_password_hash(user.MatKhau, mat_khau):
-        identity = {'id': user.UserID, 'role': user.vaitro.TenVaiTro}
+        identity = str(user.UserID)  # Identity chỉ là string hoặc int
+        additional_claims = {"role": user.vaitro.TenVaiTro}
         expires = timedelta(days=1)  
-        access_token = create_access_token(identity=identity, expires_delta=expires)
+        
+        access_token = create_access_token(
+            identity=identity,
+            additional_claims=additional_claims,
+            expires_delta=expires
+        )
+
         return jsonify({
             'token': access_token,
-            'user': identity
+            'user': {
+                'id': user.UserID,
+                'role': user.vaitro.TenVaiTro
+            }
         }), 200
 
     return jsonify({'message': 'Tên đăng nhập hoặc mật khẩu không đúng'}), 401
+
 
 
 # @auth_bp.route('/send-otp', methods=['POST'])

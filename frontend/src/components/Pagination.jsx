@@ -1,25 +1,17 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const Pagination = () => {
-  const [activePage, setActivePage] = useState(1); // Trang mặc định là 3
-  const totalPages = 5; // Số trang tĩnh (1, 2, 3, 4, 5)
-
-  const handlePageChange = (page) => {
-    setActivePage(page);
-    // Placeholder cho logic chuyển trang thực tế
-  };
-
+const Pagination = ({
+  activePage,
+  totalPages,
+  onPageChange
+}) => {
   const handlePrevPage = () => {
-    if (activePage > 1) {
-      setActivePage(activePage - 1);
-    }
+    if (activePage > 1) onPageChange(activePage - 1);
   };
 
   const handleNextPage = () => {
-    if (activePage < totalPages) {
-      setActivePage(activePage + 1);
-    }
+    if (activePage < totalPages) onPageChange(activePage + 1);
   };
 
   return (
@@ -31,7 +23,7 @@ const Pagination = () => {
         onClick={handlePrevPage}
         disabled={activePage === 1}
       >
-        <ChevronLeft className="w-10 h-10 text-gray-500" />
+        <ChevronLeft className="w-6 h-6" />
       </button>
 
       <div className="pagination-pages">
@@ -39,7 +31,7 @@ const Pagination = () => {
           <button
             key={page}
             className={`pagination-page ${activePage === page ? 'pagination-active' : ''}`}
-            onClick={() => handlePageChange(page)}
+            onClick={() => onPageChange(page)}
           >
             {page}
           </button>
@@ -53,7 +45,7 @@ const Pagination = () => {
         onClick={handleNextPage}
         disabled={activePage === totalPages}
       >
-        <ChevronRight className="w-10 h-10 text-gray-500" />
+        <ChevronRight className="w-6 h-6" />
       </button>
     </div>
   );

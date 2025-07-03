@@ -1,60 +1,75 @@
 const BASE_URL = "http://localhost:5000/api/product";
 
+// Hàm lấy header chuẩn có Authorization nếu có token
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+// Hàm xử lý response chung
+const handleResponse = async (res) => {
+  const data = await res.json();
+  if (!res.ok) {
+    const error = new Error(data.error || "Có lỗi xảy ra");
+    error.status = res.status;
+    throw error;
+  }
+  return data;
+};
 export const getAllProducts = async () => {
-  const res = await fetch(`${BASE_URL}/`);
-  if (!res.ok) throw new Error("Lỗi khi lấy danh sách sản phẩm");
-  return res.json();
+  const res = await fetch(`${BASE_URL}/`, {
+    headers: getAuthHeader(),
+  });
+  return handleResponse(res);
 };
 
 export const getProductById = async (id) => {
-  const res = await fetch(`${BASE_URL}/${id}`);
-  if (!res.ok) throw new Error("Sản phẩm không tồn tại");
-  return res.json();
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    headers: getAuthHeader(),
+  });
+  return handleResponse(res, "Sản phẩm không tồn tại");
 };
 
 export const addProduct = async (productData) => {
   const res = await fetch(`${BASE_URL}/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeader(),
     body: JSON.stringify(productData),
   });
-  if (!res.ok) throw new Error("Lỗi khi thêm sản phẩm");
-  return res.json();
+  return handleResponse(res, "Lỗi khi thêm sản phẩm");
 };
 
 export const updateProduct = async (id, productData) => {
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeader(),
     body: JSON.stringify(productData),
   });
-  if (!res.ok) throw new Error("Lỗi khi cập nhật sản phẩm");
-  return res.json();
+  return handleResponse(res, "Lỗi khi cập nhật sản phẩm");
 };
 
 export const deleteProduct = async (id) => {
   const res = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",
+    headers: getAuthHeader(),
   });
-  if (!res.ok) throw new Error("Lỗi khi xóa sản phẩm");
-  return res.json();
+  return handleResponse(res, "Lỗi khi xóa sản phẩm");
 };
 
 export const getProductsByCategory = async (maDM) => {
-  const res = await fetch(`${BASE_URL}/danhmuc/${maDM}`);
-  if (!res.ok) throw new Error("Lỗi khi lấy sản phẩm theo danh mục");
-  return res.json();
+  const res = await fetch(`${BASE_URL}/danhmuc/${maDM}`, {
+    headers: getAuthHeader(),
+  });
+  return handleResponse(res, "Lỗi khi lấy sản phẩm theo danh mục");
 };
 
 export const updateAllProductPrices = async () => {
   const res = await fetch(`${BASE_URL}/capnhat_giaban`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      // Authorization: `Bearer ${yourAccessToken}` // Bỏ comment nếu bạn bật JWT
-    },
+    headers: getAuthHeader(),
   });
-  
-  if (!res.ok) throw new Error("Lỗi khi cập nhật giá bán toàn bộ sản phẩm");
-  return res.json();
+  return handleResponse(res, "Lỗi khi cập nhật giá bán toàn bộ sản phẩm");
 };

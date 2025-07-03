@@ -31,8 +31,15 @@ export default function ReportDashboard() {
       try {
         const res = await layDanhSachBaoCao();
         if (res.status === "success") setReports(res.data);
-      } catch (err) {
-        console.error("❌ Lỗi khi lấy báo cáo:", err);
+      } catch (error) {
+        if (error.status === 403) {
+          alert("Bạn không có quyền xem!");
+        } else if (error.status === 401) {
+          alert("Vui lòng đăng nhập!");
+        } else {
+          console.error("Lỗi khi lấy dữ liệu:", error);
+        }
+        // console.error("❌ Lỗi khi lấy báo cáo:", err);
       }
     })();
   }, []);

@@ -5,7 +5,7 @@ from models.TonKho import TONKHO
 from flask_jwt_extended import jwt_required
 from seeds.update_giaban_sp import cap_nhat_gia_ban_cho_toan_bo_san_pham  # Giả sử hàm đó để trong services/product_service.py, điều chỉnh path nếu cần
 from models.ThamSo import THAMSO
-
+from utils.permissions import permission_required
 from models.ChiTietPhieuNhap import CHITIETPHIEUNHAP
 from models.DanhMucSanPham import DANHMUC
 from sqlalchemy import desc
@@ -16,8 +16,8 @@ product_bp = Blueprint('product_bp', __name__)
 
 # Lấy toàn bộ sản phẩm
 @product_bp.route('/', methods=['GET'])
-# @jwt_required()
-# @permission_required("products:view")
+@jwt_required()
+@permission_required("products:view")
 def get_products():
     try:
         # Đồng bộ tồn kho trước khi trả về dữ liệu
@@ -76,8 +76,8 @@ def get_products_by_category(ma_dm):
 
 # Thêm sản phẩm mới
 @product_bp.route('/', methods=['POST'])
-# @jwt_required()
-# @permission_required("products:add")
+@jwt_required()
+@permission_required("products:add")
 def add_product():
     data = request.get_json()
     try:
@@ -103,6 +103,7 @@ def add_product():
 
 # Lấy sản phẩm theo ID
 @product_bp.route('/<int:product_id>', methods=['GET'])
+
 def get_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:
@@ -122,8 +123,8 @@ def get_product(product_id):
 
 # Cập nhật sản phẩm
 @product_bp.route('/<int:product_id>', methods=['PUT'])
-# @jwt_required()
-# @permission_required("products:edit")
+@jwt_required()
+@permission_required("products:edit")
 def update_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:
@@ -155,8 +156,8 @@ def update_product(product_id):
 
 # Xóa sản phẩm
 @product_bp.route('/<int:product_id>', methods=['DELETE'])
-# @jwt_required()
-# @permission_required("products:delete")
+@jwt_required()
+@permission_required("products:delete")
 def delete_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product:

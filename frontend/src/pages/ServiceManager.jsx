@@ -291,6 +291,7 @@ const handleLuuPhieuDichVu = async (payload) => {
             )}
           </tbody>
         </table>
+         
         <div className="service-actions">
         <button onClick={handleSearchService} className="action-button">
             Tra cứu dịch vụ
@@ -302,6 +303,7 @@ const handleLuuPhieuDichVu = async (payload) => {
             In phiếu dịch vụ
         </button>
         </div>
+        <Pagination />
       </div>
     )}
     {selectedTab === "list-phieudichvu" && (
