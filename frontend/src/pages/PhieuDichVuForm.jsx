@@ -101,11 +101,14 @@ const PhieuDichVuForm = ({
       }
     ],
       NgayLap: ngayLap,
-      TongTien: parseFloat(tongTien),
+      TongTien: parseFloat(thanhTien),
       TraTruoc: parseFloat(traTruoc || 0),
       GhiChu: ghiChu,
       TrangThai: trangThai,
     };
+    console.log("MaDV đang lưu:", maDV);
+    console.log("Tên dịch vụ:", danhSachDichVu.find(d => d.MaDV == maDV)?.TenDV);
+    console.log("Payload đầy đủ:", payload);
     onSave && onSave(payload);
   };
 

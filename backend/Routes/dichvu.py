@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, send_file
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from models import DichVu
+from models import DICHVU
 from models.PhieuDichVu import PHIEUDICHVU
 from models.ChiTietPhieuDichVu import CHITIETPHIEUDICHVU
 from datetime import datetime
@@ -17,12 +17,17 @@ SURCHARGE_MAP = {
     "ChamKhacTheoYeuCau": "PhuThu_ChamKhac",
     "GiaCongNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],  # có thể chọn max %
     "ThayDaQuy": "PhuThu_GanDaKimCuong",
+    "GiaCongNhan": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],
+    "GanDaKimCuong": "PhuThu_GanDaKimCuong",
+    "ThuVang": "PhuThu_CanVang",
+    "SuaNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],  # có thể chọn max %",
+    "ThayMoiNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],
 }
 
 @dichvu_bp.route("/debug/dichvu")
 def debug_dv():
-    from models import DichVu
-    return jsonify([dv.TenDV for dv in DichVu.query.all()])
+    from models import DICHVU
+    return jsonify([dv.TenDV for dv in DICHVU.query.all()])
 
 
 # Thêm dịch vụ mới
@@ -30,7 +35,7 @@ def debug_dv():
 def create_dichvu():
     data = request.get_json()
     try:
-        new_dv = DichVu(
+        new_dv = DICHVU(
             TenDV=data['TenDV'],
             DonGia=data['DonGia'],
             MoTa=data.get('MoTa'),
@@ -46,7 +51,7 @@ def create_dichvu():
 # Xóa dịch vụ theo ID
 @dichvu_bp.route('/dichvu/<int:id>', methods=['DELETE'])
 def delete_dichvu(id):
-    dv = DichVu.query.get(id)
+    dv = DICHVU.query.get(id)
     if not dv:
         return jsonify({'status': 'error', 'message': 'Dịch vụ không tồn tại'}), 404
     db.session.delete(dv)
@@ -57,7 +62,7 @@ def delete_dichvu(id):
 @dichvu_bp.route('/dichvu/<int:id>', methods=['PUT'])
 def update_dichvu(id):
     data = request.get_json()
-    dv = DichVu.query.get(id)
+    dv = DICHVU.query.get(id)
     if not dv:
         return jsonify({'status': 'error', 'message': 'Dịch vụ không tồn tại'}), 404
 
@@ -73,7 +78,7 @@ def update_dichvu(id):
 @dichvu_bp.route('/dichvu/search', methods=['GET'])
 def search_dichvu():
     keyword = request.args.get('keyword', '')
-    results = DichVu.query.filter(DichVu.TenDV.ilike(f'%{keyword}%')).all()
+    results = DICHVU.query.filter(DICHVU.TenDV.ilike(f'%{keyword}%')).all()
     data = [
         {
             'MaDV': dv.MaDV,
@@ -89,7 +94,7 @@ def search_dichvu():
 # Lấy danh sách tất cả dịch vụ
 @dichvu_bp.route('/dichvu', methods=['GET'])
 def get_all_dichvu():
-    services = DichVu.query.filter_by(TrangThai=True).all()
+    services = DICHVU.query.all()
     data = []
 
     for dv in services:
@@ -102,7 +107,7 @@ def get_all_dichvu():
             # với mảng, lấy max của các tham số đang kích hoạt
             values = []
             for key in mapping:
-                ts = THAMSO.query.filter_by(TenThamSo=key, KichHoat=True).first()
+                ts = THAMSO.query.filter_by(TenThamSo=key).first()
                 if ts:
                     try:
                         values.append(float(ts.GiaTri))
@@ -110,7 +115,7 @@ def get_all_dichvu():
                         pass
             percent = max(values) if values else 0.0
         else:
-            ts = THAMSO.query.filter_by(TenThamSo=mapping, KichHoat=True).first()
+            ts = THAMSO.query.filter_by(TenThamSo=mapping).first()
             if ts:
                 try:
                     percent = float(ts.GiaTri)
@@ -142,7 +147,7 @@ def export_dichvu_pdf():
 
     p.setFont("Helvetica", 12)
     y = 770
-    services = DichVu.query.all()
+    services = DICHVU.query.all()
     for i, dv in enumerate(services):
         p.drawString(100, y, f"{i+1}. {dv.TenDV} - {float(dv.DonGia):,.0f} VND")
         y -= 20

@@ -41,12 +41,21 @@ const GeneralModalForm = ({
   if (!showModal) return null;
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    let parsedValue = value;
+    if (name === "status") {
+      parsedValue = value === "true"; // ép kiểu thành boolean
+    }
+
+    setFormData(prev => ({ ...prev, [name]: parsedValue }));
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    console.log("handleSubmit trong GeneralModalForm được gọi");
+    if (onSubmit) {
+      onSubmit(formData); // Gọi về ServiceManager.jsx
+    }
   };
   return (
     <div className="modal-overlay">
@@ -107,7 +116,7 @@ const GeneralModalForm = ({
               />
               <select
                 name="status"
-                value={formData.status || "true"}
+                value={formData.status === true ? "true" : "false"}
                 onChange={handleInputChange}
                 required
               >
