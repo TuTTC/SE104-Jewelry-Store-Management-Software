@@ -154,25 +154,29 @@ const applyFilterAndSort = () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý danh mục</h2>
+        <h3>
+          Danh mục sản phẩm: {applyFilterAndSort().length}
+        </h3>
         <div className="flex items-center gap-2">
-          <input
-            type="text"
-            placeholder="Lọc theo tên danh mục..."
-            value={nameFilter}
-            onChange={(e) => setNameFilter(e.target.value)}
-            className="input-filter"
-          />
+          
           {/* <button onClick={() => setShowSearchModal(true)} className="action-button">
             <Search className="icon" /> Tìm kiếm
           </button> */}
           {/* <button onClick={() => setShowFilterModal(true)} className="action-button">
             <Filter className="icon" /> Lọc
           </button> */}
+         
+        <div className="action-buttons">
+           {/* <input
+            type="text"
+            placeholder="Lọc theo tên danh mục..."
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            className="input-filter"
+          /> */}
           <button onClick={() => openModal('add')} className="action-button">Thêm danh mục</button>
-          <button onClick={exportToCSV} className="action-button">
-            <Download className="icon" /> Xuất CSV
-          </button>
+          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+        </div>
         </div>
       </div>
 

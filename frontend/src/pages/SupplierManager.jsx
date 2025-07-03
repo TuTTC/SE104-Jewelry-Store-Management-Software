@@ -168,7 +168,7 @@ const sortData = (key) => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý nhà cung cấp</h2>
+        <h2 className="table-title"></h2>
         <button onClick={() => openModal("add")} className="action-button">
           Thêm nhà cung cấp
         </button>

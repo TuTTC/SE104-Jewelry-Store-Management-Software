@@ -155,7 +155,7 @@ const ParameterManager = () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý tham số</h2>
+        <h2 className="table-title"></h2>
         <div>
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>

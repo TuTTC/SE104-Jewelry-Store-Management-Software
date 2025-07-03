@@ -200,8 +200,8 @@ const handleSubmit = async (e) => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý tồn kho</h2>
-        <div>
+        <h2 className="table-title"></h2>
+        <div className="action-buttons">
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
           {/* <button onClick={handleUpdateAll} className="action-button">Cập nhật tồn kho</button> */}

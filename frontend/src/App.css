@@ -2204,10 +2204,21 @@ body {
 }
 
 .filter-container {
-  margin: 10px 0;
-  display: flex;
-  gap: 10px;
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  
+  font-size: 14px;
+  transition: background-color 0.2s;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
+.filter-container:hover {
+  background-color: #f4f4f9;
+}
+
 
 .filter-button {
   padding: 6px 12px;
@@ -2220,7 +2231,7 @@ body {
 }
 
 .filter-button:hover {
-  background-color: #0056b3;
+  background-color: #4885c5;
 }
 
 .relative {
@@ -2231,9 +2242,27 @@ body {
   position: absolute;
   top: 100%;
   left: 0;
-  background: white;
-  border: 1px solid #ddd;
-  padding: 5px;
-  z-index: 10;
-  margin-top: 5px;
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+.filter-popup select {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  outline: none;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  font-size: 14px;
+  /* color: #333333; */
+  appearance: none; /* Ẩn giao diện mặc định của select trên nhiều trình duyệt */
+}
+
+.filter-popup select:focus {
+  background-color: #f0f0f0;
 }

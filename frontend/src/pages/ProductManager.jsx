@@ -27,10 +27,14 @@ const ProductManager = () => {
   const [showNameFilter, setShowNameFilter] = useState(false);
   const [selectedName, setSelectedName] = useState("");
   const [categories, setCategories] = useState([]);
-
+  const [displayedProducts, setDisplayedProducts] = useState([]); // Dữ liệu hiển thị theo trang
+  const [activePage, setActivePage] = useState(1);
+  const pageSize = 10; // Số sản phẩm mỗi trang
   const [showImageModal, setShowImageModal] = useState(false);
   const [currentImage, setCurrentImage] = useState("");
+  const [allProducts, setAllProducts] = useState([]);
 
+   const totalPages = Math.ceil(allProducts.length / pageSize);
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -43,7 +47,7 @@ const ProductManager = () => {
           setProducts(data.data);
           setCategories(data.categories);
           applyFilterAndSort(data.data, selectedCategory, selectedSupplier, selectedName, sortConfig);
-
+          setAllProducts(data.data); 
         })
     } catch (err) { 
       if (err.status === 403) {
@@ -55,7 +59,11 @@ const ProductManager = () => {
     }
   }
   };
-
+    useEffect(() => {
+    const startIndex = (activePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    setDisplayedProducts(allProducts.slice(startIndex, endIndex));
+  }, [allProducts, activePage]);
   const applyFilterAndSort = (data, category, supplier, name, sortCfg) => {
     let result = [...data];
 
@@ -228,11 +236,15 @@ const ProductManager = () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý sản phẩm</h2>
-
-        <button onClick={() => openModal("add")} className="action-button">Thêm sản phẩm</button>
+        <h2 className="table-title">
+          Số lượng sản phẩm: {filteredProducts.length}
+        </h2>
         {/* <button onClick={handleUpdateAllPrices} className="action-button">Cập nhật giá</button> */}
-        <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+        
+    <div className="action-buttons">
+      <button onClick={() => openModal('add')} className="action-button">Thêm sản phẩm</button>
+      <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+    </div>
       </div>
 
       <div className="table-container">
@@ -326,7 +338,13 @@ const ProductManager = () => {
             ))}
           </tbody>
         </table>
-        <Pagination />
+      {totalPages > 1 && (
+        <Pagination
+          activePage={activePage}
+          totalPages={totalPages}
+          onPageChange={(page) => setActivePage(page)}
+        />
+      )}
       </div>
       {showImageModal && (
           <div
