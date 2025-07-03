@@ -35,7 +35,6 @@ def create_phieu_dich_vu():
         ma_kh      = data['MaKH']
         ghi_chu    = data.get('GhiChu', '')
         trang_thai = data.get('TrangThai', 'Chờ xử lý')
-        tra_truoc  = float(data.get('TraTruoc', 0))
         chi_tiet   = data.get('ChiTiet', [])
         if not chi_tiet and data.get('MaDV'):
             chi_tiet = [{
@@ -66,6 +65,7 @@ def create_phieu_dich_vu():
                 raise ValueError(
                   f"Tiền trả trước của dịch vụ {dv.TenDV} phải ≥ 50% thành tiền."
                 )
+            
 
             ct = CHITIETPHIEUDICHVU(
                 MaDV            = dv.MaDV,
@@ -87,7 +87,7 @@ def create_phieu_dich_vu():
             MaKH      = ma_kh,
             NgayLap   = datetime.now(),
             TongTien  = tong_tien,
-            TraTruoc  = tra_truoc,
+            TraTruoc  = sum(ct.TienTraTruoc for ct in chi_tiet_objs),
             GhiChu    = ghi_chu,
             TrangThai = trang_thai
         )
@@ -117,6 +117,7 @@ def create_phieu_dich_vu():
 @phieudichvu_bp.route('/phieudichvu/<int:id>', methods=['DELETE'])
 def delete_phieu_dichvu(id):
     try:
+        db.session.query(CHITIETPHIEUDICHVU).filter_by(MaPDV=id).delete()
         phieu = PHIEUDICHVU.query.get(id)
         if not phieu:
             return jsonify({"status": "error", "message": "Phiếu dịch vụ không tồn tại."}), 404

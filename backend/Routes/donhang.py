@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from models.DonHang import DONHANG
 from models.KhachHang import KHACHHANG
 from models.ChiTietDonHang import CHITIETDONHANG
-from models.ThamSo import THAMSO
+from models.SanPham import SANPHAM
 from database import db
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
@@ -18,13 +18,12 @@ donhang_bp = Blueprint("donhang", __name__, url_prefix="/api")
 @donhang_bp.route("/donhang", methods=["GET"])
 def get_danh_sach_donhang():
     try:
-        donhangs = THAMSO.query.all()
+        donhangs = DONHANG.query.all()
         data = []
         for dh in donhangs:
-            # Compute true total from the order's detail lines
+            # Tính tổng tiền thực tế từ các dòng chi tiết đơn hàng
             true_total = sum(ct.ThanhTien for ct in dh.chitietdonhang_list)
-
-            # If you want to persist the updated total in the DB:
+            
             # dh.TongTien = true_total
             # db.session.add(dh)
 
@@ -40,8 +39,6 @@ def get_danh_sach_donhang():
                 "deliveryAddress": dh.khachhang.DiaChi if dh.khachhang else ""
             })
 
-        # Uncomment to save the recalculated totals:
-        # db.session.commit()
 
         return jsonify({"status": "success", "data": data})
 
@@ -55,28 +52,38 @@ def tao_don_hang():
     try:
         data = request.get_json()
         ma_kh = int(data.get("MaKH"))
+
         khach = KHACHHANG.query.get(ma_kh)
         if not khach:
-            return jsonify({"status": "error", "message": ": Khách hàng không tồn tại."}), 400
+            return jsonify({"status": "error", "message": "Khách hàng không tồn tại."}), 400
 
-        donhang = THAMSO(
+        # Tạo đơn hàng mới (chưa có chi tiết)
+        donhang = DONHANG(
             MaKH=ma_kh,
             NgayDat=datetime.strptime(data.get("NgayDat"), "%Y-%m-%d"),
-            TongTien=data.get("TongTien"),
+            TongTien=Decimal(data.get("TongTien", 0)),
             TrangThai=data.get("TrangThai", "Pending")
         )
+
         db.session.add(donhang)
         db.session.commit()
-        return jsonify({"status": "success", "message": "Tạo đơn hàng thành công.", "id": donhang.MaDH})
+
+        return jsonify({
+            "status": "success",
+            "message": "Tạo đơn hàng thành công.",
+            "id": donhang.MaDH
+        })
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
 # PUT /api/donhang/<id>/trangthai - Cập nhật trạng thái đơn hàng
 @donhang_bp.route("/donhang/<int:id>/trangthai", methods=["PUT"])
 def cap_nhat_trang_thai(id):
     try:
         data = request.get_json()
-        donhang = THAMSO.query.get(id)
+        donhang = DONHANG.query.get(id)
         if not donhang:
             return jsonify({"status": "error", "message": "Đơn hàng không tồn tại."})
         donhang.TrangThai = data.get("TrangThai")
@@ -90,7 +97,7 @@ def cap_nhat_trang_thai(id):
 @donhang_bp.route("/donhang/<int:id>/thanhtoan", methods=["POST"])
 def xac_nhan_thanh_toan(id):
     try:
-        donhang = THAMSO.query.get(id)
+        donhang = DONHANG.query.get(id)
         if not donhang:
             return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng."})
         donhang.TrangThai = "Paid"
@@ -104,7 +111,7 @@ def xac_nhan_thanh_toan(id):
 @donhang_bp.route("/donhang/<int:id>/giaohang", methods=["POST"])
 def dong_goi_giao_hang(id):
     try:
-        donhang = THAMSO.query.get(id)
+        donhang = DONHANG.query.get(id)
         if not donhang:
             return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng."})
         donhang.TrangThai = "Shipped"
@@ -118,7 +125,7 @@ def dong_goi_giao_hang(id):
 @donhang_bp.route("/donhang/<int:id>/doitra", methods=["POST"])
 def doi_tra_don_hang(id):
     try:
-        donhang = THAMSO.query.get(id)
+        donhang = DONHANG.query.get(id)
         if not donhang:
             return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng."})
         donhang.TrangThai = "ReturnRequested"
@@ -132,7 +139,7 @@ def doi_tra_don_hang(id):
 @donhang_bp.route("/donhang/<int:id>", methods=["DELETE"])
 def xoa_don_hang(id):
     try:
-        donhang = THAMSO.query.get(id)
+        donhang = DONHANG.query.get(id)
         if not donhang:
             return jsonify({"status": "error", "message": "Đơn hàng không tồn tại."})
         db.session.delete(donhang)
@@ -148,7 +155,7 @@ def xoa_don_hang(id):
 def sua_don_hang(id):
     try:
         data = request.get_json()
-        donhang = THAMSO.query.get(id)
+        donhang = DONHANG.query.get(id)
         if not donhang:
             return jsonify({"status": "error", "message": "Đơn hàng không tồn tại"}), 404
 
@@ -195,58 +202,57 @@ def cap_nhat_chi_tiet_don_hang(id):
     try:
         data = request.get_json()  # list of { MaCTDH?, MaSP, SoLuong, GiaBan }
 
-        # 1. Lấy tất cả chi tiết hiện có
-        existing = {ct.MaCTDH: ct for ct in CHITIETDONHANG.query.filter_by(MaDH=id).all()}
-        incoming_ids = set()
+        # 1. Lấy các chi tiết đơn hàng cũ
+        old_details = CHITIETDONHANG.query.filter_by(MaDH=id).all()
 
-        # 2. Duyệt payload, cập nhật hoặc tạo mới
+        # 2. Hoàn lại số lượng tồn kho từ chi tiết cũ
+        for ct in old_details:
+            sp = SANPHAM.query.get(ct.MaSP)
+            if sp:
+                sp.SoLuongTon += ct.SoLuong
+
+        # 3. Xóa toàn bộ chi tiết cũ
+        CHITIETDONHANG.query.filter_by(MaDH=id).delete()
+
+        # 4. Thêm chi tiết mới và trừ tồn kho tương ứng
         for item in data:
-            MaSP    = int(item.get("MaSP", 0))
+            MaSP = int(item.get("MaSP", 0))
             SoLuong = int(item.get("SoLuong", 0))
-            GiaBan  = float(item.get("GiaBan", 0))
+            GiaBan = float(item.get("GiaBan", 0))
             ThanhTien = SoLuong * GiaBan
-            ct_id = item.get("MaCTDH")
 
-            if ct_id and ct_id in existing:
-                ct = existing[ct_id]
-                ct.MaSP      = MaSP
-                ct.SoLuong   = SoLuong
-                ct.GiaBan    = GiaBan
-                ct.ThanhTien = ThanhTien
-                incoming_ids.add(ct_id)
-            else:
-                new_ct = CHITIETDONHANG(
-                    MaDH     = id,
-                    MaSP     = MaSP,
-                    SoLuong  = SoLuong,
-                    GiaBan   = GiaBan,
-                    ThanhTien= ThanhTien
-                )
-                db.session.add(new_ct)
+            sp = SANPHAM.query.get(MaSP)  # ✅ Đưa dòng này lên đầu
 
-        # 3. Xóa những chi tiết đã bị loại
-        for old_id, ct in existing.items():
-            if old_id not in incoming_ids:
-                db.session.delete(ct)
+            if not sp:
+                raise Exception(f"Sản phẩm mã {MaSP} không tồn tại.")
+            print(f"[DEBUG] SP {MaSP} tồn trước: {sp.SoLuongTon}, bán: {SoLuong}")
 
-        # 4. Tính lại tổng tiền của DonHang trên DB
-        #    có 2 cách: truy vấn sum qua SQL hoặc Python
-        #    Ví dụ dùng SQLAlchemy func.sum:
+            if sp.SoLuongTon < SoLuong:
+                raise Exception(f"Sản phẩm mã {MaSP} không đủ tồn kho.")
+            sp.SoLuongTon -= SoLuong
+
+            new_ct = CHITIETDONHANG(
+                MaDH=id,
+                MaSP=MaSP,
+                SoLuong=SoLuong,
+                GiaBan=GiaBan,
+                ThanhTien=ThanhTien
+            )
+            db.session.add(new_ct)
+
+        # 5. Tính lại tổng tiền
         new_total = db.session.query(
             func.coalesce(func.sum(CHITIETDONHANG.ThanhTien), 0)
         ).filter(CHITIETDONHANG.MaDH == id).scalar()
 
-        # 5. Gán lại vào DonHang.TongTien
-        donhang = THAMSO.query.get_or_404(id)
+        donhang = DONHANG.query.get_or_404(id)
         donhang.TongTien = Decimal(new_total)
-        db.session.add(donhang)
 
-        # 6. Commit tất cả thay đổi
         db.session.commit()
 
         return jsonify({
             "status": "success",
-            "message": "Cập nhật thành công.",
+            "message": "Cập nhật thành công và đã trừ tồn kho.",
             "newTotal": float(new_total)
         })
 

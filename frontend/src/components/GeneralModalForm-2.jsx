@@ -12,6 +12,9 @@ const GeneralModalForm = ({
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
+
+    console.log("initialData:", initialData);
+    console.log("section:", section, "mode:", mode);
     if (!initialData || mode === 'add') {
       setFormData({});
       return;
@@ -23,12 +26,15 @@ const GeneralModalForm = ({
       data.description = initialData.MoTa || '';
       data.status = initialData.TrangThai ? 'true' : 'false';
     } else if (section === 'orders') {
-      data.customerId = initialData.MaKH || '';
-      data.date = initialData.NgayDat?.slice(0,10) || '';
-      data.total = initialData.TongTien || '';
-      data.status = initialData.TrangThai || 'Pending';
-      data.paymentMethod = initialData.PhuongThucThanhToan || '';
-      data.deliveryAddress = initialData.DiaChiGiao || '';
+      data.id = initialData.id || '';  // dùng id đúng với dữ liệu frontend
+      data.customerId = initialData.customerId || '';
+      data.date = initialData.date || '';
+      data.total = initialData.total || '';
+      data.status = ["Pending", "Paid", "Shipped", "Completed"].includes(initialData.status)
+        ? initialData.status
+        : "Pending";
+      data.paymentMethod = initialData.paymentMethod || '';
+      data.deliveryAddress = initialData.deliveryAddress || '';
     } else if (section === 'reports') {
       data.LoaiBaoCao = initialData.LoaiBaoCao || '';
       data.TuNgay = initialData.TuNgay?.slice(0,10) || '';
