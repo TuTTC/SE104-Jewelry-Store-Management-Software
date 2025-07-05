@@ -4,8 +4,9 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: auto;   /* ẩn thanh cuộn ngoài nếu không cần */
 }
+
 
 /* Action Buttons */
 .action-button {
@@ -117,25 +118,27 @@ html, body {
 
 /* Container */
 .container {
-  display: flex;
-  height: 150vh;
-  background-color: #f4f4f9;
-  min-height: 150vh;
-  overflow: visible;
+    display: flex;
+    width: 100%;                   
+    min-height: 100vh;             /* ví dụ: cho content tự co giãn */
+    background-color: #f4f4f9;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
+
 
 /* Sidebar */
 .sidebar {
-  width: 256px;
-  background-color: #5e4638;
-  padding: 16px;
-  height: 100%;
-  min-height: 150vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
+    width: 256px;
+    background-color: #5e4638;
+    padding: 16px;
+    /* Bỏ height cố định để nó co giãn theo nội dung */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
 }
+
 
 .sidebar-title {
   font-size: 24px;
@@ -408,11 +411,10 @@ html, body {
 
 /* Main Content */
 .main-content {
-  flex: 1;
-  padding: 32px;
-  overflow-y: auto;
-  height: 100%;
-  min-height: 150vh;
+    flex: 1;
+    padding: 32px;
+    /* Bỏ height cố định và overflow riêng */
+    display: block;
 }
 
 .header {

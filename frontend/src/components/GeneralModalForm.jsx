@@ -22,8 +22,9 @@ const GeneralModalForm = ({
       case "products":
         return (
           <>
+            <label>Tên sản phẩm</label> 
             <input type="text" name="TenSP" value={formData.TenSP || ""} onChange={handleInputChange} placeholder="Tên sản phẩm" required />
-
+            <label>Giá bán (VND)</label> 
             <input type="number" name="GiaBan" value={formData.GiaBan || ""} onChange={handleInputChange} placeholder="Giá bán (VND)" required
             />
 
@@ -42,12 +43,14 @@ const GeneralModalForm = ({
                     </option>
                   ))}
                 </select>
+            <label>Số lượng tồn</label>
             <input type="number" name="SoLuongTon" value={formData.SoLuongTon || ""} onChange={handleInputChange} placeholder="Số lượng tồn" required />
-
+            <label>Tên nhà cung cấp</label>
             <input type="text" name="TenNCC" value={formData.TenNCC || ""} onChange={handleInputChange} placeholder="Tên nhà cung cấp" required/>
 
             {/* <input type="text" name="HinhAnh" value={formData.HinhAnh || ""} onChange={handleInputChange} placeholder="URL hình ảnh" required/> */}
               {/* Upload ảnh */}
+            <label>Ảnh sản phẩm</label>
             <input type="file" accept="image/*" onChange={handleImageUpload} />
 
             {/* Hiển thị ảnh đã chọn nếu có */}
@@ -58,6 +61,7 @@ const GeneralModalForm = ({
                 style={{ width: "100px", marginTop: "10px" }}
               />
             )}
+            <label>Ghi chú</label>
             <input type="text" name="MoTa" value={formData.MoTa || ""} onChange={handleInputChange} placeholder="Ghi chú"/>
           </>
 
@@ -65,17 +69,24 @@ const GeneralModalForm = ({
       case "orders":
         return (
           <>
+            <label>Mã đơn hàng</label>
             <input type="text" name="orderCode" value={formData.orderCode || ""} onChange={handleInputChange} placeholder="Mã đơn hàng" required />
+            <label>Khách hàng</label>
             <input type="text" name="customer" value={formData.customer || ""} onChange={handleInputChange} placeholder="Khách hàng" required />
+            <label>Ngày</label>
             <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required />
+            <label>Tổng tiền</label>
             <input type="text" name="total" value={formData.total || ""} onChange={handleInputChange} placeholder="Tổng tiền (VD: $3700)" required />
             <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
               <option value="">Chọn trạng thái</option>
               <option value="Pending">Chờ xử lý</option>
               <option value="Shipped">Đã giao</option>
             </select>
+             <label>Phương thức thanh toán</label>
             <input type="text" name="paymentMethod" value={formData.paymentMethod || ""} onChange={handleInputChange} placeholder="Phương thức thanh toán" required />
+             <label>Địa chỉ giao hàng</label>
             <input type="text" name="deliveryAddress" value={formData.deliveryAddress || ""} onChange={handleInputChange} placeholder="Địa chỉ giao hàng" required />
+             <label>Ghi chú</label>
             <input type="text" name="note" value={formData.note || ""} onChange={handleInputChange} placeholder="Ghi chú" />
           </>
         );
@@ -121,19 +132,28 @@ const GeneralModalForm = ({
       case "categories":
         return (
           <>
+            <label>Tên danh mục</label>
             <input type="text" name="TenDM" value={formData.TenDM || ""} onChange={handleInputChange} placeholder="Tên danh mục" required />
+            <label>Đơn vị tính</label>
             <input type="text" name="DonViTinh" value={formData.DonViTinh || ""} onChange={handleInputChange} placeholder="Đơn vị tính" />
-            <input type="number" name="PhanTramLoiNhuan" value={formData.PhanTramLoiNhuan || ""} onChange={handleInputChange} placeholder="Phần trăm lợi nhuận %" min = "0" />            
+            <label>Phần trăm lợi nhuận %</label>
+            <input type="number" name="PhanTramLoiNhuan" value={formData.PhanTramLoiNhuan || ""} onChange={handleInputChange} placeholder="Phần trăm lợi nhuận %" min = "0" />       
+            <label>Mô tả</label>     
             <input type="text" name="MoTa" value={formData.MoTa || ""} onChange={handleInputChange} placeholder="Mô tả" />
           </>
         );
       case "services":
         return (
           <>
+            <label>Mã dịch vụ</label>  
             <input type="text" name="code" value={formData.code || ""} onChange={handleInputChange} placeholder="Mã dịch vụ" required />
+            <label>Tên dịch vụ</label>  
             <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên dịch vụ" required />
+            <label>Giá</label>  
             <input type="number" name="price" value={formData.price || ""} onChange={handleInputChange} placeholder="Giá" step="0.01" required />
+            <label>Mô tả</label>  
             <input type="text" name="description" value={formData.description || ""} onChange={handleInputChange} placeholder="Mô tả" required />
+            <label>Trang thai</label>  
             <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
               <option value="">Chọn trạng thái</option>
               <option value="true">Kích hoạt</option>
@@ -145,9 +165,13 @@ const GeneralModalForm = ({
         return (
           <>
             {/* <input type="text" name="code" value={formData.code || ""} onChange={handleInputChange} placeholder="Mã phiếu nhập" required /> */}
+            <label>Nhà cung cấp</label>  
             <input type="text" name="supplier" value={formData.supplier || ""} onChange={handleInputChange} placeholder="Nhà cung cấp" required />
+            <label>Người nhập</label>  
             <input type="text" name="user" value={formData.user || ""} onChange={handleInputChange} placeholder="Người nhập" required />
+            <label>Mô tả</label>  
             <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required />
+            <label>Tổng tiền</label>  
             <input type="number" name="total" value={formData.total || ""} onChange={handleInputChange} placeholder="Tổng tiền" step="0.01" required />
             <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
               <option value="">Chọn trạng thái</option>
@@ -160,31 +184,42 @@ const GeneralModalForm = ({
       case "suppliers":
         return (
           <>
+            <label>Tên nhà cung cấp</label>  
             <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên nhà cung cấp" required />
+            <label>Điện thoại</label>  
             <input type="text" name="phone" value={formData.phone || ""} onChange={handleInputChange} placeholder="Điện thoại" />
+            <label>Email</label>  
             <input type="email" name="email" value={formData.email || ""} onChange={handleInputChange} placeholder="Email" />
+            <label>Địa chỉ</label>  
             <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Địa chỉ" required />
+            <label>Ghi chú</label>  
             <input type="text" name="note" value={formData.note || ""} onChange={handleInputChange} placeholder="Ghi chú"/>
           </>
         );
       case "inventory":
         return (
           <>
+            <label>ID sản phẩm</label>  
             <input type="number" name="productId" value={formData.productId || ""} onChange={handleInputChange} placeholder="ID sản phẩm" required />
+            <label>Số lượng</label>  
             <input type="number" name="quantity" value={formData.quantity || ""} onChange={handleInputChange} placeholder="Số lượng" required />
+            <label>Date</label>  
             <input type="date" name="lastUpdated" value={formData.lastUpdated || ""} onChange={handleInputChange} required />
           </>
         );
       case "reports":
         return (
           <>
+          <label>Chọn loại doanh thu</label>  
             <select name="type" value={formData.type || ""} onChange={handleInputChange} required>
               <option value="">Chọn loại</option>
               <option value="Doanh thu">Doanh thu</option>
               <option value="Tồn kho">Tồn kho</option>
               <option value="Lợi nhuận">Lợi nhuận</option>
             </select>
+          <label>Date</label>  
             <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required />
+          <label>Dữ liệu (JSON)</label>  
             <input type="text" name="data" value={formData.data || ""} onChange={handleInputChange} placeholder="Dữ liệu (JSON)" required />
           </>
         );
