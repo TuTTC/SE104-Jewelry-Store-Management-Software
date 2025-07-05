@@ -24,15 +24,28 @@ def seed_role_permissions():
         # Gán toàn bộ quyền cho Admin
         admin_role.permissions = list(all_permissions)
 
-        # Nhân viên: View tất cả + Edit sản phẩm và đơn hàng
+        # Nhân viên:
         nhanvien_role.permissions = []
         for quyen in all_permissions:
-            if ":view" in quyen.TenQuyen or quyen.TenQuyen.startswith("products:edit") or quyen.TenQuyen.startswith("orders:edit"):
+            # Loại bỏ quyền xem tài khoản
+            if quyen.TenQuyen == "accounts:view":
+                continue
+
+            # Quyền xem tất cả trừ accounts
+            if quyen.TenQuyen.endswith(":view"):
                 nhanvien_role.permissions.append(quyen)
 
-        # Khách hàng: chỉ được xem dashboard, sản phẩm, dịch vụ
+            # Quyền edit/add/delete cho các module chỉ định
+            for prefix in ["orders", "services", "purchaseOrders", "suppliers", "products"]:
+                if quyen.TenQuyen.startswith(f"{prefix}:edit") or \
+                   quyen.TenQuyen.startswith(f"{prefix}:add") or \
+                   quyen.TenQuyen.startswith(f"{prefix}:delete"):
+                    nhanvien_role.permissions.append(quyen)
+
+        # Khách hàng: Xem dashboard, sản phẩm, dịch vụ + xem đơn hàng & dịch vụ của chính mình
         khachhang_role.permissions = []
-        for ten_quyen in ["dashboard:view", "products:view", "services:view"]:
+        for ten_quyen in ["dashboard:view", "products:view", "services:view",
+                          "orders:view_own", "services:view_own"]:
             if ten_quyen in permissions_dict:
                 khachhang_role.permissions.append(permissions_dict[ten_quyen])
 

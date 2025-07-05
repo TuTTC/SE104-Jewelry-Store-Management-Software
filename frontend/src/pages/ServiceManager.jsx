@@ -18,6 +18,11 @@ const mapTenDVHienThi = (ma) => {
     DanhBongVang: "Đánh bóng vàng",
     ChamKhacTheoYeuCau: "Khắc theo yêu cầu",
     GiaCongNuTrang: "Gia công nữ trang",
+    GiaCongNhan: "Gia công nhẫn",
+    GanDaKimCuong: "Gắn đá kim cương",
+    ThuVang: "Thử vàng",
+    SuaNuTrang: "Sửa nữ trang",
+    ThayMoiNuTrang: "Thay mới nữ trang",
     // thêm nếu còn các mã khác
   };
   return mapping[ma] || ma;  // nếu không có thì trả lại chính mã
@@ -41,10 +46,10 @@ function ServiceManager() {
 
     const fetchDichVu = async () => {
     const res = await danhSachDichVu();
-    console.log("📦 Dịch vụ nhận từ API:", res);
+    console.log("Dịch vụ nhận từ API:", res);
     if (res.status === "success") {
-        console.log("✅ Dữ liệu hiển thị:", res.data);
-        console.log("🧪 Mẫu dữ liệu 1:", res.data[0]);
+        console.log("Dữ liệu hiển thị:", res.data);
+        console.log("Mẫu dữ liệu 1:", res.data[0]);
         setServices(res.data);
     } else {
         alert("Lỗi khi lấy danh sách dịch vụ");
@@ -75,14 +80,14 @@ function ServiceManager() {
     setSelectedService(null);
   };
 
-  const handleSubmit = async (data) => {
+  const handleFormSubmit = async (data) => {
+    console.log("Giá trị trạng thái:", data.status, typeof data.status);
     const payload = {
       TenDV: data.name,
       DonGia: parseFloat(data.price),
       MoTa: data.description,
-      TrangThai: data.status === "true" || data.status === true,
+      TrangThai: data.status === true,
     };
-
     if (modalMode === "add") {
       const res = await themDichVu(payload);
       if (res.status === "success") {
@@ -98,8 +103,8 @@ function ServiceManager() {
     }
   };
 
-  const handleSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
-  console.log("📥 Lưu phiếu dịch vụ với:", { maKH, ghiChu, rows });
+  const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
+  console.log("Lưu phiếu dịch vụ với:", { maKH, ghiChu, rows });
   // TODO: Gọi API lưu vào backend tại đây
 };
 
@@ -121,10 +126,10 @@ function ServiceManager() {
         if (json.status === "success") {
           setPhieuDichVuList((prev) => prev.filter((p) => p.MaPDV !== maPDV));
         } else {
-          alert("❌ Lỗi xoá phiếu dịch vụ: " + json.message);
+          alert("Lỗi xoá phiếu dịch vụ: " + json.message);
         }
       } catch (err) {
-        alert("❌ Lỗi kết nối: " + err.message);
+        alert("Lỗi kết nối: " + err.message);
       }
     }
   };
@@ -156,35 +161,23 @@ function ServiceManager() {
 
 const handleLuuPhieuDichVu = async (payload) => {
   try {
-    const finalPayload = {
-      ...payload,
-      ChiTiet: [
-        {
-          MaDV: 1,               // 🔧 bạn cần truyền đúng ID dịch vụ thực tế
-          SoLuong: 1,
-          TienTraTruoc: payload.TraTruoc,
-          NgayGiao: new Date().toISOString().split("T")[0],
-          TinhTrang: "Chưa giao"
-        }
-      ]
-    };
-
+    console.log("Payload gửi API:", payload);  // giữ log kiểm tra
     const res = await fetch("http://localhost:5000/api/phieudichvu", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(finalPayload),
+      body: JSON.stringify(payload),
     });
 
     const json = await res.json();
     if (json.status === "success") {
-      alert("✅ Lưu phiếu thành công");
+      alert("Lưu phiếu thành công");
       setModalPhieuVisible(false);
       fetchPhieuDichVu();
     } else {
-      alert("❌ Lỗi khi lưu phiếu: " + json.message);
+      alert("Lỗi khi lưu phiếu: " + json.message);
     }
   } catch (err) {
-    alert("❌ Kết nối thất bại: " + err.message);
+    alert("Kết nối thất bại: " + err.message);
   }
 };
 
@@ -291,7 +284,6 @@ const handleLuuPhieuDichVu = async (payload) => {
             )}
           </tbody>
         </table>
-         
         <div className="service-actions">
         <button onClick={handleSearchService} className="action-button">
             Tra cứu dịch vụ
@@ -303,7 +295,6 @@ const handleLuuPhieuDichVu = async (payload) => {
             In phiếu dịch vụ
         </button>
         </div>
-        <Pagination />
       </div>
     )}
     {selectedTab === "list-phieudichvu" && (
@@ -365,7 +356,7 @@ const handleLuuPhieuDichVu = async (payload) => {
           mode={modalMode}
           initialData={selectedService}
           onClose={closeModal}
-          onSubmit={handleSubmit}
+          onSubmit={handleFormSubmit}
           showModal={modalVisible}
         />
       )}
@@ -381,5 +372,3 @@ const handleLuuPhieuDichVu = async (payload) => {
 }
 
 export default ServiceManager;
-
-

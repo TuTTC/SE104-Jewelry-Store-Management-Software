@@ -4,7 +4,7 @@ const API_URL = "http://localhost:5000/api/dichvu";
 export async function themDichVu(dichVu) {
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },      
     body: JSON.stringify(dichVu),
   });
   return await res.json();
@@ -36,7 +36,7 @@ export async function traCuuDichVu(keyword) {
 
 // Lấy danh sách dịch vụ
 export async function danhSachDichVu() {
-  const res = await fetch(API_URL);
+  const res = await fetch("http://localhost:5000/api/dichvu");
   return await res.json();
 }
 

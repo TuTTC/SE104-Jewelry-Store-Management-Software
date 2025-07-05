@@ -1,55 +1,70 @@
 const BASE_URL = "http://localhost:5000/api/suppliers"; // Điều chỉnh nếu port khác
 
-// Hàm tiện ích xử lý response
-const handleResponse = async (response) => {
-  const contentType = response.headers.get("content-type");
+// Hàm tiện ích lấy header Authorization
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`,
+  };
+};
+
+// Hàm tiện ích xử lý response có ném thêm status
+const handleResponse = async (res) => {
+  const contentType = res.headers.get("content-type");
   
   let data = {};
   if (contentType && contentType.includes("application/json")) {
-    data = await response.json();
+    data = await res.json();
   } else {
-    const text = await response.text();
-    throw new Error("Server trả về HTML hoặc dữ liệu không hợp lệ:\n" + text);
+    const text = await res.text();
+    const error = new Error("Server trả về dữ liệu không hợp lệ:\n" + text);
+    error.status = res.status;
+    throw error;
   }
 
-  if (!response.ok) {
-    throw new Error(data.error || "Có lỗi xảy ra");
+  if (!res.ok) {
+    const error = new Error(data.error || "Có lỗi xảy ra");
+    error.status = res.status;
+    throw error;
   }
 
   return data;
 };
 
-
 // Lấy tất cả nhà cung cấp
 export const getAllSuppliers = async () => {
-  const response = await fetch(`${BASE_URL}/`);
-  return handleResponse(response);
+  const res = await fetch(`${BASE_URL}/`, {
+    headers: getAuthHeader(),
+  });
+  return handleResponse(res);
 };
 
 // Thêm nhà cung cấp
 export const addSupplier = async (data) => {
-  const response = await fetch(`${BASE_URL}/`, {
+  const res = await fetch(`${BASE_URL}/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeader(),
     body: JSON.stringify(data),
   });
-  return handleResponse(response);
+  return handleResponse(res);
 };
 
 // Sửa nhà cung cấp
 export const updateSupplier = async (maNCC, data) => {
-  const response = await fetch(`${BASE_URL}/${maNCC}`, {
+  const res = await fetch(`${BASE_URL}/${maNCC}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeader(),
     body: JSON.stringify(data),
   });
-  return handleResponse(response);
+  return handleResponse(res);
 };
 
 // Xóa nhà cung cấp
 export const deleteSupplier = async (maNCC) => {
-  const response = await fetch(`${BASE_URL}/${maNCC}`, {
+  const res = await fetch(`${BASE_URL}/${maNCC}`, {
     method: "DELETE",
+    headers: getAuthHeader(),
   });
-  return handleResponse(response);
+  return handleResponse(res);
 };

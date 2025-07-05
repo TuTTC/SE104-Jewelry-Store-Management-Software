@@ -33,7 +33,7 @@ function Auth() {
       setError("Mật khẩu không khớp hoặc không hợp lệ.");
       return false;
     }
-    if (!formData.select_role || !["admin", "customer"].includes(formData.select_role)) {
+    if (!formData.select_role || !["admin", "customer", "employee"].includes(formData.select_role)) {
       setError("Vui lòng chọn vai trò hợp lệ.");
       return false;
     }

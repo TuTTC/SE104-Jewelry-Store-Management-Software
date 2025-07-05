@@ -9,42 +9,68 @@ from werkzeug.security import generate_password_hash
 from utils.permissions_utils import get_user_permissions
 from sqlalchemy.exc import IntegrityError
 user_bp = Blueprint('user', __name__)
+from flask_jwt_extended import jwt_required
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity
+from datetime import datetime
 
 # 1. Lấy thông tin cá nhân
 @user_bp.route('/me', methods=['GET'])
+@jwt_required()
 def get_me():
-    user = NGUOIDUNG.query.first()
+    user_id = get_jwt_identity()
+    user = NGUOIDUNG.query.get(user_id)
+
     if not user:
-        return jsonify({'message': 'Không có người dùng nào'}), 404
+        return jsonify({'message': 'Không tìm thấy người dùng'}), 404
 
     result = {
         'UserID': user.UserID,
         'TenDangNhap': user.TenDangNhap,
         'Email': user.Email,
+        'HoTen': user.HoTen,
+        'SoDienThoai': user.SoDienThoai,
+        'DiaChi': user.DiaChi,
         'VaiTro': user.vaitro.TenVaiTro if user.vaitro else None,
-        'TaoNgay': user.TaoNgay
+        'TaoNgay': user.TaoNgay,
     }
     return jsonify(result), 200
 
 
+
 # 2. Cập nhật thông tin cá nhân
 @user_bp.route('/me', methods=['PUT'])
+@jwt_required()
 def update_me():
-    user = NGUOIDUNG.query.first()
+    user_id = get_jwt_identity()
+    user = NGUOIDUNG.query.get(user_id)
+
     if not user:
-        return jsonify({'message': 'Không có người dùng nào'}), 404
+        return jsonify({'message': 'Không tìm thấy người dùng'}), 404
 
     data = request.get_json()
+
     if 'Email' in data:
         user.Email = data['Email']
     if 'TenDangNhap' in data:
         user.TenDangNhap = data['TenDangNhap']
+    if 'HoTen' in data:
+        user.HoTen = data['HoTen']
+    if 'SoDienThoai' in data:
+        user.SoDienThoai = data['SoDienThoai']
+    if 'DiaChi' in data:
+        user.DiaChi = data['DiaChi']
+
     db.session.commit()
     return jsonify({'message': 'Cập nhật thành công'}), 200
 
 
+
+
 # 3. Lấy danh sách tài khoản
 @user_bp.route('/users', methods=['GET'])
+@jwt_required()
+@permission_required("accounts:view")
 def get_all_users():
     users = NGUOIDUNG.query.all()
     result = []
@@ -90,6 +116,8 @@ def get_user_details(user_id):
 
 # 5. Cập nhật tài khoản
 @user_bp.route('/users/<int:user_id>', methods=['PUT'])
+@jwt_required()
+@permission_required("accounts:edit")
 def update_user_by_id(user_id):
     user = NGUOIDUNG.query.get_or_404(user_id)
     data = request.get_json()
@@ -105,6 +133,8 @@ def update_user_by_id(user_id):
 
 # 6. Xóa tài khoản
 @user_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+@permission_required("accounts:delete")
 def delete_user(user_id):
     user = NGUOIDUNG.query.get_or_404(user_id)
     db.session.delete(user)
@@ -128,6 +158,8 @@ def change_user_role(user_id):
 
 # 8. Cập nhật quyền riêng người dùng
 @user_bp.route('/users/<int:user_id>/permissions', methods=['PUT'])
+@jwt_required()
+@permission_required("accounts:edit")
 def update_user_permissions(user_id):
     user = NGUOIDUNG.query.get_or_404(user_id)
     data = request.get_json()
@@ -136,6 +168,52 @@ def update_user_permissions(user_id):
     user.permissions = new_permissions
     db.session.commit()
     return jsonify({'message': 'Cập nhật quyền riêng thành công'}), 200
+
+
+
+# @user_bp.route('/add', methods=['POST'])
+# def create_user():
+#     data = request.get_json()
+
+#     ten_dang_nhap = data.get('username')
+#     email = data.get('email')
+#     mat_khau = data.get('password')
+#     ho_ten = data.get('fullName')
+#     so_dien_thoai = data.get('phone')
+#     dia_chi = data.get('address')
+#     ma_vai_tro = data.get('role')  # role ở đây truyền MaVaiTro dạng số
+
+#     # Kiểm tra thông tin bắt buộc
+#     if not all([ten_dang_nhap, email, mat_khau, ho_ten, so_dien_thoai, ma_vai_tro]):
+#         return jsonify({'message': 'Vui lòng cung cấp đầy đủ thông tin'}), 400
+
+#     # Kiểm tra email hợp lệ
+#     if '@' not in email:
+#         return jsonify({'message': 'Email không hợp lệ'}), 400
+
+#     # Kiểm tra tài khoản đã tồn tại chưa
+#     if NGUOIDUNG.query.filter((NGUOIDUNG.TenDangNhap == ten_dang_nhap) | (NGUOIDUNG.Email == email)).first():
+#         return jsonify({'message': 'Tên đăng nhập hoặc email đã tồn tại'}), 400
+
+#     # Tạo tài khoản mới
+#     hashed_password = generate_password_hash(mat_khau)
+#     new_user = NGUOIDUNG(
+#         TenDangNhap=ten_dang_nhap,
+#         Email=email,
+#         MatKhau=hashed_password,
+#         HoTen=ho_ten,
+#         SoDienThoai=so_dien_thoai,
+#         DiaChi=dia_chi,
+#         MaVaiTro=ma_vai_tro
+#     )
+
+#     try:
+#         db.session.add(new_user)
+#         db.session.commit()
+#         return jsonify({'message': 'Tạo tài khoản thành công'}), 201
+#     except IntegrityError:
+#         db.session.rollback()
+#         return jsonify({'message': 'Lỗi hệ thống, vui lòng thử lại'}), 500
 
 @user_bp.route('/add', methods=['POST'])
 def create_user():
@@ -175,8 +253,22 @@ def create_user():
 
     try:
         db.session.add(new_user)
+        db.session.flush()  # Đảm bảo có UserID trước khi commit
+
+        # Nếu là khách hàng (MaVaiTro == 1), thêm vào bảng KHACHHANG
+        if int(ma_vai_tro) == 1:
+            khach_hang = KHACHHANG(
+                UserID=new_user.UserID,
+                HoTen=ho_ten,
+                SoDienThoai=so_dien_thoai,
+                DiaChi=dia_chi or "Chưa cập nhật",
+                NgayDangKy=datetime.now()
+            )
+            db.session.add(khach_hang)
+
         db.session.commit()
         return jsonify({'message': 'Tạo tài khoản thành công'}), 201
+
     except IntegrityError:
         db.session.rollback()
         return jsonify({'message': 'Lỗi hệ thống, vui lòng thử lại'}), 500

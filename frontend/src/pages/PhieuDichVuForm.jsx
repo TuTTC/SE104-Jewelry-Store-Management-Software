@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
 import { fetchPhuThuByTen } from "../services/parameterApi";
 
 const PhieuDichVuForm = ({
@@ -7,7 +6,7 @@ const PhieuDichVuForm = ({
   onClose,
   onSave,
   initialData = {},
-  modalType = "add", // add | edit | view
+  mode = "add"
 }) => {
   const [maKH, setMaKH] = useState("");
   const [ngayLap, setNgayLap] = useState("");
@@ -21,11 +20,9 @@ const PhieuDichVuForm = ({
   const [thanhTien, setThanhTien] = useState(0);
   const [traTruoc, setTraTruoc] = useState(0);
   const [danhSachDichVu, setDanhSachDichVu] = useState([]);
-
-  const readOnly = modalType === "view";
-
+  // Đọc dữ liệu khi chuyển sang chế độ xem/sửa
   useEffect(() => {
-    if (modalType !== "add" && initialData) {
+    if (mode !== "add" && initialData) {
       if (initialData.ChiTiet?.length) {
         setMaDV(initialData.ChiTiet[0].MaDV.toString());
       }
@@ -45,7 +42,7 @@ const PhieuDichVuForm = ({
       setMaDV("");
       setSoLuong(1);
     }
-  }, [initialData, modalType]);
+  }, [initialData, mode]);
 
   useEffect(() => {
     async function fetchDichVu() {
@@ -57,36 +54,37 @@ const PhieuDichVuForm = ({
   }, []);
 
   useEffect(() => {
-    if (!maDV) return;
-    const selected = danhSachDichVu.find((d) => d.MaDV === parseInt(maDV));
-    if (!selected) return;
+  if (!maDV) return;
+  const selected = danhSachDichVu.find((d) => d.MaDV === parseInt(maDV));
+  if (!selected) return;
 
     const keyMap = {
-      CanThuVang: "PhuThu_CanVang",
-      DanhBongVang: "PhuThu_DanhBong",
-      ChamKhacTheoYeuCau: "PhuThu_ChamKhac",
-      GiaCongNuTrang: "PhuThu_MoRongNhan",
-      ThayDaQuy: "PhuThu_GanDaKimCuong",
+    CanThuVang: "PhuThu_CanVang",
+    DanhBongVang: "PhuThu_DanhBong",
+    ChamKhacTheoYeuCau: "PhuThu_ChamKhac",
+    GiaCongNuTrang: "PhuThu_MoRongNhan",
+    ThayDaQuy: "PhuThu_GanDaKimCuong",
     };
-    const tenThamSo = keyMap[selected.TenDV];
-    const giaGoc = +selected.DonGia;
-
-    async function fetchPhuThu() {
-      try {
-        const { status, data } = await fetchPhuThuByTen(tenThamSo);
-        const tyLe = status === "success" ? (+data.GiaTri) / 100 : 0.05;
-        const giaTinh = giaGoc * (1 + tyLe);
-        setDonGia(giaGoc);
-        setDonGiaThucTe(giaTinh);
-        setThanhTien(giaTinh * soLuong);
-        setTraTruoc(Math.ceil(giaTinh * soLuong * 0.5));
-      } catch (err) {
-        console.error("Lỗi khi fetch phụ thu:", err);
-      }
+  const tenThamSo = keyMap[selected.TenDV];
+  const giaGoc = +selected.DonGia;
+  async function fetchPhuThu() {
+    try {
+      const { status, data } = await fetchPhuThuByTen(tenThamSo);
+      const tyLe = status === "success" ? (+data.GiaTri) / 100 : 0.05;
+      const giaTinh = giaGoc * (1 + tyLe);
+      setDonGia(giaGoc);
+      setDonGiaThucTe(giaTinh);
+      setThanhTien(giaTinh * soLuong);
+      setTraTruoc(Math.ceil(giaTinh * soLuong * 0.5));
+    } catch (err) {
+      console.error("Lỗi khi fetch phụ thu:", err);
     }
+  }
 
-    fetchPhuThu();
-  }, [maDV, soLuong, danhSachDichVu]);
+  fetchPhuThu();
+}, [maDV, soLuong, danhSachDichVu]);
+
+  const readOnly = mode === "view";
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -95,163 +93,153 @@ const PhieuDichVuForm = ({
     const payload = {
       MaKH: parseInt(maKH, 10),
       ChiTiet: [
-        {
-          MaDV: parseInt(maDV, 10),
-          SoLuong: parseInt(soLuong, 10),
-          TienTraTruoc: parseFloat(traTruoc) || 0,
-          TinhTrang: "Chưa giao",
-        },
-      ],
+      {
+        MaDV: parseInt(maDV, 10),
+        SoLuong: parseInt(soLuong, 10),
+        TienTraTruoc: parseFloat(traTruoc) || 0,
+        TinhTrang: "Chưa giao",
+      }
+    ],
       NgayLap: ngayLap,
-      TongTien: parseFloat(tongTien),
+      TongTien: parseFloat(thanhTien),
       TraTruoc: parseFloat(traTruoc || 0),
       GhiChu: ghiChu,
       TrangThai: trangThai,
     };
+    console.log("MaDV đang lưu:", maDV);
+    console.log("Tên dịch vụ:", danhSachDichVu.find(d => d.MaDV == maDV)?.TenDV);
+    console.log("Payload đầy đủ:", payload);
     onSave && onSave(payload);
   };
 
   if (!visible) return null;
 
-  const renderSectionFields = () => (
-    <>
-      <label>
-        Mã khách hàng<br />
-        <input
-          type="number"
-          value={maKH}
-          onChange={(e) => setMaKH(e.target.value)}
-          disabled={readOnly}
-          required
-        />
-      </label>
-
-      <label>
-        Dịch vụ<br />
-        <select
-          value={maDV}
-          onChange={(e) => setMaDV(e.target.value)}
-          required
-          disabled={modalType !== "add"}
-        >
-          <option value="">-- Chọn dịch vụ --</option>
-          {danhSachDichVu.map((dv) => (
-            <option key={dv.MaDV} value={dv.MaDV}>
-              {dv.TenDV}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label>
-        Ngày lập<br />
-        <input
-          type="datetime-local"
-          value={ngayLap}
-          onChange={(e) => setNgayLap(e.target.value)}
-          disabled={readOnly}
-          required
-        />
-      </label>
-
-      <label>
-        Số lượng<br />
-        <input
-          type="number"
-          value={soLuong}
-          min={1}
-          onChange={(e) => setSoLuong(parseInt(e.target.value))}
-          required
-          disabled={readOnly}
-        />
-      </label>
-
-      <label>
-        Đơn giá gốc: {donGia.toLocaleString()}₫
-      </label>
-
-      <label>
-        Tổng tiền<br />
-        {modalType === "view" ? (
-          <span className="read-only-value">
-            {thanhTien.toLocaleString()}₫
-          </span>
-        ) : (
-          <input
-            type="number"
-            step="0.01"
-            value={thanhTien || tongTien}
-            onChange={(e) => setTongTien(e.target.value)}
-            required
-          />
-        )}
-      </label>
-
-      <label>
-        Trả trước<br />
-        <input
-          type="number"
-          value={traTruoc}
-          min={Math.ceil(thanhTien * 0.5)}
-          onChange={(e) => setTraTruoc(parseInt(e.target.value))}
-          required
-          disabled={readOnly}
-        />
-      </label>
-
-      <label>
-        Ghi chú<br />
-        <textarea
-          value={ghiChu}
-          onChange={(e) => setGhiChu(e.target.value)}
-          rows={2}
-          disabled={readOnly}
-        />
-      </label>
-
-      <label>
-        Trạng thái<br />
-        <select
-          value={trangThai}
-          onChange={(e) => setTrangThai(e.target.value)}
-          disabled={readOnly}
-        >
-          <option>Chờ xử lý</option>
-          <option>Đang thực hiện</option>
-          <option>Hoàn thành</option>
-          <option>Hủy</option>
-        </select>
-      </label>
-    </>
-  );
 
   return (
     <div className="modal-overlay">
       <div className="modal">
-        <div className="modal-header">
-          <h2>
-            {modalType === "add"
-              ? "Thêm phiếu dịch vụ"
-              : modalType === "edit"
-              ? "Chỉnh sửa phiếu dịch vụ"
-              : "Chi tiết phiếu dịch vụ"}
-          </h2>
-          <button onClick={onClose} className="modal-close">
-            <X className="icon" />
-          </button>
-        </div>
+        <h2>
+          {mode === "add"
+            ? "Thêm phiếu dịch vụ"
+            : mode === "edit"
+            ? "Chỉnh sửa phiếu dịch vụ"
+            : "Chi tiết phiếu dịch vụ"}
+        </h2>
         <form onSubmit={handleSubmit} className="modal-form">
-          {renderSectionFields()}
+          <label>
+            Mã khách hàng<br />
+            <input
+              type="number"
+              value={maKH}
+              onChange={(e) => setMaKH(e.target.value)}
+              disabled={readOnly}
+              required
+            />
+          </label>
+        <label>
+          Dịch vụ<br />
+          <select
+           value={maDV}
+           onChange={(e) => setMaDV(e.target.value)}
+           required
+           disabled={mode !== "add"}
+          >
+            <option value="">-- Chọn dịch vụ --</option>
+            {danhSachDichVu.map((dv) => (
+              <option key={dv.MaDV} value={dv.MaDV}>
+                {dv.TenDV}
+              </option>
+            ))}
+          </select>
+        </label>
+          <label>
+            Ngày lập<br />
+            <input
+              type="datetime-local"
+              value={ngayLap}
+              onChange={(e) => setNgayLap(e.target.value)}
+              disabled={readOnly}
+              required
+            />
+          </label>
+
+          <label>
+            Số lượng<br />
+           <input
+             type="number"
+             value={soLuong}
+             min={1}
+             onChange={(e) => setSoLuong(parseInt(e.target.value))}
+             required
+             disabled={readOnly}
+           />
+          </label>
+
+          <label>
+            Đơn giá gốc: {donGia.toLocaleString()}₫
+          </label>
+           {/* --- Tổng tiền: read-only khi view, else cho phép override --- */}
+           <label>
+             Tổng tiền<br />
+             {mode === "view" ? (
+               <span className="read-only-value">
+                 {thanhTien.toLocaleString()}₫
+               </span>
+             ) : (
+               <input
+                 type="number"
+                 step="0.01"
+                 value={thanhTien || tongTien}
+                 onChange={(e) => setTongTien(e.target.value)}
+                 required
+               />
+             )}
+           </label>
+          <label>
+            Trả trước<br />
+           <input
+             type="number"
+             value={traTruoc}
+             min={Math.ceil(thanhTien * 0.5)}
+             onChange={(e) => setTraTruoc(parseInt(e.target.value))}
+             required
+             disabled={readOnly}
+           />
+          </label>
+          <label>
+            Ghi chú<br />
+            <textarea
+              value={ghiChu}
+              onChange={(e) => setGhiChu(e.target.value)}
+              rows={2}
+              disabled={readOnly}
+            />
+          </label>
+          <label>
+            Trạng thái<br />
+            <select
+              value={trangThai}
+              onChange={(e) => setTrangThai(e.target.value)}
+              disabled={readOnly}
+            >
+              <option>Chờ xử lý</option>
+              <option>Đang thực hiện</option>
+              <option>Hoàn thành</option>
+              <option>Hủy</option>
+            </select>
+          </label>
           <div className="modal-actions">
-            {modalType !== "view" && (
-              <button type="submit" className="action-button">Lưu</button>
+            {mode !== "view" && (
+              <button type="submit" className="action-button">
+                Lưu phiếu
+              </button>
             )}
             <button
               type="button"
               className="action-button cancel"
               onClick={onClose}
             >
-              {modalType === "view" ? "Đóng" : "Hủy"}
+              {mode === "view" ? "Đóng" : "Hủy"}
             </button>
           </div>
         </form>

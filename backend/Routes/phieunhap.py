@@ -6,13 +6,19 @@ from models.SanPham import SANPHAM
 from models.NhaCungCap import NHACUNGCAP
 from datetime import datetime
 from io import BytesIO
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from Routes.product import cap_nhat_gia_ban_cho_san_pham
+
 from flask_jwt_extended import jwt_required
 from utils.permissions import permission_required
+from io import BytesIO
+from flask import send_file
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape
 
 pdfmetrics.registerFont(TTFont('DejaVu', '../fonts/times.ttf'))
 
@@ -168,7 +174,7 @@ def create_phieu_nhap():
                 ThanhTien=so_luong * don_gia_nhap
             )
             db.session.add(ct)
-        cap_nhat_gia_ban_cho_san_pham(ma_sp)
+        
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Tạo phiếu nhập thành công', 'MaPN': phieu.MaPN}), 201
 
@@ -239,48 +245,57 @@ def export_phieu_nhap(id):
     nha_cc = NHACUNGCAP.query.get(phieu.MaNCC)
 
     buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    c = canvas.Canvas(buffer, pagesize=landscape(A4))
+    width, height = landscape(A4)
 
     # Tiêu đề
-    c.setFont("DejaVu", 16)
-    c.drawCentredString(width / 2, height - 50, "PHIẾU NHẬP HÀNG")
+    c.setFont("DejaVu", 14)
+    c.drawCentredString(width / 2, height - 30, "PHIẾU NHẬP HÀNG")
 
-    # Thông tin chung
-    c.setFont("DejaVu", 12)
-    c.drawString(50, height - 80, f"Số phiếu: {phieu.MaPN}")
-    c.drawString(300, height - 80, f"Ngày lập: {phieu.NgayNhap.strftime('%d/%m/%Y')}")
-    c.drawString(50, height - 100, f"Nhà cung cấp: {nha_cc.TenNCC}")
-    c.drawString(300, height - 100, f"SĐT: {nha_cc.SoDienThoai}")
+    # Thông tin phiếu
+    c.setFont("DejaVu", 11)
+    c.drawString(30, height - 60, f"Số phiếu: {phieu.MaPN}")
+    c.drawString(300, height - 60, f"Ngày lập: {phieu.NgayNhap.strftime('%d/%m/%Y')}")
+    c.drawString(30, height - 80, f"Nhà cung cấp: {nha_cc.TenNCC}")
+    c.drawString(300, height - 80, f"Địa chỉ: {nha_cc.DiaChi}")
+    c.drawString(480, height - 80, f"Điện thoại: {nha_cc.SoDienThoai}")
 
-    # Bảng sản phẩm
-    y = height - 140
-    c.setFont("DejaVu", 10)
-    c.drawString(50, y, "STT")
-    c.drawString(80, y, "Tên sản phẩm")
-    c.drawString(250, y, "Số lượng")
-    c.drawString(320, y, "Đơn giá")
-    c.drawString(400, y, "Thành tiền")
-
-    c.setFont("DejaVu", 10)
+    # Chuẩn bị bảng chi tiết sản phẩm
+    data = [["STT", "Sản phẩm", "Loại", "Số lượng", "Đơn vị", "Đơn giá", "Thành tiền"]]
     for idx, item in enumerate(chi_tiet, 1):
-        y -= 20
-        sanpham = SANPHAM.query.get(item.MaSP)
-        c.drawString(50, y, str(idx))
-        c.drawString(80, y, sanpham.TenSP)
-        c.drawString(250, y, str(item.SoLuong))
-        c.drawString(320, y, f"{float(item.DonGiaNhap):,.0f}")
-        c.drawString(400, y, f"{float(item.ThanhTien):,.0f}")
+        sp = SANPHAM.query.get(item.MaSP)
+        loai = sp.danhmuc.TenDM if sp.danhmuc else "N/A"
+        dvt = sp.danhmuc.DonViTinh if sp.danhmuc and sp.danhmuc.DonViTinh else "N/A"
+        data.append([
+            str(idx),
+            sp.TenSP,
+            loai,
+            str(item.SoLuong),
+            dvt,
+            f"{float(item.DonGiaNhap):,.0f}",
+            f"{float(item.ThanhTien):,.0f}"
+        ])
+
+    # Tạo bảng PDF
+    table = Table(data, colWidths=[20*mm, 65*mm, 45*mm, 25*mm, 30*mm, 35*mm, 40*mm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONT', (0, 0), (-1, -1), "DejaVu")
+    ]))
+    table.wrapOn(c, width, height)
+    y_position = height - 300
+    table.drawOn(c, 30, y_position)
 
     # Tổng tiền
-    y -= 40
     c.setFont("DejaVu", 12)
-    c.drawString(320, y, "Tổng tiền:")
-    c.drawString(400, y, f"{float(phieu.TongTien):,.0f} VND")
+    total_y = y_position - len(data)*18 - 10
+    c.drawRightString(width - 40, total_y, f"Tổng tiền: {float(phieu.TongTien):,.0f} VND")
 
     c.showPage()
     c.save()
-
     buffer.seek(0)
+
     filename = f"PhieuNhap_{phieu.MaPN}.pdf"
     return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')

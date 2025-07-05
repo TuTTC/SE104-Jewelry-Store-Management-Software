@@ -13,12 +13,13 @@ const getAuthHeader = () => {
 const handleResponse = async (res) => {
   const data = await res.json();
   if (!res.ok) {
-    const error = new Error(data.error || "Có lỗi xảy ra");
+    const error = new Error(data.message || "Có lỗi xảy ra");
     error.status = res.status;
     throw error;
   }
   return data;
 };
+
 export const getAllProducts = async () => {
   const res = await fetch(`${BASE_URL}/`, {
     headers: getAuthHeader(),
@@ -30,7 +31,7 @@ export const getProductById = async (id) => {
   const res = await fetch(`${BASE_URL}/${id}`, {
     headers: getAuthHeader(),
   });
-  return handleResponse(res, "Sản phẩm không tồn tại");
+  return handleResponse(res);
 };
 
 export const addProduct = async (productData) => {
@@ -39,7 +40,7 @@ export const addProduct = async (productData) => {
     headers: getAuthHeader(),
     body: JSON.stringify(productData),
   });
-  return handleResponse(res, "Lỗi khi thêm sản phẩm");
+  return handleResponse(res);
 };
 
 export const updateProduct = async (id, productData) => {
@@ -48,7 +49,7 @@ export const updateProduct = async (id, productData) => {
     headers: getAuthHeader(),
     body: JSON.stringify(productData),
   });
-  return handleResponse(res, "Lỗi khi cập nhật sản phẩm");
+  return handleResponse(res);
 };
 
 export const deleteProduct = async (id) => {
@@ -56,14 +57,14 @@ export const deleteProduct = async (id) => {
     method: "DELETE",
     headers: getAuthHeader(),
   });
-  return handleResponse(res, "Lỗi khi xóa sản phẩm");
+  return handleResponse(res);
 };
 
 export const getProductsByCategory = async (maDM) => {
   const res = await fetch(`${BASE_URL}/danhmuc/${maDM}`, {
     headers: getAuthHeader(),
   });
-  return handleResponse(res, "Lỗi khi lấy sản phẩm theo danh mục");
+  return handleResponse(res);
 };
 
 export const updateAllProductPrices = async () => {
@@ -71,5 +72,5 @@ export const updateAllProductPrices = async () => {
     method: "PUT",
     headers: getAuthHeader(),
   });
-  return handleResponse(res, "Lỗi khi cập nhật giá bán toàn bộ sản phẩm");
+  return handleResponse(res);
 };

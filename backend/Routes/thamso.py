@@ -1,11 +1,13 @@
 from flask import Blueprint, request, jsonify
 from models.ThamSo import THAMSO
 from database import db
-
+from flask_jwt_extended import jwt_required
+from utils.permissions import permission_required
 thamso_bp = Blueprint("thamso_bp", __name__)
 
 # Lấy tất cả tham số
 @thamso_bp.route("/", methods=["GET"])
+
 def get_all_thamso():
     items = THAMSO.query.all()
     data = [item.to_dict() for item in items]

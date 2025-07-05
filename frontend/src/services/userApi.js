@@ -1,106 +1,122 @@
 const BASE_URL = "http://localhost:5000/api/user";
 
-// Hàm header không cần token
-const getHeaders = () => {
+// Hàm header có token
+const getAuthHeader = () => {
+  const token = localStorage.getItem("token");
   return {
     "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`,
   };
+};
+
+// Hàm tiện ích xử lý response, ném thêm status code
+const handleResponse = async (res) => {
+  const contentType = res.headers.get("content-type");
+
+  let data = {};
+  if (contentType && contentType.includes("application/json")) {
+    data = await res.json();
+  } else {
+    const text = await res.text();
+    const error = new Error("Server trả về dữ liệu không hợp lệ:\n" + text);
+    error.status = res.status;
+    throw error;
+  }
+
+  if (!res.ok) {
+    const error = new Error(data.message || "Có lỗi xảy ra");
+    error.status = res.status;
+    throw error;
+  }
+
+  return data;
 };
 
 const userApi = {
   // 1. Lấy thông tin tài khoản hiện tại
   getCurrentUser: async () => {
     const res = await fetch(`${BASE_URL}/me`, {
-      headers: getHeaders(),
+      headers: getAuthHeader(),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
-  // 2. Cập nhật thông tin tài khoản hiện tại
   updateCurrentUser: async (data) => {
     const res = await fetch(`${BASE_URL}/me`, {
       method: "PUT",
-      headers: getHeaders(),
+      headers: {
+        ...getAuthHeader(),
+        "Content-Type": "application/json", // ⚠️ Rất quan trọng
+      },
       body: JSON.stringify(data),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // 3. Lấy danh sách tất cả người dùng (admin)
   getAllUsers: async () => {
-  const res = await fetch(`${BASE_URL}/users`, {
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error("Lỗi khi lấy danh sách người dùng");
-  return res.json();
+    const res = await fetch(`${BASE_URL}/users`, {
+      headers: getAuthHeader(),
+    });
+    return handleResponse(res);
   },
-
 
   // 4. Lấy thông tin chi tiết người dùng theo ID (kèm quyền)
   getUserDetails: async (userId) => {
     const res = await fetch(`${BASE_URL}/users/${userId}/details`, {
-      headers: getHeaders(),
+      headers: getAuthHeader(),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // 5. Cập nhật người dùng theo ID
   updateUserById: async (id, data) => {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "PUT",
-      headers: getHeaders(),
+      headers: getAuthHeader(),
       body: JSON.stringify(data),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // 6. Xóa người dùng
   deleteUser: async (id) => {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "DELETE",
-      headers: getHeaders(),
+      headers: getAuthHeader(),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // 7. Đổi vai trò người dùng
   changeUserRole: async (id, roleId) => {
     const res = await fetch(`${BASE_URL}/users/${id}/role`, {
       method: "PUT",
-      headers: getHeaders(),
+      headers: getAuthHeader(),
       body: JSON.stringify({ VaiTroID: roleId }),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // 8. Cập nhật quyền riêng của người dùng
   updateUserPermissions: async (userId, permissions) => {
     const res = await fetch(`${BASE_URL}/users/${userId}/permissions`, {
       method: "PUT",
-      headers: getHeaders(),
+      headers: getAuthHeader(),
       body: JSON.stringify({ permissions }),
     });
-    return res.json();
+    return handleResponse(res);
   },
-createUser: async (userData) => {
-  console.log("Dữ liệu gửi đi:", userData);
-  const response = await fetch("http://localhost:5000/api/user/add", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(userData),
-  });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || "Lỗi hệ thống");
-  }
-
-  return response.json();
-}
-
-
+  // 9. Tạo người dùng mới
+  createUser: async (userData) => {
+    const res = await fetch(`${BASE_URL}/add`, {
+      method: "POST",
+      headers: getAuthHeader(),
+      body: JSON.stringify(userData),
+    });
+    return handleResponse(res);
+  },
 };
-
-
 
 export default userApi;

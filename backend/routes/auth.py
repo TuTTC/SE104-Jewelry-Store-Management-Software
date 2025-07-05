@@ -90,7 +90,7 @@ def send_otp_register():
     role_map = {
         'customer': 'Khách hàng',
         'admin': 'Admin',
-        
+        'employee': 'Nhân viên'
     }
     vai_tro_raw = data.get('VaiTro', 'customer')
     vai_tro = role_map.get(vai_tro_raw.lower())
@@ -101,7 +101,7 @@ def send_otp_register():
     if '@' not in email:
         return jsonify({'message': 'Email không hợp lệ'}), 400
 
-    if vai_tro not in ['Khách hàng', 'Admin']:
+    if vai_tro not in ['Khách hàng', 'Admin', 'Nhân viên']:
         return jsonify({'message': 'Vai trò không hợp lệ'}), 400
 
     if NGUOIDUNG.query.filter((NGUOIDUNG.TenDangNhap == ten_dang_nhap) | (NGUOIDUNG.Email == email)).first():

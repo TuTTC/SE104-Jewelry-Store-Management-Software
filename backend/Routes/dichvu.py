@@ -17,11 +17,16 @@ SURCHARGE_MAP = {
     "ChamKhacTheoYeuCau": "PhuThu_ChamKhac",
     "GiaCongNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],  # có thể chọn max %
     "ThayDaQuy": "PhuThu_GanDaKimCuong",
+    "GiaCongNhan": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],
+    "GanDaKimCuong": "PhuThu_GanDaKimCuong",
+    "ThuVang": "PhuThu_CanVang",
+    "SuaNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],  # có thể chọn max %",
+    "ThayMoiNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],
 }
 
 @dichvu_bp.route("/debug/dichvu")
 def debug_dv():
-    from models.DichVu import DICHVU
+    from models import DICHVU
     return jsonify([dv.TenDV for dv in DICHVU.query.all()])
 
 
@@ -89,7 +94,7 @@ def search_dichvu():
 # Lấy danh sách tất cả dịch vụ
 @dichvu_bp.route('/dichvu', methods=['GET'])
 def get_all_dichvu():
-    services = DICHVU.query.filter_by(TrangThai=True).all()
+    services = DICHVU.query.all()
     data = []
 
     for dv in services:
@@ -102,7 +107,7 @@ def get_all_dichvu():
             # với mảng, lấy max của các tham số đang kích hoạt
             values = []
             for key in mapping:
-                ts = THAMSO.query.filter_by(TenThamSo=key, KichHoat=True).first()
+                ts = THAMSO.query.filter_by(TenThamSo=key).first()
                 if ts:
                     try:
                         values.append(float(ts.GiaTri))
@@ -110,7 +115,7 @@ def get_all_dichvu():
                         pass
             percent = max(values) if values else 0.0
         else:
-            ts = THAMSO.query.filter_by(TenThamSo=mapping, KichHoat=True).first()
+            ts = THAMSO.query.filter_by(TenThamSo=mapping).first()
             if ts:
                 try:
                     percent = float(ts.GiaTri)
@@ -159,4 +164,3 @@ def export_dichvu_pdf():
         download_name="danh_sach_dich_vu.pdf",
         mimetype="application/pdf"
     )
-

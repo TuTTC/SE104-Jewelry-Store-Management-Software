@@ -121,8 +121,10 @@ const GeneralModalForm = ({
       case "categories":
         return (
           <>
-            <input type="text" name="name" value={formData.name || ""} onChange={handleInputChange} placeholder="Tên danh mục" required />
-            <input type="text" name="description" value={formData.description || ""} onChange={handleInputChange} placeholder="Mô tả" />
+            <input type="text" name="TenDM" value={formData.TenDM || ""} onChange={handleInputChange} placeholder="Tên danh mục" required />
+            <input type="text" name="DonViTinh" value={formData.DonViTinh || ""} onChange={handleInputChange} placeholder="Đơn vị tính" />
+            <input type="number" name="PhanTramLoiNhuan" value={formData.PhanTramLoiNhuan || ""} onChange={handleInputChange} placeholder="Phần trăm lợi nhuận %" min = "0" />            
+            <input type="text" name="MoTa" value={formData.MoTa || ""} onChange={handleInputChange} placeholder="Mô tả" />
           </>
         );
       case "services":

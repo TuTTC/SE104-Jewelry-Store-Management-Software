@@ -12,12 +12,13 @@ def seed_permissions():
             {"prefix": "accounts", "mo_ta": "Tài khoản người dùng"},
             {"prefix": "products", "mo_ta": "Sản phẩm"},
             {"prefix": "categories", "mo_ta": "Danh mục"},
-            {"prefix": "orders", "mo_ta": "Đơn hàng"},
-            {"prefix": "services", "mo_ta": "Dịch vụ"},
+            {"prefix": "orders", "mo_ta": "Đơn hàng", "co_view_own": True},
+            {"prefix": "services", "mo_ta": "Dịch vụ", "co_view_own": True},
             {"prefix": "purchaseOrders", "mo_ta": "Phiếu nhập hàng"},
             {"prefix": "suppliers", "mo_ta": "Nhà cung cấp"},
             {"prefix": "inventory", "mo_ta": "Tồn kho"},
             {"prefix": "reports", "mo_ta": "Báo cáo & thống kê"},
+            {"prefix": "parameters", "mo_ta": "Tham số"}
         ]
 
         permissions = []
@@ -38,6 +39,13 @@ def seed_permissions():
                 "TenQuyen": f"{m['prefix']}:add",
                 "MoTa": f"Thêm {m['mo_ta']}"
             })
+            
+            # Thêm quyền xem dữ liệu của chính mình nếu có cờ co_view_own
+            if m.get("co_view_own"):
+                permissions.append({
+                    "TenQuyen": f"{m['prefix']}:view_own",
+                    "MoTa": f"Xem {m['mo_ta']} của chính mình"
+                })
 
         # Seed vào DB nếu chưa có
         if not PERMISSIONS.query.first():
@@ -53,4 +61,5 @@ def seed_permissions():
     except Exception as e:
         db.session.rollback()
         print(f"Lỗi khi seed quyền: {e}")
+
 

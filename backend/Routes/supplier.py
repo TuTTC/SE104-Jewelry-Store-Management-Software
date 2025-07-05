@@ -1,11 +1,15 @@
 from flask import Blueprint, request, jsonify
 from models.NhaCungCap import NHACUNGCAP
 from database import db
+from flask_jwt_extended import jwt_required
+from utils.permissions import permission_required
 
 supplier_bp = Blueprint('supplier_bp', __name__)
 
 # Lấy tất cả nhà cung cấp
 @supplier_bp.route("/", methods=["GET"])
+@jwt_required()
+@permission_required("suppliers:view")
 def get_all_suppliers():
     suppliers = NHACUNGCAP.query.all()
     result = []
@@ -24,6 +28,8 @@ def get_all_suppliers():
 
 # Thêm nhà cung cấp
 @supplier_bp.route("/", methods=["POST"])
+@jwt_required()
+@permission_required("suppliers:add")
 def add_supplier():
     data = request.get_json()
 
@@ -46,6 +52,8 @@ def add_supplier():
 
 # Sửa nhà cung cấp
 @supplier_bp.route("/<int:ma_ncc>", methods=["PUT"])
+@jwt_required()
+@permission_required("suppliers:edit")
 def update_supplier(ma_ncc):
     data = request.get_json()
     supplier = NHACUNGCAP.query.get(ma_ncc)
@@ -70,6 +78,8 @@ def update_supplier(ma_ncc):
 
 # Xóa nhà cung cấp
 @supplier_bp.route("/<int:ma_ncc>", methods=["DELETE"])
+@jwt_required()
+@permission_required("suppliers:delete")
 def delete_supplier(ma_ncc):
     supplier = NHACUNGCAP.query.get(ma_ncc)
 

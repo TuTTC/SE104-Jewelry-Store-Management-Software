@@ -12,6 +12,9 @@ const GeneralModalForm = ({
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
+
+    console.log("initialData:", initialData);
+    console.log("section:", section, "mode:", mode);
     if (!initialData || mode === 'add') {
       setFormData({});
       return;
@@ -23,12 +26,15 @@ const GeneralModalForm = ({
       data.description = initialData.MoTa || '';
       data.status = initialData.TrangThai ? 'true' : 'false';
     } else if (section === 'orders') {
-      data.customerId = initialData.MaKH || '';
-      data.date = initialData.NgayDat?.slice(0,10) || '';
-      data.total = initialData.TongTien || '';
-      data.status = initialData.TrangThai || 'Pending';
-      data.paymentMethod = initialData.PhuongThucThanhToan || '';
-      data.deliveryAddress = initialData.DiaChiGiao || '';
+      data.id = initialData.id || '';  // dùng id đúng với dữ liệu frontend
+      data.customerId = initialData.customerId || '';
+      data.date = initialData.date || '';
+      data.total = initialData.total || '';
+      data.status = ["Pending", "Paid", "Shipped", "Completed"].includes(initialData.status)
+        ? initialData.status
+        : "Pending";
+      data.paymentMethod = initialData.paymentMethod || '';
+      data.deliveryAddress = initialData.deliveryAddress || '';
     } else if (section === 'reports') {
       data.LoaiBaoCao = initialData.LoaiBaoCao || '';
       data.TuNgay = initialData.TuNgay?.slice(0,10) || '';
@@ -41,12 +47,21 @@ const GeneralModalForm = ({
   if (!showModal) return null;
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+
+    let parsedValue = value;
+    if (name === "status") {
+      parsedValue = value === "true"; // ép kiểu thành boolean
+    }
+
+    setFormData(prev => ({ ...prev, [name]: parsedValue }));
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    console.log("handleSubmit trong GeneralModalForm được gọi");
+    if (onSubmit) {
+      onSubmit(formData); // Gọi về ServiceManager.jsx
+    }
   };
   return (
     <div className="modal-overlay">
@@ -107,7 +122,7 @@ const GeneralModalForm = ({
               />
               <select
                 name="status"
-                value={formData.status || "true"}
+                value={formData.status === true ? "true" : "false"}
                 onChange={handleInputChange}
                 required
               >

@@ -31,15 +31,8 @@ export default function ReportDashboard() {
       try {
         const res = await layDanhSachBaoCao();
         if (res.status === "success") setReports(res.data);
-      } catch (error) {
-        if (error.status === 403) {
-          alert("Bạn không có quyền xem!");
-        } else if (error.status === 401) {
-          alert("Vui lòng đăng nhập!");
-        } else {
-          console.error("Lỗi khi lấy dữ liệu:", error);
-        }
-        // console.error("❌ Lỗi khi lấy báo cáo:", err);
+      } catch (err) {
+        console.error("Lỗi khi lấy báo cáo:", err);
       }
     })();
   }, []);
@@ -132,10 +125,10 @@ const validate = () => {
         if (reload.status === "success") setReports(reload.data);
         closeModal();
       } else {
-        alert("❌ Thất bại: " + res.message);
+        alert("Thất bại: " + res.message);
       }
     } catch (err) {
-      alert("❌ Lỗi kết nối: " + err.message);
+      alert("Lỗi kết nối: " + err.message);
     }
   };
 
@@ -149,10 +142,10 @@ const validate = () => {
       if (res.status === "success") {
         setReports((prev) => prev.filter((r) => r.MaBC !== MaBC));
       } else {
-        alert("❌ Xóa thất bại: " + res.message);
+        alert("Xóa thất bại: " + res.message);
       }
     } catch {
-      alert("❌ Lỗi kết nối khi xóa.");
+      alert("Lỗi kết nối khi xóa.");
     }
   };
 
@@ -174,14 +167,14 @@ const validate = () => {
   // 8b. Xuất PDF
  const exportPDF = () => {
    if (!currentReport || !currentReport.MaBC) {
-     return alert("❌ Vui lòng chọn báo cáo để xuất PDF.");
+     return alert("Vui lòng chọn báo cáo để xuất PDF.");
    }
    inBaoCaoPDF(currentReport.MaBC)
      .then((blob) => {
        const url = URL.createObjectURL(blob);
        window.open(url);
      })
-     .catch((err) => alert("❌ Lỗi khi xuất PDF: " + err.message));
+     .catch((err) => alert("Lỗi khi xuất PDF: " + err.message));
  };
 
   const showReportModal  = showModal;
@@ -292,4 +285,3 @@ const validate = () => {
     </div>
   );
 }
-

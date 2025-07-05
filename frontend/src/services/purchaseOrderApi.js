@@ -75,7 +75,25 @@ export const deleteOrder = async (id) => {
 // Xuất file PDF (mở tab mới)
 export const exportOrderPDF = (id) => {
   const token = localStorage.getItem("token");
-  const headers = token ? `?token=${token}` : "";
-  const url = `${BASE_URL}/${id}/export${headers}`;
-  window.open(url, "_blank");
+
+  fetch(`${BASE_URL}/${id}/export`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Lỗi khi xuất PDF");
+      }
+      return res.blob();
+    })
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    })
+    .catch((err) => {
+      console.error(err);
+      alert("Xuất file thất bại");
+    });
 };

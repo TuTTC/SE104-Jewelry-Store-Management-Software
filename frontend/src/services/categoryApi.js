@@ -12,13 +12,26 @@ const getHeaders = () => {
 // Hàm xử lý response, trả kèm status
 const handleResponse = async (res) => {
   const data = await res.json();
+
   if (!res.ok) {
-    const error = new Error(data.error || "Có lỗi xảy ra");
+    let message = "Có lỗi xảy ra";
+
+    if (res.status === 403) {
+      message = "Bạn không có quyền thực hiện chức năng này";
+    } else if (res.status === 401) {
+      message = "Vui lòng đăng nhập";
+    } else if (data.error) {
+      message = data.error;
+    }
+
+    const error = new Error(message);
     error.status = res.status;
     throw error;
   }
+
   return data;
 };
+
 
 const categoryApi = {
   getAll: async () => {

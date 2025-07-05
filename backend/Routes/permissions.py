@@ -4,12 +4,15 @@ from models.Permissions import PERMISSIONS
 from models.NguoiDung import NGUOIDUNG
 from database import db
 from models.Relationships import user_permissions
+from flask_jwt_extended import jwt_required
+from utils.permissions import permission_required
 permission_bp = Blueprint("permission_bp", __name__)
 
 
 # 1. Lấy tất cả quyền
 @permission_bp.route("/", methods=["GET"])
-# @jwt_required()
+@jwt_required()
+@permission_required("accounts:view")
 def get_all_permissions():
     permissions = PERMISSIONS.query.all()
     data = [
@@ -23,7 +26,8 @@ def get_all_permissions():
 
 
 @permission_bp.route("/user/<int:user_id>/permissions-detail", methods=["GET"])
-# @jwt_required()
+@jwt_required()
+@permission_required("accounts:view")
 def get_user_permissions_detail(user_id):
     user = NGUOIDUNG.query.get_or_404(user_id)
 
@@ -72,7 +76,8 @@ def get_user_permissions_detail(user_id):
 
 # 4. Lấy quyền mặc định theo vai trò của người dùng
 @permission_bp.route("/user/<int:user_id>/role-permissions", methods=["GET"])
-# @jwt_required()
+@jwt_required()
+@permission_required("accounts:view")
 def get_role_permissions_of_user(user_id):
     user = NGUOIDUNG.query.get_or_404(user_id)
     
@@ -87,7 +92,8 @@ def get_role_permissions_of_user(user_id):
     }), 200
 
 @permission_bp.route("/user/<int:user_id>/permissions", methods=["PUT"])
-# @jwt_required()
+@jwt_required()
+@permission_required("accounts:edit")
 def update_user_permissions(user_id):
     user = NGUOIDUNG.query.get_or_404(user_id)
     data = request.get_json()

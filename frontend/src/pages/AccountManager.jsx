@@ -41,7 +41,13 @@ const fetchAccounts = async () => {
     setAccounts(fetchedData);
     setData(fetchedData);
   } catch (error) {
-    console.error(error);
+    if (error.status === 403) {
+      alert("Bạn không có quyền xem!");
+    } else if (error.status === 401) {
+      alert("Vui lòng đăng nhập!");
+    } else {
+      console.error("Lỗi khi lấy dữ liệu:", error);
+    }
   }
 };
 
