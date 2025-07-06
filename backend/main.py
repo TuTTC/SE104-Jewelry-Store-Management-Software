@@ -25,7 +25,7 @@ from seeds.seed_khachhang import seed_khach_hang
 from seeds.seed_baocao import seed_bao_cao
 from seeds.seed_chitietdonhang import seed_chi_tiet_don_hang
 from seeds.seed_chitietphieudichvu import seed_chi_tiet_phieu_dich_vu
-from seeds.seed_phieudichvu import seed_phieu_dich_vu
+from seeds.seed_phieudichvu import seed_phieudichvu
 # Thêm dòng này để load biến môi trường từ .env
 from dotenv import load_dotenv
 load_dotenv()  # ← Tải biến môi trường từ file .env
@@ -79,6 +79,7 @@ with app.app_context():
     # seed_them_khach_hang(20)
     # seed_phieu_dich_vu()
     # seed_chi_tiet_phieu_dich_vu()
+    # seed_phieudichvu()
 
 from Routes import register_routes
 register_routes(app)

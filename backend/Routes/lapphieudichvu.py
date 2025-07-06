@@ -29,6 +29,40 @@ def lay_tham_so(ten):
         raise ValueError(f"Tham số '{ten}' không tồn tại hoặc chưa kích hoạt.")
     return float(ts.GiaTri)
 
+def tinh_toan_lai_phieu(phieu):
+    chi_tiet_list = CHITIETPHIEUDICHVU.query.filter_by(MaPDV=phieu.MaPDV).all()
+
+    tong_tien = 0
+    tong_tra_truoc = 0
+
+    for ct in chi_tiet_list:
+        tong_tien += ct.ThanhTien
+        tong_tra_truoc += ct.TienTraTruoc
+
+    phieu.TongTien = tong_tien
+    phieu.TraTruoc = tong_tra_truoc
+    phieu.TienConLai = tong_tien - tong_tra_truoc
+
+    db.session.commit()  # Lưu thay đổi vào DB nếu muốn dữ liệu lưu lại
+
+
+def cap_nhat_trang_thai_phieu(ma_pdv):
+    """Tự động cập nhật trạng thái phiếu dịch vụ dựa vào tình trạng các chi tiết."""
+    chi_tiet_list = CHITIETPHIEUDICHVU.query.filter_by(MaPDV=ma_pdv).all()
+
+    if not chi_tiet_list:
+        return  # Không có chi tiết, không xử lý
+
+    tat_ca_da_giao = all(ct.TinhTrang == "Đã giao" for ct in chi_tiet_list)
+
+    phieu = PHIEUDICHVU.query.get(ma_pdv)
+    if not phieu:
+        return
+
+    phieu.TrangThai = "Hoàn thành" if tat_ca_da_giao else "Chưa hoàn thành"
+    db.session.commit()
+
+
 @phieudichvu_bp.route('/phieudichvu', methods=['POST'])
 def create_phieu_dich_vu():
     data = request.get_json()
@@ -156,6 +190,8 @@ def list_phieu_dichvu():
         result = []
 
         for p in phieus:
+            tinh_toan_lai_phieu(p)
+            cap_nhat_trang_thai_phieu(p.MaPDV)
             khach_hang = p.khachhang  # Quan hệ đã đặt tên là 'khachhang' trong model
             ten_kh = khach_hang.HoTen if khach_hang else "Không rõ"
 
@@ -293,28 +329,33 @@ def print_phieu_dich_vu(id):
         info = f"""
         <b>Số phiếu:</b> {phieu.MaPDV}<br/>
          <b>Ngày lập:</b> {phieu.NgayLap}<br/>
-        <b>Khách hàng:</b> {khach_hang.HoTen}<br/>
-        <b>Số điện thoại:</b> {khach_hang.SoDienThoai}<br/>
-        <b>Tổng tiền:</b> {phieu.TongTien:,}₫ &nbsp;&nbsp;&nbsp;
-        <b>Tổng tiền trả trước:</b> {phieu.TraTruoc:,}₫ &nbsp;&nbsp;&nbsp;
-        <b>Tổng tiền còn lại:</b> {phieu.TongTien - phieu.TraTruoc:,}₫<br/>
         """
+        # <b>Khách hàng:</b> {khach_hang.HoTen}<br/>
+        # <b>Số điện thoại:</b> {khach_hang.SoDienThoai}<br/>
+        # <b>Tổng tiền:</b> {phieu.TongTien:,}₫ &nbsp;&nbsp;&nbsp;
+        # <b>Tổng tiền trả trước:</b> {phieu.TraTruoc:,}₫ &nbsp;&nbsp;&nbsp;
+        # <b>Tổng tiền còn lại:</b> {phieu.TongTien - phieu.TraTruoc:,}₫<br/>
         elements.append(Paragraph(info, styles['DejaVu']))
         elements.append(Spacer(1, 12))
 
         # Dữ liệu bảng
+        # data = [
+        #     ['Khách hàng: ', '', '', '', '', 'Số điện thoại:', '', '', '', ''],
+        #     ['Tổng tiền:', '', '', 'Tổng tiền trả trước:', '', 'Tổng tiền còn lại:', '', '', '', ''],
+        #     ['Stt', 'Loại dịch vụ', 'Đơn giá dịch vụ', 'Đơn giá được tính', 'Số lượng',
+        #      'Thành tiền', 'Thanh toán', '', 'Ngày giao', 'Tình trạng'],
+        #     ['', '', '', '', '', '', 'Trả trước', 'Còn lại', '', '']
+        # ]
         data = [
-            ['Khách hàng: ', '', '', '', '', 'Số điện thoại:', '', '', '', ''],
-            ['Tổng tiền:', '', '', 'Tổng tiền trả trước:', '', 'Tổng tiền còn lại:', '', '', '', ''],
-            ['Stt', 'Loại dịch vụ', 'Đơn giá dịch vụ', 'Đơn giá được tính', 'Số lượng',
-             'Thành tiền', 'Thanh toán', '', 'Ngày giao', 'Tình trạng'],
-            ['', '', '', '', '', '', 'Trả trước', 'Còn lại', '', '']
-        ]
+    [f"Khách hàng: {khach_hang.HoTen}", '', '', '', '', f"Số điện thoại: {khach_hang.SoDienThoai}", '', '', '', ''],
+    [f"Tổng tiền: {phieu.TongTien:,}₫", '', '', f"Tổng tiền trả trước: {phieu.TraTruoc:,}₫", '', f"Tổng tiền còn lại: {phieu.TongTien - phieu.TraTruoc:,}₫", '', '', '', ''],
+    ['Stt', 'Loại dịch vụ', 'Đơn giá dịch vụ', 'Đơn giá được tính', 'Số lượng',
+     'Thành tiền', 'Thanh toán', '', 'Ngày giao', 'Tình trạng'],
+    ['', '', '', '', '', '', 'Trả trước', 'Còn lại', '', '']
+]
 
         for i, ct in enumerate(chi_tiets, 1):
             dv = DICHVU.query.get(ct.MaDV)
-            thanh_toan_truoc = min(phieu.TraTruoc, ct.ThanhTien)
-            con_lai = max(0, ct.ThanhTien - thanh_toan_truoc)
             data.append([
                 str(i),
                 dv.TenDV,
@@ -322,11 +363,12 @@ def print_phieu_dich_vu(id):
                 f"{ct.DonGiaDuocTinh:,}₫",
                 str(ct.SoLuong),
                 f"{ct.ThanhTien:,}₫",
-                f"{thanh_toan_truoc:,}₫",
-                f"{con_lai:,}₫",
+                f"{ct.TienTraTruoc:,}₫",
+                f"{ct.TienConLai:,}₫",
                 phieu.NgayLap.strftime('%Y-%m-%d'),
                 ct.TinhTrang
             ])
+
 
         # Tạo bảng
         page_width = landscape(A4)[0] - doc.leftMargin - doc.rightMargin
@@ -397,17 +439,17 @@ def print_danh_sach_pdv():
 
         # Tiêu đề bảng
         data = [
-            ['STT', 'Số phiếu', 'Ngày lập', 'Khách hàng', 'Tổng tiền', 'Trả trước', 'Còn lại', 'Tình trạng']
+            ['STT', 'Số phiếu', 'Ngày lập', 'Người lập', 'Tổng tiền', 'Trả trước', 'Còn lại', 'Trạng thái']
         ]
 
         # Nội dung bảng
         for i, pdv in enumerate(danh_sach, start=1):
-            kh = KHACHHANG.query.get(pdv.MaKH)
+            nd = NGUOIDUNG.query.get(pdv.UserID)
             data.append([
                 str(i),
                 str(pdv.MaPDV),
                 pdv.NgayLap.strftime('%Y-%m-%d'),
-                kh.HoTen if kh else 'Không rõ',
+                nd.HoTen if nd else 'Không rõ',
                 f"{pdv.TongTien}₫",
                 f"{pdv.TraTruoc}₫",
                 f"{pdv.TongTien - pdv.TraTruoc}₫",
@@ -416,8 +458,6 @@ def print_danh_sach_pdv():
 
         # Cấu hình bảng
         page_width = landscape(A4)[0] - doc.leftMargin - doc.rightMargin
-        # colWidths = [page_width * w for w in [0.05, 0.15, 0.1, 0.1, 0.08, 0.1, 0.08, 0.08, 0.13, 0.13]]
-        # =[30, 70, 80, 150, 80, 80, 80, 80]
         table = Table(data, colWidths=[30, 70, 80, 150, 80, 80, 80, 80])
         table.setStyle(TableStyle([
             ('FONTNAME', (0,0), (-1,-1), 'DejaVu'),
@@ -435,3 +475,59 @@ def print_danh_sach_pdv():
 
     except Exception as e:
         return {"error": str(e)}, 500
+
+    
+@phieudichvu_bp.route("/phieudichvu/<int:id>", methods=["PUT"])
+def update_phieu_dich_vu(id):
+    try:
+        phieu = PHIEUDICHVU.query.get_or_404(id)
+        data = request.get_json()
+
+        phieu.UserID = data.get("UserID")  # Giả sử MaKH là ID của khách hàng
+        phieu.NgayLap = data.get("NgayLap")
+
+        # phieu.NgayLap = datetime.strptime(data.get("NgayLap"), "%Y-%m-%d %H:%M")  # Chuyển về dạng datetime
+        phieu.GhiChu = data.get("GhiChu", "")
+        phieu.TrangThai = data.get("TrangThai")
+
+        # Xử lý cập nhật Chi Tiết Phiếu:
+        CHITIETPHIEUDICHVU.query.filter_by(MaPDV=id).delete()  # Xóa chi tiết cũ
+
+        chi_tiet_list = data.get("ChiTiet", [])
+        for item in chi_tiet_list:
+            ct = CHITIETPHIEUDICHVU(
+                MaPDV = id,
+                MaDV = item.get("MaDV"),
+                SoLuong = item.get("SoLuong"),
+                ChiPhiRieng = item.get("ChiPhiRieng"),
+                DonGiaDichVu = item.get("DonGia"),
+                DonGiaDuocTinh = item.get("DonGia") + item.get("ChiPhiRieng"),
+                ThanhTien = (item.get("DonGia") + item.get("ChiPhiRieng")) * item.get("SoLuong"),
+                TienTraTruoc = item.get("TienTraTruoc"),
+                TienConLai = (item.get("DonGia") + item.get("ChiPhiRieng")) * item.get("SoLuong") - item.get("TienTraTruoc"),
+                NgayGiao = None,  # Tùy nếu bạn có truyền ngày giao thì xử lý thêm
+                TinhTrang = item.get("TinhTrang"),
+            )
+            db.session.add(ct)
+        # Sau vòng for cập nhật chi tiết
+        db.session.flush()  # Đảm bảo chi tiết đã có trên session để tính toán
+
+        # Truy vấn lại toàn bộ chi tiết sau khi thêm mới
+        chi_tiet_moi = CHITIETPHIEUDICHVU.query.filter_by(MaPDV=id).all()
+
+        tong_tien = sum(d.ThanhTien for d in chi_tiet_moi)
+        tong_tra_truoc = sum(d.TienTraTruoc for d in chi_tiet_moi)
+        tien_con_lai = tong_tien - tong_tra_truoc
+
+        # Cập nhật ngược lại phiếu chính
+        phieu.TongTien = tong_tien
+        phieu.TraTruoc = tong_tra_truoc
+        phieu.TienConLai = tien_con_lai
+
+        db.session.commit()
+
+        return jsonify({"status": "success", "message": "Cập nhật phiếu dịch vụ thành công."})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500

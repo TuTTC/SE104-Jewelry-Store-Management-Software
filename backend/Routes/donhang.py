@@ -20,6 +20,9 @@ from reportlab.platypus import Table, TableStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import traceback
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
 pdfmetrics.registerFont(TTFont('DejaVu', '../fonts/times.ttf'))
 donhang_bp = Blueprint("donhang", __name__, url_prefix="/api")
 

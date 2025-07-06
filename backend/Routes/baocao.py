@@ -1,62 +1,93 @@
-from flask import Blueprint, request, jsonify, make_response, send_file
+from flask import Blueprint, request, jsonify, send_file
 from datetime import datetime
-from sqlalchemy import extract
-from datetime import date
-from models.TonKho import TONKHO
 from models.BaoCao import BAOCAO
 from models.DonHang import DONHANG
+from models.KhachHang import KHACHHANG
+from models.NguoiDung import NGUOIDUNG 
+from models.NhaCungCap import NHACUNGCAP
+from models.PhieuNhap import PHIEUNHAP
+from models.ChiTietPhieuNhap import CHITIETPHIEUNHAP
 from database import db
-from sqlalchemy import func, desc
+from sqlalchemy import func
 from io import BytesIO
-from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from calendar import monthrange
+import os
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity, jwt_required
+FONT_PATH = os.path.join(os.path.dirname(__file__), "..", "fonts", "times.ttf")
+
+pdfmetrics.registerFont(TTFont("TimesVN", FONT_PATH)) 
 
 baocao_bp = Blueprint("baocao", __name__, url_prefix="/api")
 
 @baocao_bp.route("/baocao", methods=["POST"])
 def tao_bao_cao():
     data = request.get_json()
-    loai      = data["LoaiBaoCao"]
-    tu_ngay = datetime.strptime(data.get("TuNgay"), "%Y-%m-%d").date()
-    den_ngay= datetime.strptime(data.get("DenNgay"), "%Y-%m-%d").date()
-    mo_ta    = data.get("MoTa", "")
-    nguoi_tao = data.get("NguoiTao", 1)
+    loai       = data["LoaiBaoCao"]
+    tu_ngay    = datetime.strptime(data.get("TuNgay"), "%Y-%m-%d").date()
+    den_ngay   = datetime.strptime(data.get("DenNgay"), "%Y-%m-%d").date()
+    mo_ta      = data.get("MoTa", "")
+    nguoi_tao  = data.get("NguoiTao", 1)
 
-    # Ví dụ với báo cáo doanh thu: tổng TongTien của DONHANG.NgayDat trong khoảng
-    total = 0
-    if loai == "Doanh thu":
-        total = db.session.query(
-            func.coalesce(func.sum(DONHANG.TongTien), 0)
-        ).filter(
-            func.date(DONHANG.NgayDat) >= tu_ngay,
-            func.date(DONHANG.NgayDat) <= den_ngay
-        ).scalar()
+    print("Dữ liệu nhận được:", data)
 
+    # 1. Tạo báo cáo chính
     report = BAOCAO(
-        LoaiBaoCao    = loai,
-        TuNgay        = tu_ngay,
-        DenNgay       = den_ngay,
-        MoTa          = mo_ta,
-        NguoiTao      = nguoi_tao
+        LoaiBaoCao = loai,
+        TuNgay     = tu_ngay,
+        DenNgay    = den_ngay,
+        MoTa       = mo_ta,
+        NguoiTao   = nguoi_tao
     )
     db.session.add(report)
+
+    # 2. Xác định loại còn lại
+    loai_con_lai = "Lợi nhuận" if loai == "Doanh thu" else "Doanh thu"
+
+    # 3. Kiểm tra đã tồn tại báo cáo còn lại chưa
+    existed = BAOCAO.query.filter_by(
+        LoaiBaoCao = loai_con_lai,
+        TuNgay     = tu_ngay,
+        DenNgay    = den_ngay
+    ).first()
+
+    # 4. Nếu chưa có thì tạo thêm
+    if not existed:
+        auto_report = BAOCAO(
+            LoaiBaoCao = loai_con_lai,
+            TuNgay     = tu_ngay,
+            DenNgay    = den_ngay,
+            MoTa       = f"Tự động tạo từ báo cáo {loai.lower()}",
+            NguoiTao   = nguoi_tao
+        )
+        db.session.add(auto_report)
+
+    # 5. Lưu cả hai (hoặc một)
     db.session.commit()
 
     return jsonify({
-      "status":"success", 
-      "data": {
-        "MaBC": report.MaBC,
-        "LoaiBaoCao": report.LoaiBaoCao,
-        "TuNgay": report.TuNgay.isoformat(),
-        "DenNgay": report.DenNgay.isoformat(),
-        "MoTa": report.MoTa,
-        "TaoNgay": report.TaoNgay.isoformat()
-      }
+        "status": "success",
+        "data": {
+            "MaBC":       report.MaBC,
+            "LoaiBaoCao": report.LoaiBaoCao,
+            "TuNgay":     report.TuNgay.isoformat(),
+            "DenNgay":    report.DenNgay.isoformat(),
+            "MoTa":       report.MoTa,
+            "TaoNgay":    report.TaoNgay.isoformat()
+        }
     }), 201
 
 
 # Cập nhật báo cáo
 @baocao_bp.route('/baocao/<int:id>', methods=['PUT'])
+@jwt_required()
+@permission_required("reports:edit")
 def update_baocao(id):
     try:
         data = request.get_json()
@@ -82,6 +113,8 @@ def update_baocao(id):
 
 # Xóa báo cáo
 @baocao_bp.route('/baocao/<int:id>', methods=['DELETE'])
+@jwt_required()
+@permission_required("reports:delete")
 def delete_baocao(id):
     bc = BAOCAO.query.get_or_404(id)
     db.session.delete(bc)
@@ -89,46 +122,44 @@ def delete_baocao(id):
     return jsonify({'status': 'success', 'message': 'Xóa báo cáo thành công'})
 
 # Lấy danh sách tất cả báo cáo
-
 @baocao_bp.route('/baocao', methods=['GET'])
+@jwt_required()
+@permission_required("reports:view")
 def list_baocao():
     reports = BAOCAO.query.order_by(BAOCAO.TuNgay.desc()).all()
     result = []
 
     for r in reports:
-        du_lieu = None
+        du_lieu = {}
+
+        # Tổng doanh thu từ đơn hàng
+        total_doanh_thu = db.session.query(
+            func.coalesce(func.sum(DONHANG.TongTien), 0)
+        ).filter(
+            DONHANG.NgayDat >= r.TuNgay,
+            DONHANG.NgayDat <= r.DenNgay
+        ).scalar() or 0
+
+        # Tổng tiền nhập từ phiếu nhập
+        tong_tien_nhap = db.session.query(
+            func.coalesce(
+                func.sum(CHITIETPHIEUNHAP.SoLuong * CHITIETPHIEUNHAP.DonGiaNhap), 0
+            )
+        ).join(PHIEUNHAP).filter(
+            PHIEUNHAP.NgayNhap >= r.TuNgay,
+            PHIEUNHAP.NgayNhap <= r.DenNgay
+        ).scalar() or 0
+
+        loi_nhuan = total_doanh_thu - tong_tien_nhap
 
         if r.LoaiBaoCao == "Doanh thu":
-            # Tính tổng TongTien từ DONHANG trong khoảng [TuNgay, DenNgay]
-            total = db.session.query(
-                func.coalesce(func.sum(DONHANG.TongTien), 0)
-            ).filter(
-                DONHANG.NgayDat >= r.TuNgay,
-                DONHANG.NgayDat <= r.DenNgay
-            ).scalar()
-            du_lieu = float(total)
-
-        elif r.LoaiBaoCao == "Tồn kho":
-            # Lấy tồn kho mới nhất theo MaSP trong khoảng TuNgay - DenNgay
-            sub = (
-                db.session.query(
-                    TONKHO.MaSP,
-                    func.max(TONKHO.NgayCapNhat).label("max_ngay")
-                )
-                .filter(TONKHO.NgayCapNhat >= r.TuNgay,
-                        TONKHO.NgayCapNhat <= r.DenNgay)
-                .group_by(TONKHO.MaSP)
-                .subquery()
-            )
-
-            rows = (
-                db.session.query(TONKHO.MaSP, TONKHO.SoLuongTon)
-                .join(sub, (TONKHO.MaSP == sub.c.MaSP) &
-                           (TONKHO.NgayCapNhat == sub.c.max_ngay))
-                .all()
-            )
-
-            du_lieu = [{"MaSP": sp, "SoLuongTon": qty} for sp, qty in rows]
+            du_lieu = {
+                "DoanhThu": total_doanh_thu
+            }
+        elif r.LoaiBaoCao == "Lợi nhuận":
+            du_lieu = {
+                "LoiNhuan": loi_nhuan
+            }
 
         result.append({
             "MaBC":       r.MaBC,
@@ -144,8 +175,11 @@ def list_baocao():
     return jsonify({"status": "success", "data": result})
 
 
+
 # Báo cáo tồn kho
 @baocao_bp.route('/baocao/tonkho', methods=['GET'])
+@jwt_required()
+@permission_required("reports:add")
 def baocao_ton_kho():
     reports = BAOCAO.query.filter(BAOCAO.LoaiBaoCao == 'Tồn kho').all()
     data = [r.to_dict() for r in reports]
@@ -153,72 +187,138 @@ def baocao_ton_kho():
 
 # Xem/print báo cáo ra PDF
 @baocao_bp.route("/baocao/<int:id>/print", methods=["GET"])
+@jwt_required()
+@permission_required("reports:view")
 def print_bao_cao(id):
-    reports = BAOCAO.query.order_by(BAOCAO.TuNgay.desc()).all()
+    bc = BAOCAO.query.get_or_404(id)
+    tu_ngay = bc.TuNgay
+    den_ngay = bc.DenNgay
 
     buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    c.setFont("Helvetica", 12)
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='NormalTimes', fontName='TimesVN', fontSize=10))
+    styles.add(ParagraphStyle(name='TitleTimes', fontName='TimesVN', fontSize=16, alignment=1))
+    elements = []
 
-    y = height - 40
-    c.drawString(40, y, "BAO CAO & THONG KE")
-    y -= 30
+    # Tiêu đề
+    elements.append(Paragraph(f"BÁO CÁO {bc.LoaiBaoCao.upper()}", styles['TitleTimes']))
 
-    headers = ["ID", "Loai", "Tu ngay", "Den ngay", "Du lieu", "Ngay tao"]
-    x_positions = [40, 80, 180, 280, 380, 480]
-    for x, h in zip(x_positions, headers):
-        c.drawString(x, y, h)
-    y -= 20
+    # Thời gian
+    if tu_ngay.day == 1 and den_ngay.day == monthrange(den_ngay.year, den_ngay.month)[1] and tu_ngay.month == den_ngay.month:
+        elements.append(Paragraph(f"Tháng: {tu_ngay.month}/{tu_ngay.year}", styles['NormalTimes']))
+    elif tu_ngay.month == 1 and den_ngay.month == 12 and tu_ngay.day == 1 and den_ngay.day == 31:
+        elements.append(Paragraph(f"Năm: {tu_ngay.year}", styles['NormalTimes']))
+    else:
+        elements.append(Paragraph(
+            f"Từ ngày: {tu_ngay.strftime('%d/%m/%Y')} - Đến ngày: {den_ngay.strftime('%d/%m/%Y')}",
+            styles['NormalTimes']
+        ))
 
-    for r in reports:
-        if r.LoaiBaoCao == "Doanh thu":
-            du_lieu = db.session.query(
-                func.coalesce(func.sum(DONHANG.TongTien), 0.0)
-            ).filter(
-                DONHANG.NgayDat >= r.TuNgay,
-                DONHANG.NgayDat <= r.DenNgay
-            ).scalar() or 0.0
-            du_lieu_str = f"{float(du_lieu):,.0f} VND"
+    elements.append(Spacer(1, 12))
 
-        elif r.LoaiBaoCao == "Tồn kho":
-            from models.TonKho import TONKHO
-            tonkho_list = db.session.query(
-                TONKHO.MaSP,
-                TONKHO.SoLuongTon
-            ).filter(
-                TONKHO.NgayCapNhat >= r.TuNgay,
-                TONKHO.NgayCapNhat <= r.DenNgay
-            ).all()
+    # === DOANH THU ===
+    if bc.LoaiBaoCao == "Doanh thu":
+        orders = db.session.query(DONHANG.MaDH, DONHANG.NgayDat, KHACHHANG.HoTen, DONHANG.TongTien) \
+            .join(NGUOIDUNG, DONHANG.UserID == NGUOIDUNG.UserID) \
+            .filter(DONHANG.NgayDat >= tu_ngay, DONHANG.NgayDat <= den_ngay) \
+            .order_by(DONHANG.NgayDat).all()
 
-            if tonkho_list:
-                du_lieu_str = "; ".join([f"SP#{MaSP}: {SoLuongTon}" for MaSP, SoLuongTon in tonkho_list])
-            else:
-                du_lieu_str = "Không có dữ liệu"
-        else:
-            du_lieu_str = "Không xác định"
+        total = sum(o.TongTien for o in orders)
 
-        vals = [
-            str(r.MaBC),
-            r.LoaiBaoCao,
-            r.TuNgay.strftime("%Y-%m-%d"),
-            r.DenNgay.strftime("%Y-%m-%d"),
-            du_lieu_str,
-            r.TaoNgay.strftime("%Y-%m-%d")
-        ]
-        for x, v in zip(x_positions, vals):
-            c.drawString(x, y, str(v)[:30])
-        y -= 18
-        if y < 50:
-            c.showPage()
-            c.setFont("Helvetica", 12)
-            y = height - 40
+        headers = ["ST", "Mã đơn hàng", "Ngày đặt", "Khách hàng", "Tổng tiền", "Đơn vị tính"]
+        data = [[Paragraph(cell, styles["NormalTimes"]) for cell in headers]]
+        for idx, o in enumerate(orders, start=1):
+            row = [
+                Paragraph(str(idx), styles["NormalTimes"]),
+                Paragraph(str(o.MaDH), styles["NormalTimes"]),
+                Paragraph(o.NgayDat.strftime("%d/%m/%Y"), styles["NormalTimes"]),
+                Paragraph(o.HoTen, styles["NormalTimes"]),
+                Paragraph(f"{o.TongTien:,.0f}", styles["NormalTimes"]),
+                Paragraph("VNĐ", styles["NormalTimes"])
+            ]
+            data.append(row)
 
-    c.save()
+
+        table = Table(data, colWidths=[30, 80, 80, 150, 80, 50])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ]))
+
+        elements.append(table)
+        elements.append(Spacer(1, 12))
+        elements.append((
+            Paragraph(f"<b>Tổng doanh thu: {total:,.0f} VNĐ</b>", styles["NormalTimes"])
+        ))
+
+    # === LỢI NHUẬN ===
+    elif bc.LoaiBaoCao == "Lợi nhuận":
+        # Lấy các phiếu nhập trong khoảng thời gian
+        phieu_nhaps = db.session.query(
+            PHIEUNHAP.MaPN,
+            PHIEUNHAP.NgayNhap,
+            NGUOIDUNG.HoTen.label("TenNguoiLap"),
+            NHACUNGCAP.TenNCC,
+            func.sum(CHITIETPHIEUNHAP.SoLuong * CHITIETPHIEUNHAP.DonGiaNhap).label("TongTienNhap")
+        ).join(NHACUNGCAP, PHIEUNHAP.MaNCC == NHACUNGCAP.MaNCC) \
+         .join(CHITIETPHIEUNHAP, PHIEUNHAP.MaPN == CHITIETPHIEUNHAP.MaPN) \
+         .join(NGUOIDUNG, PHIEUNHAP.UserID == NGUOIDUNG.UserID) \
+         .filter(PHIEUNHAP.NgayNhap >= tu_ngay, PHIEUNHAP.NgayNhap <= den_ngay) \
+         .group_by(PHIEUNHAP.MaPN, PHIEUNHAP.NgayNhap, NGUOIDUNG.HoTen, NHACUNGCAP.TenNCC) \
+         .order_by(PHIEUNHAP.NgayNhap).all()
+
+        # Tổng doanh thu
+        total_doanh_thu = db.session.query(
+            func.coalesce(func.sum(DONHANG.TongTien), 0)
+        ).filter(DONHANG.NgayDat >= tu_ngay, DONHANG.NgayDat <= den_ngay).scalar() or 0
+
+        # Tổng tiền nhập & lợi nhuận
+        tong_tien_nhap = sum(p.TongTienNhap for p in phieu_nhaps)
+        loi_nhuan = total_doanh_thu - tong_tien_nhap
+
+        # === Tạo bảng dữ liệu ===
+        headers = ["ST", "Tên nhà cung cấp", "Ngày nhập", "Người lập", "Tổng tiền nhập", "Đơn vị tính"]
+        data = [[Paragraph(h, styles["NormalTimes"]) for h in headers]]
+
+        for idx, p in enumerate(phieu_nhaps, start=1):
+            data.append([
+                Paragraph(str(idx), styles["NormalTimes"]),
+                Paragraph(p.TenNCC, styles["NormalTimes"]),
+                Paragraph(p.NgayNhap.strftime("%d/%m/%Y"), styles["NormalTimes"]),
+                Paragraph(p.TenNguoiLap, styles["NormalTimes"]),
+                Paragraph(f"{p.TongTienNhap:,.0f}", styles["NormalTimes"]),
+                Paragraph("VNĐ", styles["NormalTimes"]),
+            ])
+
+        table = Table(data, colWidths=[30, 120, 80, 80, 100, 50])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ]))
+
+        elements.append(table)
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph(
+            f"<b>Tổng lợi nhuận:</b> {loi_nhuan:,.0f} VNĐ",
+            styles["NormalTimes"]
+        ))
+    else:
+        elements.append(Paragraph("Loại báo cáo không được hỗ trợ để in.", styles['NormalTimes']))
+
+    doc.build(elements)
     buffer.seek(0)
-    return send_file(
+    response = send_file(
         buffer,
         as_attachment=True,
-        download_name="BaoCao.pdf",
+        download_name=f"BaoCao_{bc.LoaiBaoCao}_{tu_ngay.strftime('%m_%Y')}.pdf",
         mimetype="application/pdf"
     )
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response

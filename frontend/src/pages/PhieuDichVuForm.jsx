@@ -9,6 +9,7 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
   const [trangThai, setTrangThai] = useState("Chưa giao");
   const [danhSachDichVu, setDanhSachDichVu] = useState([]);
   const [chiTiet, setChiTiet] = useState([]);
+  const [userID, setUserID] = useState("");
 
   useEffect(() => {
     async function fetchDichVu() {
@@ -19,25 +20,66 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
     fetchDichVu();
   }, []);
 
-  useEffect(() => {
+//   useEffect(() => {
+//   if (visible) {
+//     if (mode === "add") {
+//       // Reset toàn bộ các trường khi thêm mới
+//       // setMaKH("");
+//       setUserID("");
+//       setNgayLap("");
+//       setGhiChu("");
+//       setTrangThai("Chưa giao");
+//       setChiTiet([]);
+//     } else if (mode === "edit" || mode === "view") {
+//       // Nếu sửa hoặc xem, nạp dữ liệu từ initialData
+//       setUserID(initialData.UserID || "");
+//       // // setMaKH(initialData.MaKH || "");
+//       // const ngayLapFormat = initialData.NgayLap
+//       //   ? initialData.NgayLap.replace(" ", "T").slice(0, 16)
+//       //   : "";
+
+//       // setNgayLap(ngayLapFormat);
+//       setNgayLap(initialData.NgayLap || "");
+//       setGhiChu(initialData.GhiChu || "");
+//       setTrangThai(initialData.TrangThai || "Chưa giao");
+//       setChiTiet(initialData.ChiTiet || []);
+//     }
+//   }
+// }, [visible, mode, initialData]);
+useEffect(() => {
   if (visible) {
     if (mode === "add") {
-      // Reset toàn bộ các trường khi thêm mới
-      setMaKH("");
+      setUserID("");
       setNgayLap("");
       setGhiChu("");
       setTrangThai("Chưa giao");
       setChiTiet([]);
     } else if (mode === "edit" || mode === "view") {
-      // Nếu sửa hoặc xem, nạp dữ liệu từ initialData
-      setMaKH(initialData.MaKH || "");
-      setNgayLap(initialData.NgayLap || "");
+      setUserID(initialData.UserID || "");
+
+      const ngayLapFormat = initialData.NgayLap
+        ? initialData.NgayLap.replace(" ", "T").slice(0, 16)
+        : "";
+
+      setNgayLap(ngayLapFormat);
       setGhiChu(initialData.GhiChu || "");
       setTrangThai(initialData.TrangThai || "Chưa giao");
-      setChiTiet(initialData.ChiTiet || []);
+
+      // Chuẩn hóa dữ liệu chi tiết về đúng định dạng form cần
+      const chiTietChuanHoa = (initialData.ChiTiet || []).map(d => ({
+        MaDV: d.MaDV,
+        SoLuong: d.SoLuong,
+        ChiPhiRieng: d.ChiPhiRieng,
+        DonGia: d.DonGiaDichVu,   // Lấy từ DonGiaDichVu backend trả về
+        TinhTrang: d.TinhTrang,
+        TienTraTruoc: d.TienTraTruoc
+      }));
+
+      setChiTiet(chiTietChuanHoa);
     }
   }
 }, [visible, mode, initialData]);
+
 
 
   const handleAddDichVu = () => {
@@ -67,17 +109,23 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
     if (field === "MaDV") {
       const dv = danhSachDichVu.find((d) => d.MaDV === parseInt(value));
       updated[index].DonGia = dv?.DonGia || 0;
+
+      // Nếu các trường chưa được gán lần nào thì gán mặc định
+      if (!updated[index].ChiPhiRieng) updated[index].ChiPhiRieng = 0;
+      if (!updated[index].SoLuong) updated[index].SoLuong = 1;
+      if (!updated[index].TienTraTruoc) updated[index].TienTraTruoc = 0;
     }
 
-    const donGiaDuocTinh =
-      parseFloat(updated[index].DonGia || 0) +
-      parseFloat(updated[index].ChiPhiRieng || 0);
-    const soLuong = parseInt(updated[index].SoLuong || 0);
+    const donGia = parseFloat(updated[index].DonGia) || 0;
+    const chiPhi = parseFloat(updated[index].ChiPhiRieng) || 0;
+    const soLuong = parseInt(updated[index].SoLuong) || 0;
+
+    const donGiaDuocTinh = donGia + chiPhi;
     const thanhTien = donGiaDuocTinh * soLuong;
 
     updated[index].ThanhTien = thanhTien;
     updated[index].TienTraTruoc = Math.max(
-      updated[index].TienTraTruoc,
+      parseFloat(updated[index].TienTraTruoc) || 0,
       Math.ceil(thanhTien * 0.5)
     );
 
@@ -88,8 +136,9 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
     e.preventDefault();
 
     const payload = {
-      MaKH: parseInt(maKH),
-      NgayLap: ngayLap,
+      UserID: parseInt(userID),
+      NgayLap: ngayLap.replace("T", " "),
+      // NgayLap: ngayLap,
       GhiChu: ghiChu,
       TrangThai: trangThai,
       ChiTiet: chiTiet.map((d) => ({
@@ -119,19 +168,23 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
         }}
       >
         <div className="modal-header">
-          <h2>{mode === "view" ? "Xem phiếu dịch vụ" : "Thêm phiếu dịch vụ"}</h2>
+          <h2>
+            {mode === "add" ? "Thêm phiếu dịch vụ" : "Sửa phiếu dịch vụ"}
+          </h2>
           <button onClick={onClose}>
             <X />
           </button>
         </div>
+
         <form onSubmit={handleSubmit} className="modal-form scrollable">
           <input
-            type="number"
-            placeholder="Mã khách hàng"
-            value={maKH}
-            onChange={(e) => setMaKH(e.target.value)}
-            required
-          />
+          type="number"
+          placeholder="Mã khách hàng"
+          value={userID}
+          onChange={(e) => setUserID(e.target.value)}
+          required
+        />
+
           <input
             type="datetime-local"
             value={ngayLap}
@@ -148,10 +201,10 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
             value={trangThai}
             onChange={(e) => setTrangThai(e.target.value)}
           >
-            <option value="Chờ xử lý">Chờ xử lý</option>
-            <option value="Đang thực hiện">Đang thực hiện</option>
+           
+            <option value="Chưa hoàn thành">Chưa hoàn thành</option>
             <option value="Hoàn thành">Hoàn thành</option>
-            <option value="Hủy">Hủy</option>
+           
           </select>
 
           <hr />
@@ -191,25 +244,27 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
             <tbody>
               {chiTiet.map((item, index) => {
                 const donGiaDuocTinh =
-                  parseFloat(item.DonGia) + parseFloat(item.ChiPhiRieng || 0);
-                const thanhTien = donGiaDuocTinh * item.SoLuong;
+                  (parseFloat(item.DonGia) || 0) + (parseFloat(item.ChiPhiRieng) || 0);
+                const thanhTien = donGiaDuocTinh * (parseInt(item.SoLuong) || 0);
 
                 return (
                   <tr key={index}>
                     <td>
-                      <select
-                        value={item.MaDV}
-                        onChange={(e) => updateDichVu(index, "MaDV", e.target.value)}
-                        required
-                        style={{ width: "100%" }}
-                      >
-                        <option value="">-- Chọn dịch vụ --</option>
-                        {danhSachDichVu.map((dv) => (
+                    <select
+                      value={item.MaDV}
+                      onChange={(e) => updateDichVu(index, "MaDV", e.target.value)}
+                      required
+                      style={{ width: "100%" }}
+                    >
+                      <option value="">-- Chọn dịch vụ --</option>
+                      {danhSachDichVu
+                        .filter((dv) => dv.TrangThai === 1 || dv.TrangThai === true || dv.TrangThai === "true")
+                        .map((dv) => (
                           <option key={dv.MaDV} value={dv.MaDV}>
                             {dv.TenDV}
                           </option>
-                        ))}
-                      </select>
+                      ))}
+                    </select>
                     </td>
                     <td>
                       <input
@@ -245,16 +300,14 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
                       })}
                     </td>
                     <td>
-                      <input
-                        type="number"
-                        min={Math.ceil(thanhTien * 0.5)}
-                        value={item.TienTraTruoc}
-                        onChange={(e) =>
-                          updateDichVu(index, "TienTraTruoc", e.target.value)
-                        }
-                        style={{ width: "100%" }}
-                        required
-                      />
+                    <input
+                      type="number"
+                      min={!isNaN(thanhTien) ? Math.ceil(thanhTien * 0.5) : 0}
+                      value={item.TienTraTruoc}
+                      onChange={(e) => updateDichVu(index, "TienTraTruoc", e.target.value)}
+                      style={{ width: "100%" }}
+                      required
+                    />
                     </td>
                     <td>
                       <select
@@ -287,12 +340,15 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
             <Plus size={16} /> Thêm dịch vụ
           </button>
 
-          <div className="modal-actions">
-            <button type="submit" className="action-button">Lưu phiếu</button>
-            <button type="button" className="action-button cancel" onClick={onClose}>
-              Hủy
-            </button>
-          </div>
+         <div className="modal-actions">
+          <button type="submit" className="action-button">
+            {mode === "add" ? "Lưu phiếu" : "Cập nhật"}
+          </button>
+          <button type="button" className="action-button cancel" onClick={onClose}>
+            Hủy
+          </button>
+        </div>
+
         </form>
       </div>
     </div>

@@ -184,13 +184,14 @@ const GeneralModalForm = ({
               />
               <select
                 name="status"
-                value={formData.status === true ? "true" : "false"}
+                value={formData.status}
                 onChange={handleInputChange}
                 required
               >
                 <option value="true">Kích hoạt</option>
                 <option value="false">Không hoạt động</option>
               </select>
+
             </>
           )}
 

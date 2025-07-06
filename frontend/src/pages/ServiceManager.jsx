@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Edit, Trash, Eye, Printer, Filter, ArrowUpDown } from "lucide-react";
+import { Edit, Trash, Printer, Filter, ArrowUpDown } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm-2.jsx";
 import PhieuDichVuForm from "./PhieuDichVuForm";
 import {
   danhSachDichVu,
   themDichVu,
   suaDichVu,
-  xoaDichVu,
+  // xoaDichVu,
   traCuuDichVu
 } from "../services/dichvuApi";
 
@@ -47,13 +47,8 @@ function ServiceManager() {
   const [modalPhieuVisible, setModalPhieuVisible] = useState(false);
   const [selectedPhieu, setSelectedPhieu] = useState(null);
   const [modePhieu, setModePhieu] = useState("add");
-  const [formData, setFormData] = useState({
-  name: "",
-  price: "",
-  description: "",
-  status: "", // Giá trị mặc định khi thêm mới
-});
-
+  const [currentPage, setCurrentPage] = useState(1); // Thêm state cho phân trang
+  const itemsPerPage = 10; // Số mục mỗi trang
   useEffect(() => {
     fetchDichVu();
     fetchPhieuDichVu();
@@ -73,6 +68,7 @@ function ServiceManager() {
       filteredPhieu = phieuDichVuList.filter((p) => p.TrangThai === selectedPhieuStatus);
     }
     setDataPhieuDichVu(filteredPhieu);
+    setCurrentPage(1); // Đặt lại trang khi bộ lọc thay đổi
   }, [services, phieuDichVuList, selectedServiceStatus, selectedPhieuStatus]);
 
   const fetchDichVu = async () => {
@@ -101,6 +97,7 @@ function ServiceManager() {
     }
   };
 
+    
   const sortData = (key, isServiceTab = true) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -159,29 +156,11 @@ function ServiceManager() {
     }
   };
 
-const openModal = (mode, service = null) => {
-  setModalMode(mode);
-  setSelectedService(service);
-
-  if (service) {
-    setFormData({
-      name: service.TenDV || "",
-      price: service.DonGia || "",
-      description: service.MoTa || "",
-      status: service.TrangThai === true ? "true" : "false",  // Ép về string
-    });
-  } else {
-    setFormData({
-      name: "",
-      price: "",
-      description: "",
-      status: "true",
-    });
-  }
-
-  setModalVisible(true);
-};
-
+  const openModal = (mode, service = null) => {
+    setModalMode(mode);
+    setSelectedService(service);
+    setModalVisible(true);
+  };
 
   const closeModal = () => {
     setModalVisible(false);
@@ -190,14 +169,12 @@ const openModal = (mode, service = null) => {
 
   const handleFormSubmit = async (data) => {
     console.log("Giá trị trạng thái:", data.status, typeof data.status);
-
     const payload = {
       TenDV: data.name,
       DonGia: parseFloat(data.price),
       MoTa: data.description,
-      TrangThai: data.status === "true", // So sánh với string "true" mới đúng
+      TrangThai: data.status === "true",
     };
-
     if (modalMode === "add") {
       const res = await themDichVu(payload);
       if (res.status === "success") {
@@ -213,37 +190,14 @@ const openModal = (mode, service = null) => {
     }
   };
 
-
-const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
-  console.log("Lưu phiếu dịch vụ với:", { maKH, ghiChu, rows });
-
-  const chiTiet = rows.map(row => ({
-    MaDV: row.MaDV,
-    SoLuong: row.SoLuong || 1,
-    ChiPhiRieng: parseFloat(row.ChiPhiRieng || 0),  // ✅ bắt buộc cần
-    TienTraTruoc: parseFloat(row.TienTraTruoc || 0),
-    TinhTrang: row.TinhTrang || "Chưa giao",
-    NgayGiao: row.NgayGiao || null
-  }));
-
-  const payload = {
-    MaKH: maKH,
-    GhiChu: ghiChu || "",
-    ChiTiet: chiTiet
-  };
-
-  await handleLuuPhieuDichVu(payload);
-};
-
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Bạn có chắc muốn xoá dịch vụ này?")) {
-      const res = await xoaDichVu(id);
-      if (res.status === "success") {
-        fetchDichVu();
-      } else alert("Lỗi xoá dịch vụ: " + res.message);
-    }
-  };
+  // const handleDelete = async (id) => {
+  //   if (window.confirm("Bạn có chắc muốn xoá dịch vụ này?")) {
+  //     const res = await xoaDichVu(id);
+  //     if (res.status === "success") {
+  //       fetchDichVu();
+  //     } else alert("Lỗi xoá dịch vụ: " + res.message);
+  //   }
+  // };
 
   const handleXoaPhieu = async (maPDV) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa phiếu dịch vụ này?")) {
@@ -264,33 +218,37 @@ const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
     }
   };
 
-  const handleThemPhieuDichVu = () => {
-    setSelectedPhieu(null);
-    setModePhieu("add");
-    setModalPhieuVisible(true);
-  };
+const handleThemPhieuDichVu = () => {
+  setSelectedPhieu(null);
+  setModePhieu("add");
+  setModalPhieuVisible(true);
+};
 
-  const handleXemChiTiet = async (maPDV) => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/phieudichvu/${maPDV}`);
-      const json = await res.json();
 
-      if (json.status === "success") {
-        setSelectedPhieu(json.data);
-        setModePhieu("view");
-        setModalPhieuVisible(true);
-      } else {
-        alert("Không tìm thấy chi tiết phiếu dịch vụ #" + maPDV);
-      }
-    } catch (err) {
-      alert("Lỗi khi lấy chi tiết phiếu dịch vụ: " + err.message);
+ const handleSuaPhieuDichVu = async (maPDV) => {
+  try {
+    const res = await fetch(`http://localhost:5000/api/phieudichvu/${maPDV}`);
+    const json = await res.json();
+
+    if (json.status === "success") {
+      setSelectedPhieu(json.data);
+      setModePhieu("edit");
+      setModalPhieuVisible(true);
+    } else {
+      alert("Không tìm thấy chi tiết phiếu dịch vụ #" + maPDV);
     }
-  };
+  } catch (err) {
+    alert("Lỗi khi lấy chi tiết phiếu dịch vụ: " + err.message);
+  }
+};
 
-  const handleLuuPhieuDichVu = async (payload) => {
-    
-    try {
-      console.log("Payload gửi API:", payload);
+
+const handleLuuPhieuDichVu = async (payload) => {
+  try {
+    console.log("Payload gửi API:", payload);
+
+    if (modePhieu === "add") {
+      // Thêm mới
       const res = await fetch("http://localhost:5000/api/phieudichvu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -305,10 +263,28 @@ const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
       } else {
         alert("Lỗi khi lưu phiếu: " + json.message);
       }
-    } catch (err) {
-      alert("Kết nối thất bại: " + err.message);
+    } else if (modePhieu === "edit" && selectedPhieu) {
+      // Cập nhật
+      const res = await fetch(`http://localhost:5000/api/phieudichvu/${selectedPhieu.MaPDV}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (json.status === "success") {
+        alert("Cập nhật phiếu thành công");
+        setModalPhieuVisible(false);
+        fetchPhieuDichVu();
+      } else {
+        alert("Lỗi khi cập nhật phiếu: " + json.message);
+      }
     }
-  };
+  } catch (err) {
+    alert("Kết nối thất bại: " + err.message);
+  }
+};
+
 
   const handleSearchService = async () => {
     const keyword = prompt("Nhập từ khóa để tra cứu dịch vụ:");
@@ -322,24 +298,16 @@ const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
       }
     }
   };
-
-  const handleReloadServices = async () => {
-    fetchDichVu();
-  };
-
-  const handlePrintServicePDF = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/dichvu/pdf", {
-        method: "GET",
-      });
-
-      if (!res.ok) throw new Error("Lỗi khi lấy PDF");
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      window.open(url);
-    } catch (err) {
-      alert("Lỗi khi in phiếu dịch vụ: " + err.message);
+   const handleSearchServiceForm = async () => {
+    const keyword = prompt("Nhập từ khóa để tra cứu dịch vụ:");
+    if (keyword) {
+      const res = await traCuuDichVu(keyword);
+      if (res.status === "success") {
+        setPhieuDichVuList(res.data);
+        setDataPhieuDichVu(res.data);
+      } else {
+        alert("Không tìm thấy dịch vụ.");
+      }
     }
   };
   const handlePrintAllPDF = async () => {
@@ -382,7 +350,7 @@ const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
                 <button onClick={handlePrintAllPDF} className="action-button">
                   Xuất danh sách phiếu dịch vụ
                 </button>
-                <button onClick={handleSearchService} className="action-button">
+                <button onClick={handleSearchServiceForm} className="action-button">
                     Tra cứu phiếu dịch vụ
                 </button>
               </div>
@@ -462,9 +430,9 @@ const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
                   <button onClick={() => openModal("edit", s)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  <button onClick={() => handleDelete(s.MaDV)} className="action-icon delete">
+                  {/* <button onClick={() => handleDelete(s.MaDV)} className="action-icon delete">
                     <Trash className="icon" />
-                  </button>
+                  </button> */}
                 </td>
               </tr>
             ))
@@ -528,9 +496,10 @@ const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
               <td>{p.TrangThai}</td>
               <td>
 
-                <button onClick={() => handleXemChiTiet(p.MaPDV)} className="action-icon edit">
+                <button onClick={() => handleSuaPhieuDichVu(p.MaPDV)} className="action-icon edit">
                   <Edit className="icon" />
                 </button>
+
                 <button onClick={() => handleXoaPhieu(p.MaPDV)} className="action-icon delete">
                   <Trash className="icon" />
                 </button>

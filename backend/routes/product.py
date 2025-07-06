@@ -117,6 +117,7 @@ def add_product():
 
 # Lấy sản phẩm theo ID (chỉ lấy nếu chưa bị ẩn)
 @product_bp.route('/<int:product_id>', methods=['GET'])
+
 def get_product(product_id):
     product = SANPHAM.query.get(product_id)
     if not product or product.IsDisabled:
@@ -136,6 +137,7 @@ def get_product(product_id):
 
 # Cập nhật sản phẩm
 @product_bp.route('/<int:product_id>', methods=['PUT'])
+
 @jwt_required()
 @permission_required("products:edit")
 def update_product(product_id):
