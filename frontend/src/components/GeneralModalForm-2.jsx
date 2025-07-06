@@ -174,7 +174,6 @@ const GeneralModalForm = ({
                 placeholder="Giá dịch vụ"
                 required
               />
-
               <input
                 type="text"
                 name="description"
@@ -184,7 +183,7 @@ const GeneralModalForm = ({
               />
               <select
                 name="status"
-                value={formData.status}
+                value={formData.status === true ? "true" : "false"}
                 onChange={handleInputChange}
                 required
               >
