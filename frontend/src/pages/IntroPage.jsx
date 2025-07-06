@@ -16,10 +16,10 @@ const IntroPage = () => {
         <div className="desktop2Child" />
         <div className="extraInfo">
           <div className="signUpArea">
-            <b className="youCanBe">You can be one step ahead.</b>
-            <div className="signUpTo">Sign up to hear about our updates on the dot.</div>
+            <b className="youCanBe">Để không bỏ lỡ thông tin từ chúng tôi !</b>
+            <div className="signUpTo">Đăng ký để nhận được thông tin mới nhất.</div>
             <div className="signUpAreaChild" />
-            <div className="yourEmailAddress">Your email address</div>
+            <div className="yourEmailAddress">Địa chỉ Email của bạn</div>
             <div className="signUp">SIGN UP</div>
           </div>
           <div className="customerServicesParent">
@@ -27,24 +27,24 @@ const IntroPage = () => {
             <b className="aboutUs">ABOUT US</b>
             <b className="materialCare">MATERIAL CARE</b>
             <b className="mainLocations">MAIN LOCATIONS</b>
-            <div className="contactUs">Contact Us</div>
-            <div className="origins">Origins</div>
-            <div className="jewelryRepair">Jewelry Repair</div>
+            <div className="contactUs">Liên Hệ </div>
+            <div className="origins">Nguồn Gốc</div>
+            <div className="jewelryRepair">Bảo Trì</div>
             <div className="hoChiMinh">Ho Chi Minh City, VN</div>
             <div className="sanFranciscoCa">San Francisco, CA</div>
             <div className="newYorkNy">New York, NY</div>
             <div className="haNoiVn">Ha Noi, VN</div>
-            <div className="ringSizing">Ring Sizing</div>
-            <div className="metalAllergyResources">Metal Allergy Resources</div>
-            <div className="stylingTips">Styling Tips</div>
-            <div className="ourPurpose">Our Purpose</div>
-            <div className="careers">Careers</div>
-            <div className="sustainability">Sustainability</div>
-            <div className="givingBack">Giving Back</div>
-            <div className="trackYourOrder">Track your Order</div>
-            <div className="scheduleAnAppointment">Schedule an appointment</div>
-            <div className="shippingReturns">Shipping & Returns</div>
-            <div className="frequentlyAskedQuestions">Frequently Asked Questions</div>
+            <div className="ringSizing">Kích Cỡ Nhẫn</div>
+            <div className="metalAllergyResources">Chất Liệu</div>
+            <div className="stylingTips">Mẹo Phối Trang Sức</div>
+            <div className="ourPurpose">Mục Tiêu Của Chúng Tôi</div>
+            <div className="careers">Công Việc</div>
+            <div className="sustainability">Chính Sách Bền Vững</div>
+            <div className="givingBack">Chính Sách Hoàn Hàng</div>
+            <div className="trackYourOrder">Theo Dõi Đơn</div>
+            <div className="scheduleAnAppointment">Đặt Lịch Hẹn</div>
+            <div className="shippingReturns">Vận Chuyển & Hoàn Trả</div>
+            <div className="frequentlyAskedQuestions">Câu Hỏi Thường Gặp</div>
           </div>
           <div className="socials">
             <img className="akarIconslinkedinBoxFill" alt="" src="/akar-icons_linkedin-box-fill.svg" />
@@ -71,12 +71,12 @@ const IntroPage = () => {
             <p>
               <span className="at">At</span>
               <span className="ptv"> PTV</span>
-              <span>, we exist to illuminate beauty—crafted by nature, perfected by artistry. Each gemstone tells a story of timeless elegance, authenticity, and grace.</span>
+              <span>, we build systems to standardize management—precise in operation, streamlined in workflow.</span>
             </p>
             <p> </p>
-            <p>More than just jewelry, our creations are symbols of refinement, luck, and individuality, designed for those who seek meaning in every detail.</p>
+            <p>Each gemstone is stored as valuable data: clear, reliable, and easily traceable. More than inventory control, it's a tool that reflects professionalism and operational efficiency.</p>
             <p> </p>
-            <p>Because true brilliance is meant to be worn.</p>
+            <p>Because true value deserves to be tracked, managed, and optimized.</p>
           </div>
           <b className="whatWereWeContainer">
             <p> </p>

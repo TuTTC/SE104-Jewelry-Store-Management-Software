@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, ForeignKey, DateTime, DECIMAL, Enum, Text, func
 from sqlalchemy.orm import relationship
+from models.Relationships import baocao_phieunhap
 import enum
 from database import db
 
@@ -36,3 +37,8 @@ class PHIEUNHAP(db.Model):
             "GhiChu": self.GhiChu
         }
 
+    # bao_caos = relationship(
+    # "BAOCAO",
+    # secondary=baocao_phieunhap,
+    # back_populates="phieunhaps"
+    # )

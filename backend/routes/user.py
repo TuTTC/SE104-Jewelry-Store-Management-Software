@@ -83,11 +83,13 @@ def get_all_users():
             'HoTen': user.HoTen,
             'SoDienThoai': user.SoDienThoai,
             'DiaChi': user.DiaChi,
-            'TaoNgay': user.TaoNgay.strftime("%Y-%m-%d %H:%M:%S") if user.TaoNgay else None
+            'TaoNgay': user.TaoNgay.strftime("%Y-%m-%d %H:%M:%S") if user.TaoNgay else None,
+            'TrangThai': "Kích hoạt" if user.TrangThai else "Khóa"
         }
         result.append(item)
     
     return jsonify(result), 200
+
 
 
 

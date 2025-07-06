@@ -4,6 +4,7 @@ from models.PhieuNhap import PHIEUNHAP
 from models.ChiTietPhieuNhap import CHITIETPHIEUNHAP
 from models.SanPham import SANPHAM
 from models.NhaCungCap import NHACUNGCAP
+from models.NguoiDung import NGUOIDUNG
 from datetime import datetime
 from io import BytesIO
 from reportlab.pdfbase import pdfmetrics
@@ -135,6 +136,13 @@ def create_phieu_nhap():
         if not ncc:
             return jsonify({'status': 'error', 'message': 'Nhà cung cấp không tồn tại'}), 400
 
+        # Kiểm tra người nhập tồn tại và ở trạng thái kích hoạt
+        user = NGUOIDUNG.query.get(user_id)
+        if not user:
+            return jsonify({'status': 'error', 'message': 'Người nhập không tồn tại'}), 400
+        if user.TrangThai is not True:
+            return jsonify({'status': 'error', 'message': 'Tài khoản người nhập đang bị khóa, không thể thực hiện thao tác'}), 400
+
         if not chi_tiet:
             return jsonify({'status': 'error', 'message': 'Danh sách chi tiết phiếu nhập trống'}), 400
 
@@ -182,6 +190,7 @@ def create_phieu_nhap():
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
+
 # Lấy danh sách phiếu nhập
 @phieunhap_bp.route('/phieunhap', methods=['GET'])
 @jwt_required()
@@ -210,8 +219,17 @@ def update_phieu_nhap(id):
     data = request.get_json()
     phieu = PHIEUNHAP.query.get_or_404(id)
     try:
+        # Kiểm tra người nhập có đang bị khóa không
+        user = NGUOIDUNG.query.get(phieu.UserID)
+        if not user:
+            return jsonify({'status': 'error', 'message': 'Người nhập không tồn tại'}), 400
+        if user.TrangThai is not True:
+            return jsonify({'status': 'error', 'message': 'Tài khoản người nhập đang bị khóa, không thể cập nhật phiếu nhập'}), 400
+
+        # Cập nhật thông tin phiếu nhập
         phieu.GhiChu = data.get('GhiChu', phieu.GhiChu)
         phieu.TrangThai = data.get('TrangThai', phieu.TrangThai)
+        
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Cập nhật phiếu nhập thành công'})
     except Exception as e:

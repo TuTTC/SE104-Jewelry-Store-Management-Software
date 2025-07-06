@@ -1,33 +1,20 @@
 from flask import Blueprint, request, jsonify, send_file
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from models.DichVu import DICHVU
+from models import DICHVU
 from models.PhieuDichVu import PHIEUDICHVU
 from models.ChiTietPhieuDichVu import CHITIETPHIEUDICHVU
 from datetime import datetime
 from database import db
-from models.ThamSo import THAMSO
 
 dichvu_bp = Blueprint('dichvu', __name__)
 
-# Ánh xạ TenDV → TenThamSo
-SURCHARGE_MAP = {
-    "CanThuVang": "PhuThu_CanVang",
-    "DanhBongVang": "PhuThu_DanhBong",
-    "ChamKhacTheoYeuCau": "PhuThu_ChamKhac",
-    "GiaCongNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],  # có thể chọn max %
-    "ThayDaQuy": "PhuThu_GanDaKimCuong",
-    "GiaCongNhan": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],
-    "GanDaKimCuong": "PhuThu_GanDaKimCuong",
-    "ThuVang": "PhuThu_CanVang",
-    "SuaNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],  # có thể chọn max %",
-    "ThayMoiNuTrang": ["PhuThu_MoRongNhan", "PhuThu_ThuNhoLac"],
-}
 
+# DEBUG: Lấy tên tất cả dịch vụ
 @dichvu_bp.route("/debug/dichvu")
 def debug_dv():
-    from models import DICHVU
     return jsonify([dv.TenDV for dv in DICHVU.query.all()])
+
 
 
 # Thêm dịch vụ mới
@@ -39,26 +26,31 @@ def create_dichvu():
             TenDV=data['TenDV'],
             DonGia=data['DonGia'],
             MoTa=data.get('MoTa'),
-            TrangThai=data.get('TrangThai', True)
+            TrangThai=str(data.get('TrangThai', True)).lower() == "true",
+            IsDisable=False
         )
         db.session.add(new_dv)
         db.session.commit()
         return jsonify({'status': 'success', 'message': 'Thêm dịch vụ thành công'}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'status': 'error', 'message': str(e)}), 400
+        print(f"Lỗi khi thêm dịch vụ: {e}")
+        return jsonify({'status': 'error', 'message': 'Đã xảy ra lỗi, vui lòng thử lại.'}), 400
 
-# Xóa dịch vụ theo ID
+
+
+# Xóa mềm dịch vụ
 @dichvu_bp.route('/dichvu/<int:id>', methods=['DELETE'])
 def delete_dichvu(id):
     dv = DICHVU.query.get(id)
     if not dv:
         return jsonify({'status': 'error', 'message': 'Dịch vụ không tồn tại'}), 404
-    db.session.delete(dv)
+    dv.IsDisable = True
     db.session.commit()
-    return jsonify({'status': 'success', 'message': 'Xóa dịch vụ thành công'})
+    return jsonify({'status': 'success', 'message': 'Ẩn dịch vụ thành công'})
 
-# Sửa thông tin dịch vụ
+
+# Cập nhật dịch vụ
 @dichvu_bp.route('/dichvu/<int:id>', methods=['PUT'])
 def update_dichvu(id):
     data = request.get_json()
@@ -70,15 +62,18 @@ def update_dichvu(id):
     dv.DonGia = data.get('DonGia', dv.DonGia)
     dv.MoTa = data.get('MoTa', dv.MoTa)
     dv.TrangThai = data.get('TrangThai', dv.TrangThai)
-
     db.session.commit()
     return jsonify({'status': 'success', 'message': 'Cập nhật dịch vụ thành công'})
 
-# Tìm kiếm dịch vụ theo từ khóa
+
+# Tìm kiếm dịch vụ (lọc theo keyword và IsDisable=False)
 @dichvu_bp.route('/dichvu/search', methods=['GET'])
 def search_dichvu():
     keyword = request.args.get('keyword', '')
-    results = DICHVU.query.filter(DICHVU.TenDV.ilike(f'%{keyword}%')).all()
+    results = DICHVU.query.filter(
+        DICHVU.TenDV.ilike(f'%{keyword}%'),
+        DICHVU.IsDisable == False
+    ).all()
     data = [
         {
             'MaDV': dv.MaDV,
@@ -91,71 +86,46 @@ def search_dichvu():
     ]
     return jsonify({'status': 'success', 'data': data})
 
-# Lấy danh sách tất cả dịch vụ
+
+# Lấy tất cả dịch vụ còn hoạt động
 @dichvu_bp.route('/dichvu', methods=['GET'])
 def get_all_dichvu():
-    services = DICHVU.query.all()
-    data = []
-
-    for dv in services:
-        ten = dv.TenDV
-        mapping = SURCHARGE_MAP.get(ten)
-
-        # Xác định % phụ thu
-        percent = 0.0
-        if isinstance(mapping, list):
-            # với mảng, lấy max của các tham số đang kích hoạt
-            values = []
-            for key in mapping:
-                ts = THAMSO.query.filter_by(TenThamSo=key).first()
-                if ts:
-                    try:
-                        values.append(float(ts.GiaTri))
-                    except ValueError:
-                        pass
-            percent = max(values) if values else 0.0
-        else:
-            ts = THAMSO.query.filter_by(TenThamSo=mapping).first()
-            if ts:
-                try:
-                    percent = float(ts.GiaTri)
-                except ValueError:
-                    percent = 0.0
-
-        base_price = float(dv.DonGia)
-        price_with_surcharge = round(base_price * (1 + percent / 100), 2)
-
-        data.append({
-            "MaDV":        dv.MaDV,
-            "TenDV":       dv.TenDV,
-            "DonGia":      base_price,
-            "PhuThu":      percent,               # % phụ thu
-            "DonGiaThuc":  price_with_surcharge,  # giá sau phụ thu
-            "MoTa":        dv.MoTa,
-            "TrangThai":   dv.TrangThai
-        })
-
+    services = DICHVU.query.filter_by(IsDisable=False).all()
+    data = [
+        {
+            "MaDV": dv.MaDV,
+            "TenDV": dv.TenDV,
+            "DonGia": float(dv.DonGia),
+            "MoTa": dv.MoTa,
+            "TrangThai": dv.TrangThai
+        }
+        for dv in services
+    ]
     return jsonify({"status": "success", "data": data})
 
+
+# Xuất danh sách dịch vụ ra PDF
 @dichvu_bp.route('/dichvu/pdf', methods=['GET'])
 def export_dichvu_pdf():
     buffer = BytesIO()
     p = canvas.Canvas(buffer)
 
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(100, 800, "Danh sach dich vu")
+    p.drawString(100, 800, "Danh sách dịch vụ")
 
     p.setFont("Helvetica", 12)
     y = 770
-    services = DICHVU.query.all()
+    services = DICHVU.query.filter_by(IsDisable=False).all()
     for i, dv in enumerate(services):
-        p.drawString(100, y, f"{i+1}. {dv.TenDV} - {float(dv.DonGia):,.0f} VND")
+        don_gia = f"{float(dv.DonGia):,.0f} VND"
+        mo_ta = dv.MoTa if dv.MoTa else ""
+        trang_thai = "Hoạt động" if dv.TrangThai else "Ngừng"
+        p.drawString(100, y, f"{i+1}. {dv.TenDV} | Đơn giá: {don_gia} | Mô tả: {mo_ta} | Trạng thái: {trang_thai}")
         y -= 20
         if y < 50:
             p.showPage()
             y = 800
 
-    p.showPage()
     p.save()
     buffer.seek(0)
     return send_file(
@@ -164,3 +134,4 @@ def export_dichvu_pdf():
         download_name="danh_sach_dich_vu.pdf",
         mimetype="application/pdf"
     )
+

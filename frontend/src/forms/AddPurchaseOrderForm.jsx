@@ -100,9 +100,16 @@ function PurchaseOrderForm({
 
   if (!showModal) return null;
 
+  const tongTien = productList.reduce(
+    (sum, item) =>
+      sum +
+      (parseFloat(item.SoLuong) || 0) * (parseFloat(item.DonGiaNhap) || 0),
+    0
+  );
+
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal" style={{ width: "auto", maxWidth: "90vw" }}>
         <div className="modal-header">
           <h2>{modalType === "add" ? "Thêm Phiếu nhập" : "Sửa Phiếu nhập"}</h2>
           <button onClick={closeModal} className="modal-close">
@@ -167,81 +174,93 @@ function PurchaseOrderForm({
             ))}
           </select>
 
-      <h3>Danh sách sản phẩm</h3>
-{productList.map((item, index) => (
-  <div key={index} className="product-row"> <br/>
-    
-    <div>
-      <strong>STT: {index + 1}</strong><br/>
-    </div>
+          <h3>Danh sách sản phẩm</h3>
 
-    <div>
-      <label>Sản phẩm</label><br />
-      <select
-        value={item.MaSP}
-        onChange={(e) =>
-          handleProductChange(index, "MaSP", e.target.value)
-        }
-        required
-      >
-        <option value="">Chọn sản phẩm</option>
-        {products.map((sp) => (
-          <option key={sp.MaSP} value={sp.MaSP}>
-            {sp.TenSP}
-          </option>
-        ))}
-      </select>
-    </div>
+          <table className="data-table" style={{ width: "100%", tableLayout: "auto" }}>
+            <thead>
+              <tr>
+                <th style={{ width: "40%" }}>Sản phẩm</th>
+                <th style={{ width: "15%" }}>Số lượng</th>
+                <th style={{ width: "15%" }}>Đơn giá nhập</th>
+                <th style={{ width: "20%" }}>Thành tiền</th>
+                <th style={{ width: "10%" }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {productList.map((item, index) => (
+                <tr key={index}>
+                  <td>
+                    <select
+                      value={item.MaSP}
+                      onChange={(e) =>
+                        handleProductChange(index, "MaSP", e.target.value)
+                      }
+                      style={{ width: "100%" }}
+                      required
+                    >
+                      <option value="">Chọn sản phẩm</option>
+                      {products.map((sp) => (
+                        <option key={sp.MaSP} value={sp.MaSP}>
+                          {sp.TenSP}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={item.SoLuong}
+                      onChange={(e) =>
+                        handleProductChange(index, "SoLuong", e.target.value)
+                      }
+                      min={0}
+                      style={{ width: "100%" }}
+                      required
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      value={item.DonGiaNhap}
+                      onChange={(e) =>
+                        handleProductChange(index, "DonGiaNhap", e.target.value)
+                      }
+                      min={0}
+                      style={{ width: "100%" }}
+                      required
+                    />
+                  </td>
+                  <td>
+                    {(item.SoLuong * item.DonGiaNhap).toLocaleString("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    })}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="action-icon delete"
+                      onClick={() => removeProductRow(index)}
+                    >
+                      <Trash size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-    <div>
-      <label>Số lượng</label><br />
-      <input
-        type="number"
-        placeholder="Số lượng"
-        value={item.SoLuong}
-        min={0}
-        onChange={(e) =>
-          handleProductChange(index, "SoLuong", e.target.value)
-        }
-        required
-      />
-    </div>
-
-    <div>
-      <label>Đơn giá nhập</label><br />
-      <input
-        type="number"
-        placeholder="Đơn giá nhập"
-        value={item.DonGiaNhap}
-        min={0}
-        onChange={(e) =>
-          handleProductChange(index, "DonGiaNhap", e.target.value)
-        }
-        required
-      />
-    </div>
-
-    <button type="button" onClick={() => removeProductRow(index)}>
-      <Trash size={16} />
-    </button>
-  </div>
-))}
-
-          <p>
-            <strong>Tổng tiền toàn bộ:</strong>{" "}
-            {productList.reduce(
-              (sum, item) =>
-                sum +
-                (parseFloat(item.SoLuong) || 0) * (parseFloat(item.DonGiaNhap) || 0),
-              0
-            ).toLocaleString()}{" "}
-            VND
-          </p>
-
-
-          <button type="button" onClick={addProductRow}>
+          <button type="button" className="action-button" onClick={addProductRow}>
             <Plus size={16} /> Thêm sản phẩm
           </button>
+
+          <p style={{ marginTop: "10px" }}>
+            <strong>Tổng tiền toàn bộ:</strong>{" "}
+            {tongTien.toLocaleString("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            })}
+          </p>
 
           <div className="modal-actions">
             <button type="submit" className="action-button">

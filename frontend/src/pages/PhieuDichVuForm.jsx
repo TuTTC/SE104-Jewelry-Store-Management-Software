@@ -1,48 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { fetchPhuThuByTen } from "../services/parameterApi";
+import { X, Plus, Trash } from "lucide-react";
+import "../App.css";
 
-const PhieuDichVuForm = ({
-  visible,
-  onClose,
-  onSave,
-  initialData = {},
-  mode = "add"
-}) => {
+const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData = {} }) => {
   const [maKH, setMaKH] = useState("");
   const [ngayLap, setNgayLap] = useState("");
-  const [tongTien, setTongTien] = useState("");
   const [ghiChu, setGhiChu] = useState("");
-  const [trangThai, setTrangThai] = useState("Chờ xử lý");
-  const [maDV, setMaDV] = useState("");
-  const [donGia, setDonGia] = useState(0);
-  const [donGiaThucTe, setDonGiaThucTe] = useState(0);
-  const [soLuong, setSoLuong] = useState(1);
-  const [thanhTien, setThanhTien] = useState(0);
-  const [traTruoc, setTraTruoc] = useState(0);
+  const [trangThai, setTrangThai] = useState("Chưa giao");
   const [danhSachDichVu, setDanhSachDichVu] = useState([]);
-  // Đọc dữ liệu khi chuyển sang chế độ xem/sửa
-  useEffect(() => {
-    if (mode !== "add" && initialData) {
-      if (initialData.ChiTiet?.length) {
-        setMaDV(initialData.ChiTiet[0].MaDV.toString());
-      }
-      setMaKH(initialData.MaKH || "");
-      setNgayLap(initialData.NgayLap?.replace(" ", "T") || "");
-      setTongTien(initialData.TongTien?.toString() || "");
-      setTraTruoc(initialData.TraTruoc?.toString() || "");
-      setGhiChu(initialData.GhiChu || "");
-      setTrangThai(initialData.TrangThai || "Chờ xử lý");
-    } else {
-      setMaKH("");
-      setNgayLap("");
-      setTongTien("");
-      setTraTruoc("");
-      setGhiChu("");
-      setTrangThai("Chờ xử lý");
-      setMaDV("");
-      setSoLuong(1);
-    }
-  }, [initialData, mode]);
+  const [chiTiet, setChiTiet] = useState([]);
 
   useEffect(() => {
     async function fetchDichVu() {
@@ -54,192 +20,277 @@ const PhieuDichVuForm = ({
   }, []);
 
   useEffect(() => {
-  if (!maDV) return;
-  const selected = danhSachDichVu.find((d) => d.MaDV === parseInt(maDV));
-  if (!selected) return;
-
-    const keyMap = {
-    CanThuVang: "PhuThu_CanVang",
-    DanhBongVang: "PhuThu_DanhBong",
-    ChamKhacTheoYeuCau: "PhuThu_ChamKhac",
-    GiaCongNuTrang: "PhuThu_MoRongNhan",
-    ThayDaQuy: "PhuThu_GanDaKimCuong",
-    };
-  const tenThamSo = keyMap[selected.TenDV];
-  const giaGoc = +selected.DonGia;
-  async function fetchPhuThu() {
-    try {
-      const { status, data } = await fetchPhuThuByTen(tenThamSo);
-      const tyLe = status === "success" ? (+data.GiaTri) / 100 : 0.05;
-      const giaTinh = giaGoc * (1 + tyLe);
-      setDonGia(giaGoc);
-      setDonGiaThucTe(giaTinh);
-      setThanhTien(giaTinh * soLuong);
-      setTraTruoc(Math.ceil(giaTinh * soLuong * 0.5));
-    } catch (err) {
-      console.error("Lỗi khi fetch phụ thu:", err);
+  if (visible) {
+    if (mode === "add") {
+      // Reset toàn bộ các trường khi thêm mới
+      setMaKH("");
+      setNgayLap("");
+      setGhiChu("");
+      setTrangThai("Chưa giao");
+      setChiTiet([]);
+    } else if (mode === "edit" || mode === "view") {
+      // Nếu sửa hoặc xem, nạp dữ liệu từ initialData
+      setMaKH(initialData.MaKH || "");
+      setNgayLap(initialData.NgayLap || "");
+      setGhiChu(initialData.GhiChu || "");
+      setTrangThai(initialData.TrangThai || "Chưa giao");
+      setChiTiet(initialData.ChiTiet || []);
     }
   }
+}, [visible, mode, initialData]);
 
-  fetchPhuThu();
-}, [maDV, soLuong, danhSachDichVu]);
 
-  const readOnly = mode === "view";
+  const handleAddDichVu = () => {
+    setChiTiet([
+      ...chiTiet,
+      {
+        MaDV: "",
+        SoLuong: 1,
+        ChiPhiRieng: 0,
+        DonGia: 0,
+        TinhTrang: "Chưa giao",
+        TienTraTruoc: 0,
+      },
+    ]);
+  };
+
+  const handleRemoveDichVu = (index) => {
+    const newList = [...chiTiet];
+    newList.splice(index, 1);
+    setChiTiet(newList);
+  };
+
+  const updateDichVu = (index, field, value) => {
+    const updated = [...chiTiet];
+    updated[index][field] = value;
+
+    if (field === "MaDV") {
+      const dv = danhSachDichVu.find((d) => d.MaDV === parseInt(value));
+      updated[index].DonGia = dv?.DonGia || 0;
+    }
+
+    const donGiaDuocTinh =
+      parseFloat(updated[index].DonGia || 0) +
+      parseFloat(updated[index].ChiPhiRieng || 0);
+    const soLuong = parseInt(updated[index].SoLuong || 0);
+    const thanhTien = donGiaDuocTinh * soLuong;
+
+    updated[index].ThanhTien = thanhTien;
+    updated[index].TienTraTruoc = Math.max(
+      updated[index].TienTraTruoc,
+      Math.ceil(thanhTien * 0.5)
+    );
+
+    setChiTiet(updated);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (readOnly) return;
 
     const payload = {
-      MaKH: parseInt(maKH, 10),
-      ChiTiet: [
-      {
-        MaDV: parseInt(maDV, 10),
-        SoLuong: parseInt(soLuong, 10),
-        TienTraTruoc: parseFloat(traTruoc) || 0,
-        TinhTrang: "Chưa giao",
-      }
-    ],
+      MaKH: parseInt(maKH),
       NgayLap: ngayLap,
-      TongTien: parseFloat(thanhTien),
-      TraTruoc: parseFloat(traTruoc || 0),
       GhiChu: ghiChu,
       TrangThai: trangThai,
+      ChiTiet: chiTiet.map((d) => ({
+        MaDV: parseInt(d.MaDV),
+        SoLuong: parseInt(d.SoLuong),
+        ChiPhiRieng: parseFloat(d.ChiPhiRieng || 0),
+        DonGia: parseFloat(d.DonGia || 0),
+        TienTraTruoc: parseFloat(d.TienTraTruoc || 0),
+        TinhTrang: d.TinhTrang,
+      })),
     };
-    console.log("MaDV đang lưu:", maDV);
-    console.log("Tên dịch vụ:", danhSachDichVu.find(d => d.MaDV == maDV)?.TenDV);
-    console.log("Payload đầy đủ:", payload);
-    onSave && onSave(payload);
+    onSave(payload);
   };
 
   if (!visible) return null;
 
-
   return (
     <div className="modal-overlay">
-      <div className="modal">
-        <h2>
-          {mode === "add"
-            ? "Thêm phiếu dịch vụ"
-            : mode === "edit"
-            ? "Chỉnh sửa phiếu dịch vụ"
-            : "Chi tiết phiếu dịch vụ"}
-        </h2>
-        <form onSubmit={handleSubmit} className="modal-form">
-          <label>
-            Mã khách hàng<br />
-            <input
-              type="number"
-              value={maKH}
-              onChange={(e) => setMaKH(e.target.value)}
-              disabled={readOnly}
-              required
-            />
-          </label>
-        <label>
-          Dịch vụ<br />
+      <div
+        className="modal"
+        style={{
+          width: "95%",
+          maxWidth: "1300px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          overflowX: "hidden",
+        }}
+      >
+        <div className="modal-header">
+          <h2>{mode === "view" ? "Xem phiếu dịch vụ" : "Thêm phiếu dịch vụ"}</h2>
+          <button onClick={onClose}>
+            <X />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="modal-form scrollable">
+          <input
+            type="number"
+            placeholder="Mã khách hàng"
+            value={maKH}
+            onChange={(e) => setMaKH(e.target.value)}
+            required
+          />
+          <input
+            type="datetime-local"
+            value={ngayLap}
+            onChange={(e) => setNgayLap(e.target.value)}
+            required
+          />
+          <textarea
+            placeholder="Ghi chú"
+            value={ghiChu}
+            onChange={(e) => setGhiChu(e.target.value)}
+            rows="3"
+          />
           <select
-           value={maDV}
-           onChange={(e) => setMaDV(e.target.value)}
-           required
-           disabled={mode !== "add"}
+            value={trangThai}
+            onChange={(e) => setTrangThai(e.target.value)}
           >
-            <option value="">-- Chọn dịch vụ --</option>
-            {danhSachDichVu.map((dv) => (
-              <option key={dv.MaDV} value={dv.MaDV}>
-                {dv.TenDV}
-              </option>
-            ))}
+            <option value="Chờ xử lý">Chờ xử lý</option>
+            <option value="Đang thực hiện">Đang thực hiện</option>
+            <option value="Hoàn thành">Hoàn thành</option>
+            <option value="Hủy">Hủy</option>
           </select>
-        </label>
-          <label>
-            Ngày lập<br />
-            <input
-              type="datetime-local"
-              value={ngayLap}
-              onChange={(e) => setNgayLap(e.target.value)}
-              disabled={readOnly}
-              required
-            />
-          </label>
 
-          <label>
-            Số lượng<br />
-           <input
-             type="number"
-             value={soLuong}
-             min={1}
-             onChange={(e) => setSoLuong(parseInt(e.target.value))}
-             required
-             disabled={readOnly}
-           />
-          </label>
+          <hr />
+          <h3>Danh sách chi tiết dịch vụ</h3>
+          <div
+            style={{
+              overflowX: "auto",
+              overflowY: "auto",
+              maxHeight: "300px",
+              marginBottom: "1rem",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+            }}
+          >
+          {/* <h3>Danh sách chi tiết dịch vụ</h3> */}
+          <table
+            className="data-table"
+            style={{
+              width: "100%",
+              tableLayout: "auto",
+              borderCollapse: "collapse",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={{ minWidth: "160px" }}>Dịch vụ</th>
+                <th style={{ minWidth: "100px" }}>Số lượng</th>
+                <th style={{ minWidth: "140px" }}>Chi phí riêng</th>
+                <th style={{ minWidth: "160px" }}>Đơn giá được tính</th>
+                <th style={{ minWidth: "150px" }}>Thành tiền</th>
+                <th style={{ minWidth: "130px" }}>Trả trước</th>
+                <th style={{ minWidth: "120px" }}>Tình trạng</th>
+                <th style={{ width: "50px" }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {chiTiet.map((item, index) => {
+                const donGiaDuocTinh =
+                  parseFloat(item.DonGia) + parseFloat(item.ChiPhiRieng || 0);
+                const thanhTien = donGiaDuocTinh * item.SoLuong;
 
-          <label>
-            Đơn giá gốc: {donGia.toLocaleString()}₫
-          </label>
-           {/* --- Tổng tiền: read-only khi view, else cho phép override --- */}
-           <label>
-             Tổng tiền<br />
-             {mode === "view" ? (
-               <span className="read-only-value">
-                 {thanhTien.toLocaleString()}₫
-               </span>
-             ) : (
-               <input
-                 type="number"
-                 step="0.01"
-                 value={thanhTien || tongTien}
-                 onChange={(e) => setTongTien(e.target.value)}
-                 required
-               />
-             )}
-           </label>
-          <label>
-            Trả trước<br />
-           <input
-             type="number"
-             value={traTruoc}
-             min={Math.ceil(thanhTien * 0.5)}
-             onChange={(e) => setTraTruoc(parseInt(e.target.value))}
-             required
-             disabled={readOnly}
-           />
-          </label>
-          <label>
-            Ghi chú<br />
-            <textarea
-              value={ghiChu}
-              onChange={(e) => setGhiChu(e.target.value)}
-              rows={2}
-              disabled={readOnly}
-            />
-          </label>
-          <label>
-            Trạng thái<br />
-            <select
-              value={trangThai}
-              onChange={(e) => setTrangThai(e.target.value)}
-              disabled={readOnly}
-            >
-              <option>Chờ xử lý</option>
-              <option>Đang thực hiện</option>
-              <option>Hoàn thành</option>
-              <option>Hủy</option>
-            </select>
-          </label>
+                return (
+                  <tr key={index}>
+                    <td>
+                      <select
+                        value={item.MaDV}
+                        onChange={(e) => updateDichVu(index, "MaDV", e.target.value)}
+                        required
+                        style={{ width: "100%" }}
+                      >
+                        <option value="">-- Chọn dịch vụ --</option>
+                        {danhSachDichVu.map((dv) => (
+                          <option key={dv.MaDV} value={dv.MaDV}>
+                            {dv.TenDV}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={item.SoLuong}
+                        onChange={(e) => updateDichVu(index, "SoLuong", e.target.value)}
+                        min="1"
+                        style={{ width: "100%" }}
+                        required
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        value={item.ChiPhiRieng}
+                        onChange={(e) =>
+                          updateDichVu(index, "ChiPhiRieng", e.target.value)
+                        }
+                        min="0"
+                        style={{ width: "100%" }}
+                      />
+                    </td>
+                    <td>
+                      {donGiaDuocTinh.toLocaleString("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      })}
+                    </td>
+                    <td>
+                      {thanhTien.toLocaleString("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      })}
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        min={Math.ceil(thanhTien * 0.5)}
+                        value={item.TienTraTruoc}
+                        onChange={(e) =>
+                          updateDichVu(index, "TienTraTruoc", e.target.value)
+                        }
+                        style={{ width: "100%" }}
+                        required
+                      />
+                    </td>
+                    <td>
+                      <select
+                        value={item.TinhTrang}
+                        onChange={(e) =>
+                          updateDichVu(index, "TinhTrang", e.target.value)
+                        }
+                        style={{ width: "100%" }}
+                      >
+                        <option value="Chưa giao">Chưa giao</option>
+                        <option value="Đã giao">Đã giao</option>
+                      </select>
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDichVu(index)}
+                        className="action-icon delete"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          </div>
+          <button type="button" onClick={handleAddDichVu} className="action-button">
+            <Plus size={16} /> Thêm dịch vụ
+          </button>
+
           <div className="modal-actions">
-            {mode !== "view" && (
-              <button type="submit" className="action-button">
-                Lưu phiếu
-              </button>
-            )}
-            <button
-              type="button"
-              className="action-button cancel"
-              onClick={onClose}
-            >
-              {mode === "view" ? "Đóng" : "Hủy"}
+            <button type="submit" className="action-button">Lưu phiếu</button>
+            <button type="button" className="action-button cancel" onClick={onClose}>
+              Hủy
             </button>
           </div>
         </form>

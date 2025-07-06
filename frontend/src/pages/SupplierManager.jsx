@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Edit, Trash,ArrowUpDown  } from "lucide-react";
+import { Edit, Trash, ArrowUpDown } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm";
 import * as supplierApi from "../services/supplierApi";
 import Pagination from '../components/Pagination';
@@ -13,21 +13,28 @@ const SupplierManager = () => {
     phone: "",
     email: "",
     address: "",
+    date: "",
     note: ""
+    
   });
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [error, setError] = useState(null);
-  const [data, setData] = useState([]); // Mảng dữ liệu hiển thị
+  const [data, setData] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTab, setSelectedTab] = useState("list"); // Thêm state cho tab
+  const itemsPerPage = 10;
+
   useEffect(() => {
     fetchSuppliers();
   }, []);
 
   const fetchSuppliers = () => {
     supplierApi.getAllSuppliers()
-      .then((data) => {
-        setSuppliers(data);
-        setData(data);
+      .then((response) => {
+        const fetchedData = Array.isArray(response) ? response : [];
+        setSuppliers(fetchedData);
+        setData(fetchedData);
       })
       .catch((error) => {
         if (error.status === 403) {
@@ -37,8 +44,39 @@ const SupplierManager = () => {
         } else {
           console.error("Lỗi khi lấy dữ liệu:", error);
         }
+        setSuppliers([]);
+        setData([]);
       });
   };
+
+  // Logic phân trang
+  const tabFilters = {
+    list: null, // Không lọc
+    active: (item) => item.status === "Active",
+    inactive: (item) => item.status === "Inactive",
+  };
+
+  const filterFn = tabFilters[selectedTab] || null;
+  const filteredData = (data || []).filter(filterFn ? filterFn : () => true);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Đảm bảo currentPage hợp lệ
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    } else if (totalPages === 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  // Đặt lại trang khi tab thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedTab]);
 
   const openModal = (mode, supplier = null) => {
     setModalMode(mode);
@@ -51,6 +89,7 @@ const SupplierManager = () => {
         phone: supplier.SoDienThoai || "",
         email: supplier.Email || "",
         address: supplier.DiaChi || "",
+        date: supplier.NgayHopTac || "",
         note: supplier.GhiChu || ""
       });
     } else {
@@ -60,6 +99,7 @@ const SupplierManager = () => {
         phone: "",
         email: "",
         address: "",
+        date: "",
         note: ""
       });
     }
@@ -73,6 +113,7 @@ const SupplierManager = () => {
       phone: "",
       email: "",
       address: "",
+      date: "",
       note: ""
     });
     setError(null);
@@ -93,6 +134,7 @@ const SupplierManager = () => {
       SoDienThoai: formData.phone,
       Email: formData.email,
       DiaChi: formData.address,
+      NgayHopTac: formData.date,
       GhiChu: formData.note
     };
 
@@ -113,57 +155,58 @@ const SupplierManager = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Bạn có chắc muốn xoá nhà cung cấp này?")) {
-      supplierApi.deleteSupplier(id)
-        .then(() => fetchSuppliers())
-        .catch(err => alert(err.message));
-    }
-  };
-
-const sortData = (key) => {
-  let direction = 'asc';
-
-  if (sortConfig.key === key && sortConfig.direction === 'asc') {
-    direction = 'desc';
+const handleDelete = (id) => {
+  if (window.confirm("Bạn có chắc muốn xoá nhà cung cấp này?")) {
+    supplierApi.deleteSupplier(id)
+      .then(() => {
+        alert("Xóa nhà cung cấp thành công.");
+        fetchSuppliers();
+      })
+      .catch(err => {
+        alert(err.message || "Đã xảy ra lỗi.");
+      });
   }
-
-  const sortedData = [...data].sort((a, b) => {
-    const aValue = a[key];
-    const bValue = b[key];
-
-    // Xử lý null hoặc undefined
-    if (aValue === null || aValue === undefined) return 1;
-    if (bValue === null || bValue === undefined) return -1;
-
-    // Xử lý kiểu ngày dạng string
-    const dateRegex = /^\d{4}-\d{2}-\d{2}/; 
-    if (typeof aValue === 'string' && dateRegex.test(aValue)) {
-      const dateA = new Date(aValue);
-      const dateB = new Date(bValue);
-      return direction === 'asc' ? dateA - dateB : dateB - dateA;
-    }
-
-    // Xử lý chuỗi
-    if (typeof aValue === 'string') {
-      return direction === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-
-    // Xử lý số
-    if (typeof aValue === 'number') {
-      return direction === 'asc'
-        ? aValue - bValue
-        : bValue - aValue;
-    }
-
-    return 0;
-  });
-
-  setData(sortedData);
-  setSortConfig({ key, direction });
 };
+
+
+  const sortData = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+
+    const sortedData = [...(data || [])].sort((a, b) => {
+      const aValue = a[key];
+      const bValue = b[key];
+
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+      if (typeof aValue === 'string' && dateRegex.test(aValue)) {
+        const dateA = new Date(aValue);
+        const dateB = new Date(bValue);
+        return direction === 'asc' ? dateA - dateB : dateB - dateA;
+      }
+
+      if (typeof aValue === 'string') {
+        return direction === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      if (typeof aValue === 'number') {
+        return direction === 'asc'
+          ? aValue - bValue
+          : bValue - aValue;
+      }
+
+      return 0;
+    });
+
+    setData(sortedData);
+    setSortConfig({ key, direction });
+  };
 
   return (
     <div className="table-card">
@@ -190,7 +233,7 @@ const sortData = (key) => {
           </thead>
 
           <tbody>
-            {data.map((s) => (
+            {currentItems.map((s) => (
               <tr key={s.MaNCC}>
                 <td>{s.MaNCC}</td>
                 <td>{s.TenNCC}</td>
@@ -211,7 +254,11 @@ const sortData = (key) => {
             ))}
           </tbody>
         </table>
-        <Pagination />
+        <Pagination
+          totalPages={totalPages}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+        />
       </div>
 
       {modalVisible && (
@@ -231,4 +278,3 @@ const sortData = (key) => {
 };
 
 export default SupplierManager;
-

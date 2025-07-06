@@ -96,7 +96,7 @@ function Auth() {
   };
 
   return (
-    <div className="container">
+    <div className="auth-container">
       <div className="modal">
         <div className="modal-header">
           <h2>{selectedPage === "login" ? "Đăng nhập" : "Đăng ký"}</h2>

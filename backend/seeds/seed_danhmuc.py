@@ -18,15 +18,15 @@ def seed_danh_muc():
                 existing_dm.MoTa = dm["MoTa"]
                 existing_dm.DonViTinh = dm["DonViTinh"]
                 existing_dm.PhanTramLoiNhuan = Decimal(dm["LoiNhuan"])
-                existing_dm.isDisabled = dm["isDisabled"]
+                existing_dm.IsDisabled = dm["isDisabled"]
                 print(f"Cập nhật danh mục '{dm['TenDM']}'.")
             else:
                 danh_muc = DANHMUC(
                     TenDM=dm["TenDM"],
                     MoTa=dm["MoTa"],
                     DonViTinh=dm["DonViTinh"],
-                    LoiNhuan=Decimal(dm["LoiNhuan"]),
-                    isDisabled=dm["isDisabled"]
+                    PhanTramLoiNhuan=Decimal(dm["LoiNhuan"]),
+                    IsDisabled=dm["isDisabled"]
                 )
                 db.session.add(danh_muc)
                 print(f"Đã thêm danh mục '{dm['TenDM']}'.")

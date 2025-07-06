@@ -11,7 +11,7 @@ from utils.roles import seed_roles
 from extensions import mail
 from flask_cors import CORS
 from seeds.seed_danhmuc import seed_danh_muc
-from seeds.seed_user import seed_user, clear_users
+from seeds.seed_user import seed_user, clear_users, seed_them_khach_hang
 from seeds.seed_nhacungcap import seed_nhacungcap
 from seeds.seed_sanpham import seed_sanpham
 from seeds.seed_phieunhap import seed_phieu_nhap
@@ -23,6 +23,9 @@ from seeds.seed_dichvu import seed_dichvu
 from seeds.seed_donhang import seed_don_hang
 from seeds.seed_khachhang import seed_khach_hang
 from seeds.seed_baocao import seed_bao_cao
+from seeds.seed_chitietdonhang import seed_chi_tiet_don_hang
+from seeds.seed_chitietphieudichvu import seed_chi_tiet_phieu_dich_vu
+from seeds.seed_phieudichvu import seed_phieu_dich_vu
 # Thêm dòng này để load biến môi trường từ .env
 from dotenv import load_dotenv
 load_dotenv()  # ← Tải biến môi trường từ file .env
@@ -59,10 +62,10 @@ with app.app_context():
     db.create_all()
     # seed_roles()
     # seed_danh_muc()
-    #seed_user()
+    # seed_user()
     # seed_nhacungcap()
     # clear_users()
-    seed_sanpham()
+    # seed_sanpham()
     # seed_phieu_nhap()
     # seed_permissions()
     # seed_role_permissions()
@@ -72,6 +75,10 @@ with app.app_context():
     # seed_khach_hang()
     # seed_don_hang()
     # seed_bao_cao()
+    # seed_chi_tiet_don_hang()
+    # seed_them_khach_hang(20)
+    # seed_phieu_dich_vu()
+    # seed_chi_tiet_phieu_dich_vu()
 
 from Routes import register_routes
 register_routes(app)

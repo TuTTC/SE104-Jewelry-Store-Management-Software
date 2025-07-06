@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
 from models.NhaCungCap import NHACUNGCAP
+from models.PhieuNhap import PHIEUNHAP
 from database import db
 from flask_jwt_extended import jwt_required
 from utils.permissions import permission_required
-
+from sqlalchemy.exc import IntegrityError
 supplier_bp = Blueprint('supplier_bp', __name__)
 
 # Lấy tất cả nhà cung cấp
@@ -84,12 +85,18 @@ def delete_supplier(ma_ncc):
     supplier = NHACUNGCAP.query.get(ma_ncc)
 
     if not supplier:
-        return jsonify({"error": "Nhà cung cấp không tồn tại"}), 404
+        return jsonify({"status": "error", "message": "Nhà cung cấp không tồn tại."}), 404
+
+    if PHIEUNHAP.query.filter_by(MaNCC=ma_ncc).first():
+        return jsonify({
+            "status": "error",
+            "message": "Không thể xóa nhà cung cấp vì đã phát sinh phiếu nhập."
+        }), 400    
 
     try:
         db.session.delete(supplier)
         db.session.commit()
-        return jsonify({"message": "Xóa thành công!"}), 200
+        return jsonify({"status": "success", "message": "Xóa nhà cung cấp thành công."}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"status": "error", "message": str(e)}), 400

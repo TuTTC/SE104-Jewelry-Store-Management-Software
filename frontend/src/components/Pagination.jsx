@@ -1,17 +1,23 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const Pagination = ({
-  activePage,
-  totalPages,
-  onPageChange
-}) => {
+const Pagination = ({ totalPages, currentPage, setCurrentPage }) => {
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   const handlePrevPage = () => {
-    if (activePage > 1) onPageChange(activePage - 1);
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const handleNextPage = () => {
-    if (activePage < totalPages) onPageChange(activePage + 1);
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
   };
 
   return (
@@ -21,17 +27,17 @@ const Pagination = ({
         aria-label="prev"
         className="pagination-button"
         onClick={handlePrevPage}
-        disabled={activePage === 1}
+        disabled={currentPage === 1}
       >
-        <ChevronLeft className="w-6 h-6" />
+        <ChevronLeft className="w-10 h-10 text-gray-500" />
       </button>
 
       <div className="pagination-pages">
         {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
           <button
             key={page}
-            className={`pagination-page ${activePage === page ? 'pagination-active' : ''}`}
-            onClick={() => onPageChange(page)}
+            className={`pagination-page ${currentPage === page ? 'pagination-active' : ''}`}
+            onClick={() => handlePageChange(page)}
           >
             {page}
           </button>
@@ -43,9 +49,9 @@ const Pagination = ({
         aria-label="next"
         className="pagination-button"
         onClick={handleNextPage}
-        disabled={activePage === totalPages}
+        disabled={currentPage === totalPages}
       >
-        <ChevronRight className="w-6 h-6" />
+        <ChevronRight className="w-10 h-10 text-gray-500" />
       </button>
     </div>
   );

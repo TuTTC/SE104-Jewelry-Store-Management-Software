@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowUpDown, Download, Edit, Trash } from "lucide-react";
+import { ArrowUpDown, Printer, Edit, Trash, Download } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm-2.jsx";
 import {
   layDanhSachBaoCao,
@@ -56,21 +56,69 @@ export default function ReportDashboard() {
   const openModal = (type, item = null) => {
     setModalType(type);
     setCurrentItem(item);
+
     if (type === "edit" && item) {
-      setFormData({
+      // basic fields
+      const base = {
         LoaiBaoCao: item.LoaiBaoCao,
-        TuNgay: item.TuNgay,
-        DenNgay: item.DenNgay,
-        MoTa: item.MoTa,
+        TuNgay:     item.TuNgay,
+        DenNgay:    item.DenNgay,
+        MoTa:       item.MoTa || "",
+      };
+
+      // now derive your time‑type + selection values:
+      let thoiGianLoai    = "";
+      let selectedDate    = "";
+      let selectedMonth   = "";
+      let selectedYear    = "";
+
+      if (base.TuNgay === base.DenNgay) {
+        // same day
+        thoiGianLoai = "ngay";
+        selectedDate = base.TuNgay;
+      } else {
+        const [y1, m1] = base.TuNgay.split("-");
+        // const [y2, m2] = base.DenNgay.split("-");
+        // month report: starts 1st and ends last day of same month
+        const lastDay = new Date(+y1, +m1, 0).getDate().toString().padStart(2, "0");
+        if (
+          base.TuNgay === `${y1}-${m1}-01` &&
+          base.DenNgay === `${y1}-${m1}-${lastDay}`
+        ) {
+          thoiGianLoai  = "thang";
+          selectedMonth = `${y1}-${m1}`;
+        }
+        // year report: starts Jan 1 and ends Dec 31
+        else if (
+          base.TuNgay === `${y1}-01-01` &&
+          base.DenNgay === `${y1}-12-31`
+        ) {
+          thoiGianLoai = "nam";
+          selectedYear = y1;
+        }
+      }
+
+      setFormData({
+        ...base,
+        thoiGianLoai,
+        selectedDate,
+        selectedMonth,
+        selectedYear,
       });
     } else {
+      // reset for add
       setFormData({
-        LoaiBaoCao: "",
+        LoaiBaoCao:  "",
         TuNgay:      "",
         DenNgay:     "",
         MoTa:        "",
+        thoiGianLoai:"",
+        selectedDate:"",
+        selectedMonth:"",
+        selectedYear:"",
       });
     }
+
     setError("");
     setShowModal(true);
   };
@@ -80,60 +128,63 @@ export default function ReportDashboard() {
   };
 
   // 4. Xử lý thay đổi input
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((f) => ({ ...f, [name]: value }));
-  };
+  // const handleInputChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData((f) => ({ ...f, [name]: value }));
+  // };
 
 
 // 5. Validate
-const validate = () => {
-  // Bắt buộc chọn loại, từ ngày, đến ngày
-  if (!formData.LoaiBaoCao || !formData.TuNgay || !formData.DenNgay) {
-    setError("Vui lòng chọn loại và khoảng thời gian báo cáo.");
-    return false;
-  }
-  return true;
-};
+// const validate = () => {
+//   // Bắt buộc chọn loại, từ ngày, đến ngày
+//   if (!formData.LoaiBaoCao || !formData.TuNgay || !formData.DenNgay) {
+//     setError("Vui lòng chọn loại và khoảng thời gian báo cáo.");
+//     return false;
+//   }
+//   return true;
+// };
 
  // 6. Submit (add / edit)
-  const handleSubmit = async (formData) => {
-    console.log("📤 Dữ liệu gửi đi:", formData);
-    const { LoaiBaoCao, TuNgay, DenNgay, MoTa } = formData;
-    // ✅ Kiểm tra form trước
-    if (!LoaiBaoCao || !TuNgay || !DenNgay) {
-      alert("⚠️ Vui lòng nhập đầy đủ thông tin báo cáo.");
-      return;
-    }
-    
-    const payload = {
-      LoaiBaoCao,
-      TuNgay,
-      DenNgay,
-      MoTa,
-      NguoiTao: 1,  // hoặc userID hiện tại nếu có login
-    };
+ const handleSubmit = async (formData) => {
+  console.log("Dữ liệu gửi đi:", formData);
 
-    try {
-      const res =
-        modalType === "add"
-          ? await themBaoCao(formData)
-          : await suaBaoCao(currentItem.MaBC, formData);
+  const { LoaiBaoCao, TuNgay, DenNgay, MoTa } = formData;
 
-      if (res.status === "success") {
-        const reload = await layDanhSachBaoCao();
-        if (reload.status === "success") setReports(reload.data);
-        closeModal();
-      } else {
-        alert("Thất bại: " + res.message);
-      }
-    } catch (err) {
-      alert("Lỗi kết nối: " + err.message);
-    }
+  if (!LoaiBaoCao) {
+    alert("Vui lòng chọn loại báo cáo.");
+    return;
+  }
+  if (!TuNgay || !DenNgay) {
+    alert("Không xác định được khoảng thời gian. Vui lòng chọn lại.");
+    return;
+  }
+
+  const payload = {
+    LoaiBaoCao,
+    TuNgay,
+    DenNgay,
+    MoTa,
+    NguoiTao: 1,
   };
 
-  // The following block is a duplicate and should be removed to avoid syntax errors.
+  console.log("Payload gửi API:", payload);
 
+  try {
+    const res = modalType === "add"
+      ? await themBaoCao(payload)
+      : await suaBaoCao(currentItem.MaBC, payload);
+
+    if (res.status === "success") {
+      const reload = await layDanhSachBaoCao();
+      if (reload.status === "success") setReports(reload.data);
+      closeModal();
+    } else {
+      alert("Thất bại: " + res.message);
+    }
+  } catch (err) {
+    alert("Lỗi kết nối: " + err.message);
+  }
+};
   // 7. Xóa
   const handleDelete = async (MaBC) => {
     if (!window.confirm("Xác nhận xóa báo cáo này?")) return;
@@ -165,17 +216,21 @@ const validate = () => {
   };
 
   // 8b. Xuất PDF
- const exportPDF = () => {
-   if (!currentReport || !currentReport.MaBC) {
-     return alert("Vui lòng chọn báo cáo để xuất PDF.");
-   }
-   inBaoCaoPDF(currentReport.MaBC)
-     .then((blob) => {
-       const url = URL.createObjectURL(blob);
-       window.open(url);
-     })
-     .catch((err) => alert("Lỗi khi xuất PDF: " + err.message));
- };
+  const exportPDF = (report) => {
+    if (!report || !report.MaBC) {
+      alert("Vui lòng chọn báo cáo để xuất PDF.");
+      return;
+    }
+
+    inBaoCaoPDF(report.MaBC)
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+      })
+      .catch((err) => alert("Lỗi khi xuất PDF: " + err.message));
+
+    console.log("Xuất PDF cho báo cáo:", report);
+  };
 
   const showReportModal  = showModal;
   const modalMode        = modalType;
@@ -193,9 +248,6 @@ const validate = () => {
           <button onClick={exportCSV} className="action-button">
             <Download className="icon" /> Xuất CSV
           </button>
-          <button onClick={exportPDF} className="action-button">
-            <Download className="icon" /> Xuất PDF
-          </button>
         </div>
       </div>
 
@@ -208,6 +260,9 @@ const validate = () => {
               </th>
               <th onClick={() => sortData("LoaiBaoCao")}>
                 Loại <ArrowUpDown className="sort-icon" />
+              </th>
+              <th>
+               Báo cáo
               </th>
               <th onClick={() => sortData("TuNgay")}>
                 Từ ngày <ArrowUpDown className="sort-icon" />
@@ -223,45 +278,65 @@ const validate = () => {
             </tr>
           </thead>
           <tbody>
-            {reports.map((r) => (
-              <tr key={r.MaBC}>
-                <td>{r.MaBC}</td>
-                <td>{r.LoaiBaoCao}</td>
-                <td>{r.TuNgay}</td> 
-                <td>{r.DenNgay}</td>
-                <td>
-                  {r.LoaiBaoCao === "Doanh thu" ? (
-                    parseFloat(r.DuLieu).toLocaleString("vi-VN", {
-                      style: "currency",
-                      currency: "VND",
-                    })
-                  ) : r.LoaiBaoCao === "Tồn kho" && Array.isArray(r.DuLieu) ? (
-                    <ul style={{ paddingLeft: "1rem", margin: 0 }}>
-                      {r.DuLieu.map((item, index) => (
-                        <li key={index}>SP#{item.MaSP}: {item.SoLuongTon} sản phẩm</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    "Không rõ dữ liệu"
-                  )}
-                </td>
-                <td>{r.TaoNgay}</td>
-                <td>
-                  <button
-                    onClick={() => openModal("edit", r)}
-                    className="action-icon edit"
-                  >
-                    <Edit className="icon" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(r.MaBC)}
-                    className="action-icon delete"
-                  >
-                    <Trash className="icon" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {reports.map((r) => {
+              let rangeType;
+              if (r.TuNgay === r.DenNgay) {
+                rangeType = "Theo ngày";
+              } else if (r.TuNgay.slice(0,7) === r.DenNgay.slice(0,7)) {
+                rangeType = "Theo tháng";
+              } else {
+                rangeType = "Theo năm";
+              }
+              return (
+                <tr key={r.MaBC}>
+                  <td>{r.MaBC}</td>
+                  <td>{r.LoaiBaoCao}</td>
+                  <td>{rangeType}</td>
+                  <td>{r.TuNgay}</td> 
+                  <td>{r.DenNgay}</td>
+                  <td>
+                    {r.LoaiBaoCao === "Doanh thu" && typeof r.DuLieu === "object" ? (
+                      <div>
+                        <b>Doanh thu:</b>{" "}
+                        {parseFloat(r.DuLieu.DoanhThu || 0).toLocaleString("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        })}
+                      </div>
+                    ) : r.LoaiBaoCao === "Lợi nhuận" && typeof r.DuLieu === "object" ? (
+                      <div>
+                        <b>Lợi nhuận:</b>{" "}
+                        {parseFloat(r.DuLieu.LoiNhuan || 0).toLocaleString("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        })}
+                      </div>
+                    ) : (
+                      "Không rõ dữ liệu"
+                    )}
+                  </td>
+
+                  <td>{r.TaoNgay}</td>
+                  <td>
+                    <button
+                      onClick={() => openModal("edit", r)}
+                      className="action-icon edit"
+                    >
+                      <Edit className="icon" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r.MaBC)}
+                      className="action-icon delete"
+                    >
+                      <Trash className="icon" />
+                    </button>
+                    <button onClick={() => exportPDF(r)} className="action-icon export-pdf">
+                      <Printer　color="#22c55e" className="icon" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
             {reports.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ textAlign: "center" }}>
@@ -280,8 +355,9 @@ const validate = () => {
         initialData={currentReport} // hoặc {} với mode="add"
         showModal={showReportModal}
         onClose={closeReportModal}
-        onSubmit={handleSaveReport}
+        onSubmit={ handleSaveReport }
       />
     </div>
   );
 }
+

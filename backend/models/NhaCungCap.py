@@ -11,3 +11,4 @@ class NHACUNGCAP(db.Model):
     DiaChi = Column(Text, nullable=False)
     NgayHopTac = Column(Date)
     GhiChu = Column(Text)
+    

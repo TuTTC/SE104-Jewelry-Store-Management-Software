@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, make_response
 from models.DonHang import DONHANG
 from models.KhachHang import KHACHHANG
+from models.NguoiDung import NGUOIDUNG
 from models.ChiTietDonHang import CHITIETDONHANG
 from models.SanPham import SANPHAM
 from models.DanhMucSanPham import DANHMUC
@@ -31,22 +32,20 @@ def get_danh_sach_donhang():
         for dh in donhangs:
             # Tính tổng tiền thực tế từ các dòng chi tiết đơn hàng
             true_total = sum(ct.ThanhTien for ct in dh.chitietdonhang_list)
-            
-            # dh.TongTien = true_total
-            # db.session.add(dh)
+
+            nguoidung = NGUOIDUNG.query.get(dh.UserID)
 
             data.append({
                 "id": dh.MaDH,
                 "orderCode": f"DH{dh.MaDH:04}",
-                "customerId": dh.MaKH,
-                "customer": dh.khachhang.HoTen if dh.khachhang else "(Không rõ)",
+                "customerId": dh.UserID,
+                "customer": nguoidung.HoTen if nguoidung else "(Không rõ)",
                 "date": dh.NgayDat.strftime("%Y-%m-%d"),
                 "total": float(true_total),
                 "status": dh.TrangThai,
                 "paymentMethod": "Chuyển khoản",
-                "deliveryAddress": dh.khachhang.DiaChi if dh.khachhang else ""
+                "deliveryAddress": nguoidung.DiaChi if nguoidung else ""
             })
-
 
         return jsonify({"status": "success", "data": data})
 
@@ -54,20 +53,25 @@ def get_danh_sach_donhang():
         return jsonify({"status": "error", "message": str(e)})
 
 
-# POST /api/donhang - Tạo đơn hàng mới
+
 @donhang_bp.route("/donhang", methods=["POST"])
 def tao_don_hang():
     try:
         data = request.get_json()
-        ma_kh = int(data.get("MaKH"))
+        user_id = int(data.get("UserID"))  # Đổi tên cho rõ, không dùng MaKH nữa
 
-        khach = KHACHHANG.query.get(ma_kh)
+        khach = NGUOIDUNG.query.get(user_id)
         if not khach:
-            return jsonify({"status": "error", "message": "Khách hàng không tồn tại."}), 400
+            return jsonify({"status": "error", "message": "Người dùng không tồn tại."}), 400
 
-        # Tạo đơn hàng mới (chưa có chi tiết)
+        if not khach.vaitro or khach.vaitro.TenVaiTro.lower() != "khách hàng":
+            return jsonify({"status": "error", "message": "Người dùng này không phải khách hàng."}), 400
+
+        if khach.TrangThai is not True:
+            return jsonify({"status": "error", "message": "Tài khoản khách hàng đang bị khóa."}), 400
+
         donhang = DONHANG(
-            MaKH=ma_kh,
+            UserID=user_id,
             NgayDat=datetime.strptime(data.get("NgayDat"), "%Y-%m-%d"),
             TongTien=Decimal(data.get("TongTien", 0)),
             TrangThai=data.get("TrangThai", "Pending")
@@ -85,6 +89,7 @@ def tao_don_hang():
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 # PUT /api/donhang/<id>/trangthai - Cập nhật trạng thái đơn hàng
 @donhang_bp.route("/donhang/<int:id>/trangthai", methods=["PUT"])
@@ -167,24 +172,32 @@ def sua_don_hang(id):
         if not donhang:
             return jsonify({"status": "error", "message": "Đơn hàng không tồn tại"}), 404
 
-        ma_kh = data.get("MaKH")
-        if not ma_kh:
-            return jsonify({"status": "error", "message": "Thiếu MaKH"}), 400
+        user_id = data.get("UserID")
+        if not user_id:
+            return jsonify({"status": "error", "message": "Thiếu UserID"}), 400
 
-        khach = KHACHHANG.query.get(ma_kh)
+        khach = NGUOIDUNG.query.get(user_id)
         if not khach:
-            return jsonify({"status": "error", "message": "Khách hàng không tồn tại"}), 404
+            return jsonify({"status": "error", "message": "Người dùng không tồn tại"}), 404
 
-        donhang.MaKH = ma_kh
+        if not khach.vaitro or khach.vaitro.TenVaiTro.lower() != "khách hàng":
+            return jsonify({"status": "error", "message": "Người dùng này không phải khách hàng."}), 400
+
+        if khach.TrangThai is not True:
+            return jsonify({"status": "error", "message": "Tài khoản khách hàng đang bị khóa."}), 400
+
+        donhang.UserID = user_id
         donhang.NgayDat = datetime.strptime(data.get("NgayDat"), "%Y-%m-%d")
         donhang.TongTien = data.get("TongTien")
         donhang.TrangThai = data.get("TrangThai")
 
         db.session.commit()
         return jsonify({"status": "success", "message": "Đã cập nhật đơn hàng."})
+        
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 # GET /api/donhang/<id>/chitiet - Lấy chi tiết đơn hàng
 @donhang_bp.route("/donhang/<int:id>/chitiet", methods=["GET"])
@@ -273,8 +286,8 @@ def xuat_pdf_chi_tiet_don(id):
     try:
         don_hang = DONHANG.query.get_or_404(id)
         
-        khach_hang = KHACHHANG.query.get(don_hang.MaKH)
-        if not khach_hang:
+        khach_hang = NGUOIDUNG.query.get(don_hang.UserID)
+        if not khach_hang or khach_hang.vaitro.TenVaiTro.lower() != "khách hàng":
             return jsonify({"status": "error", "message": "Không tìm thấy khách hàng"}), 400
 
         ctdh_list = CHITIETDONHANG.query.filter_by(MaDH=id).all()
@@ -286,7 +299,6 @@ def xuat_pdf_chi_tiet_don(id):
         width, height = landscape(A4)
 
         p.setFont("DejaVu", 12)
-        
         p.drawCentredString(width / 2, height - 2 * cm, "PHIẾU BÁN HÀNG")
 
         p.setFont("DejaVu", 11)
@@ -297,7 +309,7 @@ def xuat_pdf_chi_tiet_don(id):
         # Vẽ bảng
         y = height - 5 * cm
         col_widths = [1.5*cm, 6*cm, 6*cm, 2.5*cm, 2.5*cm, 3*cm, 3*cm]
-        headers = ["Stt", "Sản phẩm", "Loại sản phẩm", "Số lượng", "Đơn vị tính", "Đơn giá", "Thành tiền"]
+        headers = ["STT", "Sản phẩm", "Loại sản phẩm", "Số lượng", "Đơn vị tính", "Đơn giá", "Thành tiền"]
 
         p.setFont("DejaVu", 10)
         x = 2 * cm

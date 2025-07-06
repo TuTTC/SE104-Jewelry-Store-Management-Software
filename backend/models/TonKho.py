@@ -9,6 +9,7 @@ class TONKHO(db.Model):
 
     MaTK = Column(Integer, primary_key=True, autoincrement=True)
     MaSP = Column(Integer, ForeignKey("SANPHAM.MaSP"), nullable=False)
+    TonDau = Column(Integer, default=0, nullable=False)
     SoLuongTon = Column(Integer, default=0, nullable=False)
     NgayCapNhat = Column(DateTime, server_default=func.now(), onupdate=func.now())
     MucCanhBao = Column(Integer, default=10, nullable=False)
@@ -17,5 +18,4 @@ class TONKHO(db.Model):
         CheckConstraint('SoLuongTon >= 0', name='check_soluongton_nonnegative'),
     )
 
-    # Quan hệ
     sanpham = relationship("SANPHAM", backref="tonkho_entries")

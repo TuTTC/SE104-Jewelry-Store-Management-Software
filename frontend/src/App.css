@@ -4,9 +4,8 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow: auto;   /* ẩn thanh cuộn ngoài nếu không cần */
+  overflow: auto;
 }
-
 
 /* Action Buttons */
 .action-button {
@@ -54,7 +53,7 @@ html, body {
 .auth-button {
   padding: 10px 20px;
   font-size: 16px;
-  background-color: #c1a47e;
+  background-color: #5e4638;
   color: white;
   border: none;
   border-radius: 5px;
@@ -62,45 +61,98 @@ html, body {
 }
 
 .auth-button:hover {
+  background-color:  #5e4638;
+}
+
+/* Modal header and form */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Register and Login form buttons */
+.register-form, .login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center; /* Căn giữa các phần tử trong form */
+}
+
+.register-form .action-button,
+.login-form .action-button {
+  display: block; /* Đảm bảo nút xuống dòng */
+  width: 100%;
+  max-width: 300px; /* Giới hạn chiều rộng nút để căn giữa đẹp hơn */
+  margin: 10px auto 0; /* Căn giữa ngang và thêm khoảng cách trên */
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+  border: none;
+}
+
+.action-button {
+  background-color:  #5e4638; /* Màu chính */
+  color: #ffffff;
+}
+
+.action-button:hover {
   background-color: #a68563;
+}
+
+.action-button.cancel {
+  background-color: #f4f4f9;
+  color: #333333;
 }
 
 .action-button.google {
   background-color: #4285f4;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 10px;
+  color: #ffffff;
 }
 
 .action-button.google:hover {
   background-color: #357abd;
 }
 
-.modal-form input[type="password"] {
-  margin-bottom: 10px;
-  padding: 8px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
+/* Input group */
 .input-group {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 16px;
+  width: 100%; /* Đảm bảo input chiếm toàn bộ chiều rộng form */
+}
+
+.input-group input,
+.input-group select {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .input-group .icon {
   color: #666666;
 }
 
+/* Error message */
 .error-message {
-  color: #e74c3c;
+  color: #e74c3c; /* Màu đỏ */
   font-size: 14px;
   margin-bottom: 16px;
+  text-align: center; /* Căn giữa thông báo lỗi */
 }
 
 .modal-form input,
@@ -118,27 +170,37 @@ html, body {
 
 /* Container */
 .container {
-    display: flex;
-    width: 100%;                   
-    min-height: 100vh;             /* ví dụ: cho content tự co giãn */
-    background-color: #f4f4f9;
-    overflow-y: auto;
-    overflow-x: hidden;
+  display: flex;
+  height: 150vh;
+  background-color: #f4f4f9;
+  min-height: 150vh;
+  overflow: visible;
 }
 
+/* Container for Auth form (Login/Register) */
+.auth-container {
+  display: flex;
+  justify-content: center; /* Căn giữa ngang */
+  align-items: center; /* Căn giữa dọc */
+  min-height: 100vh; /* Chiếm toàn bộ chiều cao màn hình */
+  width: 100%;
+  background-color: #f4f4f9; /* Nền nhẹ để nổi bật form */
+  position: relative;
+  z-index: 0;
+}
 
 /* Sidebar */
 .sidebar {
-    width: 256px;
-    background-color: #5e4638;
-    padding: 16px;
-    /* Bỏ height cố định để nó co giãn theo nội dung */
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    z-index: 1;
+  width: 256px;
+  background-color: #5e4638;
+  padding: 16px;
+  height: 100%;
+  min-height: 150vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
-
 
 .sidebar-title {
   font-size: 24px;
@@ -246,7 +308,7 @@ html, body {
 
 /* Profile-specific styles */
 .profile-card-content {
-  font-family: 'Cormorant Garamond', serif;
+  /* font-family: 'Cormorant Garamond', serif; */
   letter-spacing: 0.5px;
   max-width: 100%;
   padding: 20px;
@@ -269,7 +331,7 @@ html, body {
   position: absolute;
   right: 0;
   top: 0;
-  font-family: 'Cormorant Garamond', serif;
+  /* font-family: 'Cormorant Garamond', serif; */
   font-size: 14px;
   padding: 4px 12px;
   border: none;
@@ -321,7 +383,7 @@ html, body {
   font-size: 16px;
   font-weight: 500;
   color: #1f2937;
-  font-family: 'Cormorant Garamond', serif;
+  /* font-family: 'Cormorant Garamond', serif; */
 }
 
 .profile-email {
@@ -348,21 +410,21 @@ html, body {
 }
 
 .profile-label {
-  font-family: 'Cormorant Garamond', serif;
+  /* font-family: 'Cormorant Garamond', serif; */
   font-size: 14px;
   font-weight: normal;
   color: #555;
 }
 
 .profile-value {
-  font-family: 'Cormorant Garamond', serif;
+  /* font-family: 'Cormorant Garamond', serif; */
   font-size: 14px;
   font-weight: normal;
   color: #333;
 }
 
 .profile-input {
-  font-family: 'Cormorant Garamond', serif;
+  /* font-family: 'Cormorant Garamond', serif; */
   font-size: 14px;
   font-weight: 400; /* dùng số cụ thể */
   color: #555;
@@ -411,10 +473,11 @@ html, body {
 
 /* Main Content */
 .main-content {
-    flex: 1;
-    padding: 32px;
-    /* Bỏ height cố định và overflow riêng */
-    display: block;
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+  height: 100%;
+  min-height: 150vh;
 }
 
 .header {

@@ -8,4 +8,5 @@ class DICHVU(db.Model):
     TenDV = Column(String(100), nullable=False)
     DonGia = Column(DECIMAL(10, 2), nullable=False)
     MoTa = Column(Text, nullable=True)
-    TrangThai = Column(Boolean, default=True)
+    TrangThai = Column(Boolean, default=True)         # Còn hoạt động hay không
+    IsDisable = Column(Boolean, default=False)        # True = đã xóa mềm, False = còn sử dụng

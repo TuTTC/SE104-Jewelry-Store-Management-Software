@@ -123,10 +123,16 @@ const GeneralModalForm = ({
           <label>Vai trò</label>
           <select name="role" value={formData.role || ""} onChange={handleInputChange} required>
               <option value="">Chọn vai trò</option>
-              <option value="1">Khách hàng</option>
-              <option value="2">Quản trị</option>
-              <option value="3">Nhân viên</option>
+              <option value="customer">Khách hàng</option>
+              <option value="admin">Quản trị</option>
+              <option value="employee">Nhân viên</option>
             </select>
+            <label>Trạng thái</label>
+              <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
+              <option value="">Chọn trạng thái</option>
+              <option value="true" >Kích hoạt</option>
+              <option value="false">Khóa</option>
+          </select>
           </>
         );
       case "categories":
@@ -194,18 +200,32 @@ const GeneralModalForm = ({
             <input type="text" name="address" value={formData.address || ""} onChange={handleInputChange} placeholder="Địa chỉ" required />
             <label>Ghi chú</label>  
             <input type="text" name="note" value={formData.note || ""} onChange={handleInputChange} placeholder="Ghi chú"/>
+            <label>Ngày hợp tác</label>
+            <input type="date" name="date" value={formData.date || ""} onChange={handleInputChange} required/>
           </>
         );
       case "inventory":
         return (
           <>
-            <label>ID sản phẩm</label>  
-            <input type="number" name="productId" value={formData.productId || ""} onChange={handleInputChange} placeholder="ID sản phẩm" required />
-            <label>Số lượng</label>  
-            <input type="number" name="quantity" value={formData.quantity || ""} onChange={handleInputChange} placeholder="Số lượng" required />
-            <label>Date</label>  
-            <input type="date" name="lastUpdated" value={formData.lastUpdated || ""} onChange={handleInputChange} required />
+            {/* <input type="number" name="stt" value={formData.stt || ""} onChange={handleInputChange} placeholder="STT" required /> */}
+            <label>Tên sản phẩm</label>
+            <input type="text" name="productName" value={formData.productName || ""} onChange={handleInputChange} placeholder="Tên sản phẩm" required />
+            <label>Tồn đầu</label>
+            <input type="number" name="tonDau" value={formData.tonDau || ""} onChange={handleInputChange} placeholder="Tồn đầu" required />
+            <label>Số lượng mua vào</label>
+            <input type="number" name="soLuongMuaVao" value={formData.soLuongMuaVao || ""} onChange={handleInputChange} placeholder="Số lượng mua vào" required />
+             <label>Số lượng bán ra</label>
+            <input type="number" name="soLuongBanRa" value={formData.soLuongBanRa || ""} onChange={handleInputChange} placeholder="Số lượng bán ra" required />
+             <label>Tồn cuối</label>
+            <input type="number" name="tonCuoi" value={formData.tonCuoi || ""} onChange={handleInputChange} placeholder="Tồn cuối" required />
+            <label>Đơn vị tính</label>
+            <input type="text" name="donViTinh" value={formData.donViTinh || ""} onChange={handleInputChange} placeholder="Đơn vị tính" required />
+            <label>Ngày cập nhật</label>
+            <input type="datetime-local" name="lastUpdated" value={formData.lastUpdated || ""} onChange={handleInputChange} required/>
+            <label>Mức cảnh báo</label>
+            <input type="number" name="warning" value={formData.warning || ""} onChange={handleInputChange} placeholder="Mức cảnh báo" required />
           </>
+
         );
       case "reports":
         return (

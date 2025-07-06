@@ -252,7 +252,7 @@ const applyFilterAndSort = () => {
             ))}
           </tbody>
         </table>
-        <Pagination />
+        {/* <Pagination /> */}
       </div>
 
       <GeneralModalForm

@@ -247,6 +247,18 @@ export async function getChiTietDonHang(id) {
 /** Xuất chi tiết đơn hàng ra PDF */
 export async function inChiTietDonHang(id) {
   const res = await fetch(`${API_URL}/${id}/chitiet/pdf`);
-  if (!res.ok) throw new Error("Không thể tạo PDF");
-  return res.blob();
+
+  if (!res.ok) {
+    const errorText = await res.text(); // đọc nội dung trả về nếu lỗi
+    throw new Error(errorText || "Không thể tạo PDF");
+  }
+
+  const blob = await res.blob();
+
+  // Kiểm tra chắc chắn blob là file PDF
+  if (blob.type !== "application/pdf") {
+    throw new Error("Dữ liệu trả về không phải file PDF hợp lệ.");
+  }
+
+  return blob;
 }

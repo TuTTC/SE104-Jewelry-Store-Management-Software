@@ -10,7 +10,10 @@ const GeneralModalForm = ({
   showModal
 }) => {
   const [formData, setFormData] = useState({});
-
+  const [thoiGianLoai] = useState("ngay");
+  const [selectedDate] = useState("");
+  const [selectedMonth] = useState("");
+  const [selectedYear] = useState("");
   useEffect(() => {
 
     console.log("initialData:", initialData);
@@ -23,6 +26,7 @@ const GeneralModalForm = ({
     if (section === 'services') {
       data.name = initialData.TenDV || '';
       data.price = initialData.DonGia || '';
+      data.chiphirieng = initialData.ChiPhiRieng || '';
       data.description = initialData.MoTa || '';
       data.status = initialData.TrangThai ? 'true' : 'false';
     } else if (section === 'orders') {
@@ -36,10 +40,14 @@ const GeneralModalForm = ({
       data.paymentMethod = initialData.paymentMethod || '';
       data.deliveryAddress = initialData.deliveryAddress || '';
     } else if (section === 'reports') {
-      data.LoaiBaoCao = initialData.LoaiBaoCao || '';
-      data.TuNgay = initialData.TuNgay?.slice(0,10) || '';
-      data.DenNgay = initialData.DenNgay?.slice(0,10) || '';
-      data.MoTa = initialData.MoTa || '';
+      data.LoaiBaoCao     = initialData.LoaiBaoCao || '';
+      data.TuNgay         = initialData.TuNgay?.slice(0,10) || '';
+      data.DenNgay        = initialData.DenNgay?.slice(0,10) || '';
+      data.MoTa           = initialData.MoTa || '';
+      data.thoiGianLoai   = initialData.thoiGianLoai || '';
+      data.selectedDate   = initialData.selectedDate || '';
+      data.selectedMonth  = initialData.selectedMonth || '';
+      data.selectedYear   = initialData.selectedYear || '';
     }
     setFormData(data);
   }, [initialData, section, mode]);
@@ -48,19 +56,72 @@ const GeneralModalForm = ({
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    let parsedValue = value;
-    if (name === "status") {
-      parsedValue = value === "true"; // ép kiểu thành boolean
+    // Xử lý riêng cho section reports
+    if (section === "reports") {
+      if (name === "thoiGianLoai") {
+        setFormData((prev) => ({
+          ...prev,
+          thoiGianLoai: value,
+          TuNgay: "",
+          DenNgay: "",
+          selectedDate: "",
+          selectedMonth: "",
+          selectedYear: ""
+        }));
+        return;
+      }
+
+      if (name === "selectedDate") {
+        setFormData((prev) => ({
+          ...prev,
+          selectedDate: value,
+          TuNgay: value,
+          DenNgay: value
+        }));
+        return;
+      }
+
+      if (name === "selectedMonth") {
+        const [year, month] = value.split("-");
+        const lastDay = new Date(year, month, 0).getDate();
+        setFormData((prev) => ({
+          ...prev,
+          selectedMonth: value,
+          TuNgay: `${year}-${month}-01`,
+          DenNgay: `${year}-${month}-${String(lastDay).padStart(2, "0")}`
+        }));
+        return;
+      }
+
+      if (name === "selectedYear") {
+        setFormData((prev) => ({
+          ...prev,
+          selectedYear: value,
+          TuNgay: `${value}-01-01`,
+          DenNgay: `${value}-12-31`
+        }));
+        return;
+      }
     }
 
-    setFormData(prev => ({ ...prev, [name]: parsedValue }));
+    // Các field chung cho mọi section
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
     console.log("handleSubmit trong GeneralModalForm được gọi");
     if (onSubmit) {
-      onSubmit(formData); // Gọi về ServiceManager.jsx
+      onSubmit({
+      ...formData,
+      thoiGianLoai,
+      selectedDate,
+      selectedMonth,
+      selectedYear,
+    }); // Gọi về ServiceManager.jsx
     }
   };
   return (
@@ -110,9 +171,10 @@ const GeneralModalForm = ({
                 name="price"
                 value={formData.price || ""}
                 onChange={handleInputChange}
-                placeholder="Giá"
+                placeholder="Giá dịch vụ"
                 required
               />
+
               <input
                 type="text"
                 name="description"
@@ -178,42 +240,79 @@ const GeneralModalForm = ({
 
           {section === "reports" && (
             <>
+              {/* Report type */}
               <select
                 name="LoaiBaoCao"
                 value={formData.LoaiBaoCao || ""}
                 onChange={handleInputChange}
                 required
               >
-                <option value="" disabled>
-                  Chọn loại báo cáo
-                </option>
+                <option value="" disabled>Chọn loại báo cáo</option>
                 <option value="Doanh thu">Doanh thu</option>
-                <option value="Tồn kho">Tồn kho</option>
+                <option value="Lợi nhuận">Lợi nhuận</option>
               </select>
-              <input
-                type="date"
-                name="TuNgay"
-                value={formData.TuNgay || ""}
+
+              {/* Time period selector */}
+              <select
+                name="thoiGianLoai"
+                value={formData.thoiGianLoai || ""}
                 onChange={handleInputChange}
                 required
-              />
-              <input
-                type="date"
-                name="DenNgay"
-                value={formData.DenNgay || ""}
-                onChange={handleInputChange}
-                required
-              />
+              >
+                <option value="" disabled>Chọn thời gian</option>
+                <option value="ngay">Báo cáo ngày</option>
+                <option value="thang">Báo cáo tháng</option>
+                <option value="nam">Báo cáo năm</option>
+              </select>
+
+              {/* Ngày */}
+              {formData.thoiGianLoai === "ngay" && (
+                <input
+                  type="date"
+                  name="selectedDate"
+                  value={formData.selectedDate || ""}
+                  onChange={handleInputChange}
+                  required
+                />
+              )}
+
+              {/* Tháng */}
+              {formData.thoiGianLoai === "thang" && (
+                <input
+                  type="month"
+                  name="selectedMonth"
+                  value={formData.selectedMonth || ""}
+                  onChange={handleInputChange}
+                  required
+                />
+              )}
+
+              {/* Năm */}
+              {formData.thoiGianLoai === "nam" && (
+                <select
+                  name="selectedYear"
+                  value={formData.selectedYear || ""}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="" disabled>Chọn năm</option>
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return <option key={year} value={year}>{year}</option>;
+                  })}
+                </select>
+              )}
+
+              {/* Description */}
               <textarea
                 name="MoTa"
                 value={formData.MoTa || ""}
                 onChange={handleInputChange}
                 placeholder="Mô tả báo cáo"
-                rows={4}
+                rows={3}
               />
             </>
           )}
-
           <div className="modal-actions">
             <button type="submit" className="action-button">
               Lưu

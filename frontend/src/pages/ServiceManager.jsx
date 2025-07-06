@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Edit, Trash, Eye, Printer } from "lucide-react";
+import { Edit, Trash, Eye, Printer, Filter, ArrowUpDown } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm-2.jsx";
 import PhieuDichVuForm from "./PhieuDichVuForm";
 import {
@@ -9,6 +9,9 @@ import {
   xoaDichVu,
   traCuuDichVu
 } from "../services/dichvuApi";
+
+import { getPhieuDichVuList } from "../services/phieudichvuApi";
+
 import Pagination from '../components/Pagination';
 
 const mapTenDVHienThi = (ma) => {
@@ -23,57 +26,162 @@ const mapTenDVHienThi = (ma) => {
     ThuVang: "Thử vàng",
     SuaNuTrang: "Sửa nữ trang",
     ThayMoiNuTrang: "Thay mới nữ trang",
-    // thêm nếu còn các mã khác
   };
-  return mapping[ma] || ma;  // nếu không có thì trả lại chính mã
+  return mapping[ma] || ma;
 };
 
 function ServiceManager() {
   const [services, setServices] = useState([]);
+  const [phieuDichVuList, setPhieuDichVuList] = useState([]);
+  const [dataServices, setDataServices] = useState([]);
+  const [dataPhieuDichVu, setDataPhieuDichVu] = useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [showServiceStatusFilter, setShowServiceStatusFilter] = useState(false); // Filter for service status
+  const [selectedServiceStatus, setSelectedServiceStatus] = useState(""); // Selected service status
+  const [showPhieuStatusFilter, setShowPhieuStatusFilter] = useState(false); // Filter for phieu status
+  const [selectedPhieuStatus, setSelectedPhieuStatus] = useState(""); // Selected phieu status
   const [modalVisible, setModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState("add");
   const [selectedService, setSelectedService] = useState(null);
   const [selectedTab, setSelectedTab] = useState("list-dichvu");
-  const [phieuDichVuList, setPhieuDichVuList] = useState([]);
   const [modalPhieuVisible, setModalPhieuVisible] = useState(false);
   const [selectedPhieu, setSelectedPhieu] = useState(null);
   const [modePhieu, setModePhieu] = useState("add");
+  const [formData, setFormData] = useState({
+  name: "",
+  price: "",
+  description: "",
+  status: "", // Giá trị mặc định khi thêm mới
+});
 
   useEffect(() => {
     fetchDichVu();
     fetchPhieuDichVu();
   }, []);
 
-    const fetchDichVu = async () => {
+  useEffect(() => {
+    let filteredServices = services;
+    if (selectedServiceStatus) {
+      filteredServices = services.filter((s) => 
+        (s.TrangThai ? "Kích hoạt" : "Không hoạt động") === selectedServiceStatus
+      );
+    }
+    setDataServices(filteredServices);
+
+    let filteredPhieu = phieuDichVuList;
+    if (selectedPhieuStatus) {
+      filteredPhieu = phieuDichVuList.filter((p) => p.TrangThai === selectedPhieuStatus);
+    }
+    setDataPhieuDichVu(filteredPhieu);
+  }, [services, phieuDichVuList, selectedServiceStatus, selectedPhieuStatus]);
+
+  const fetchDichVu = async () => {
     const res = await danhSachDichVu();
     console.log("Dịch vụ nhận từ API:", res);
     if (res.status === "success") {
-        console.log("Dữ liệu hiển thị:", res.data);
-        console.log("Mẫu dữ liệu 1:", res.data[0]);
-        setServices(res.data);
+      console.log("Dữ liệu hiển thị:", res.data);
+      console.log("Mẫu dữ liệu 1:", res.data[0]);
+      setServices(res.data);
     } else {
-        alert("Lỗi khi lấy danh sách dịch vụ");
+      alert("Lỗi khi lấy danh sách dịch vụ");
     }
-    };
+  };
 
-    const fetchPhieuDichVu = async () => {
+  const fetchPhieuDichVu = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/phieudichvu");
-      const json = await res.json();
+      const json = await getPhieuDichVuList();
+      console.log("Dữ liệu phiếu:", json);
       if (json.status === "success") {
         setPhieuDichVuList(json.data);
       } else {
-        alert("Lỗi khi lấy danh sách phiếu dịch vụ");
+        alert("Lỗi khi lấy danh sách phiếu dịch vụ: " + (json.message || "Không rõ"));
       }
     } catch (err) {
       alert("Lỗi kết nối khi lấy phiếu dịch vụ: " + err.message);
     }
   };
-  const openModal = (mode, service = null) => {
-    setModalMode(mode);
-    setSelectedService(service);
-    setModalVisible(true);
+
+  const sortData = (key, isServiceTab = true) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+
+    const sortArray = (data) => {
+      return [...data].sort((a, b) => {
+        if (a[key] === null || a[key] === undefined) return 1;
+        if (b[key] === null || b[key] === undefined) return -1;
+        if (a[key] === null && b[key] === null) return 0;
+
+        if (key === "NgayLap") {
+          const dateA = new Date(a[key]).getTime();
+          const dateB = new Date(b[key]).getTime();
+          return direction === "asc" ? dateA - dateB : dateB - dateA;
+        } else if (typeof a[key] === "string") {
+          const valueA = a[key].toLowerCase();
+          const valueB = b[key].toLowerCase();
+          return direction === "asc" ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+        } else {
+          return direction === "asc" ? a[key] - b[key] : b[key] - a[key];
+        }
+      });
+    };
+
+    if (isServiceTab) {
+      setDataServices(sortArray(dataServices));
+    } else {
+      setDataPhieuDichVu(sortArray(dataPhieuDichVu));
+    }
   };
+
+  const handleServiceStatusFilterChange = (e) => {
+    const value = e.target.value;
+    setSelectedServiceStatus(value);
+    if (value === "") {
+      setDataServices(services);
+    } else {
+      const filteredData = services.filter((s) => 
+        (s.TrangThai ? "Kích hoạt" : "Không hoạt động") === value
+      );
+      setDataServices(filteredData);
+    }
+  };
+
+  const handlePhieuStatusFilterChange = (e) => {
+    const value = e.target.value;
+    setSelectedPhieuStatus(value);
+    if (value === "") {
+      setDataPhieuDichVu(phieuDichVuList);
+    } else {
+      const filteredData = phieuDichVuList.filter((p) => p.TrangThai === value);
+      setDataPhieuDichVu(filteredData);
+    }
+  };
+
+const openModal = (mode, service = null) => {
+  setModalMode(mode);
+  setSelectedService(service);
+
+  if (service) {
+    setFormData({
+      name: service.TenDV || "",
+      price: service.DonGia || "",
+      description: service.MoTa || "",
+      status: service.TrangThai === true ? "true" : "false",  // Ép về string
+    });
+  } else {
+    setFormData({
+      name: "",
+      price: "",
+      description: "",
+      status: "true",
+    });
+  }
+
+  setModalVisible(true);
+};
+
 
   const closeModal = () => {
     setModalVisible(false);
@@ -82,12 +190,14 @@ function ServiceManager() {
 
   const handleFormSubmit = async (data) => {
     console.log("Giá trị trạng thái:", data.status, typeof data.status);
+
     const payload = {
       TenDV: data.name,
       DonGia: parseFloat(data.price),
       MoTa: data.description,
-      TrangThai: data.status === true,
+      TrangThai: data.status === "true", // So sánh với string "true" mới đúng
     };
+
     if (modalMode === "add") {
       const res = await themDichVu(payload);
       if (res.status === "success") {
@@ -103,19 +213,38 @@ function ServiceManager() {
     }
   };
 
-  const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
+
+const handleFormSubmitPhieuDichVu = async ({ maKH, ghiChu, rows }) => {
   console.log("Lưu phiếu dịch vụ với:", { maKH, ghiChu, rows });
-  // TODO: Gọi API lưu vào backend tại đây
+
+  const chiTiet = rows.map(row => ({
+    MaDV: row.MaDV,
+    SoLuong: row.SoLuong || 1,
+    ChiPhiRieng: parseFloat(row.ChiPhiRieng || 0),  // ✅ bắt buộc cần
+    TienTraTruoc: parseFloat(row.TienTraTruoc || 0),
+    TinhTrang: row.TinhTrang || "Chưa giao",
+    NgayGiao: row.NgayGiao || null
+  }));
+
+  const payload = {
+    MaKH: maKH,
+    GhiChu: ghiChu || "",
+    ChiTiet: chiTiet
+  };
+
+  await handleLuuPhieuDichVu(payload);
 };
+
 
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc muốn xoá dịch vụ này?")) {
       const res = await xoaDichVu(id);
-      if (res.status === "success") fetchDichVu();
-      else alert("Lỗi xoá dịch vụ: " + res.message);
+      if (res.status === "success") {
+        fetchDichVu();
+      } else alert("Lỗi xoá dịch vụ: " + res.message);
     }
   };
-  
+
   const handleXoaPhieu = async (maPDV) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa phiếu dịch vụ này?")) {
       try {
@@ -125,6 +254,7 @@ function ServiceManager() {
         const json = await res.json();
         if (json.status === "success") {
           setPhieuDichVuList((prev) => prev.filter((p) => p.MaPDV !== maPDV));
+          setDataPhieuDichVu((prev) => prev.filter((p) => p.MaPDV !== maPDV));
         } else {
           alert("Lỗi xoá phiếu dịch vụ: " + json.message);
         }
@@ -141,214 +271,290 @@ function ServiceManager() {
   };
 
   const handleXemChiTiet = async (maPDV) => {
-  try {
-    const res = await fetch(`http://localhost:5000/api/phieudichvu/${maPDV}`);
-    const json = await res.json();
+    try {
+      const res = await fetch(`http://localhost:5000/api/phieudichvu/${maPDV}`);
+      const json = await res.json();
 
-    if (json.status === "success") {
-      setSelectedPhieu(json.data);
-      setModePhieu("view");
-      setModalPhieuVisible(true);
-    } else {
-      alert("Không tìm thấy chi tiết phiếu dịch vụ #" + maPDV);
+      if (json.status === "success") {
+        setSelectedPhieu(json.data);
+        setModePhieu("view");
+        setModalPhieuVisible(true);
+      } else {
+        alert("Không tìm thấy chi tiết phiếu dịch vụ #" + maPDV);
+      }
+    } catch (err) {
+      alert("Lỗi khi lấy chi tiết phiếu dịch vụ: " + err.message);
     }
-  } catch (err) {
-    alert("Lỗi khi lấy chi tiết phiếu dịch vụ: " + err.message);
-  }
   };
 
-  
+  const handleLuuPhieuDichVu = async (payload) => {
+    
+    try {
+      console.log("Payload gửi API:", payload);
+      const res = await fetch("http://localhost:5000/api/phieudichvu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-const handleLuuPhieuDichVu = async (payload) => {
-  try {
-    console.log("Payload gửi API:", payload);  // giữ log kiểm tra
-    const res = await fetch("http://localhost:5000/api/phieudichvu", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json();
-    if (json.status === "success") {
-      alert("Lưu phiếu thành công");
-      setModalPhieuVisible(false);
-      fetchPhieuDichVu();
-    } else {
-      alert("Lỗi khi lưu phiếu: " + json.message);
+      const json = await res.json();
+      if (json.status === "success") {
+        alert("Lưu phiếu thành công");
+        setModalPhieuVisible(false);
+        fetchPhieuDichVu();
+      } else {
+        alert("Lỗi khi lưu phiếu: " + json.message);
+      }
+    } catch (err) {
+      alert("Kết nối thất bại: " + err.message);
     }
-  } catch (err) {
-    alert("Kết nối thất bại: " + err.message);
-  }
-};
-
+  };
 
   const handleSearchService = async () => {
     const keyword = prompt("Nhập từ khóa để tra cứu dịch vụ:");
     if (keyword) {
-        const res = await traCuuDichVu(keyword);
-        if (res.status === "success") {
+      const res = await traCuuDichVu(keyword);
+      if (res.status === "success") {
         setServices(res.data);
-        } else {
+        setDataServices(res.data);
+      } else {
         alert("Không tìm thấy dịch vụ.");
-        }
+      }
     }
-    };
-    const handleReloadServices = async () => {
-        fetchDichVu(); // Hoặc gọi lại danhSachDichVu nếu muốn
-    };
-    const handlePrintServicePDF = async () => {
+  };
+
+  const handleReloadServices = async () => {
+    fetchDichVu();
+  };
+
+  const handlePrintServicePDF = async () => {
     try {
-        const res = await fetch("http://localhost:5000/api/dichvu/pdf", {
+      const res = await fetch("http://localhost:5000/api/dichvu/pdf", {
         method: "GET",
-        });
+      });
 
-        if (!res.ok) throw new Error("Lỗi khi lấy PDF");
+      if (!res.ok) throw new Error("Lỗi khi lấy PDF");
 
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        window.open(url); // hoặc dùng để tải về: window.location.href = url;
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url);
     } catch (err) {
-        alert("Lỗi khi in phiếu dịch vụ: " + err.message);
+      alert("Lỗi khi in phiếu dịch vụ: " + err.message);
     }
-    };
+  };
+  const handlePrintAllPDF = async () => {
+  try {
+    const res = await fetch("http://localhost:5000/api/phieudichvu/print-danhsach", {
+      method: "GET",
+    });
 
+    if (!res.ok) throw new Error("Không thể lấy PDF");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    window.open(url); // Mở tab mới xem trước
+  } catch (err) {
+    alert("Lỗi khi in danh sách: " + err.message);
+  }
+};
 
   const handleInChiTiet = (maPDV) => {
-  const printUrl = `http://localhost:5000/api/phieudichvu/${maPDV}/print`;
-  window.open(printUrl, "_blank");
+    const printUrl = `http://localhost:5000/api/phieudichvu/${maPDV}/print`;
+    window.open(printUrl, "_blank");
   };
+
   return (
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title"></h2>
-        <button onClick={() => openModal("add")} className="action-button">
-          Thêm dịch vụ
-        </button>
+        {selectedTab === "list-dichvu" && (
+            <button onClick={() => openModal("add")} className="action-button">
+              Thêm dịch vụ
+            </button>
+            
+          )}
+          {selectedTab === "list-phieudichvu" && (
+            
+              <div>
+                <button onClick={handleThemPhieuDichVu} className="action-button">
+                  Thêm phiếu dịch vụ
+                </button>
+                <button onClick={handlePrintAllPDF} className="action-button">
+                  Xuất danh sách phiếu dịch vụ
+                </button>
+                <button onClick={handleSearchService} className="action-button">
+                    Tra cứu phiếu dịch vụ
+                </button>
+              </div>
+            
+          )}
+
       </div>
 
-    <div className="tabs">
-      {[
-        { key: "list-dichvu", label: "Danh sách dịch vụ hiện có" },
-        { key: "list-phieudichvu", label: "Danh sách các phiếu dịch vụ" },
-      ].map((tab) => (
-        <button
-          key={tab.key}
-          className={selectedTab === tab.key ? "tab active" : "tab"}
-          onClick={() => setSelectedTab(tab.key)}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-    { selectedTab === "list-dichvu" && (
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tên</th>
-              <th>Giá dịch vụ</th>
-              <th>Giá thực tế</th>
-              <th>Mô tả</th>
-              <th>Trạng thái</th>
-              <th>Hành động</th>
-            </tr>   
-          </thead>
-          <tbody>
-            {services.length === 0 ? (
-              <tr><td colSpan={6}>Không có dịch vụ nào.</td></tr>
-            ) : (
-              services.map((s) => (
-                <tr key={s.MaDV}>
-                  <td>{s.MaDV}</td>
-                  <td>{mapTenDVHienThi(s.TenDV)}</td>
-                  <td>{Number(s.DonGia || 0).toLocaleString()}₫</td>
-                  {/* Hiển thị giá thực đã bao gồm phụ thu */}
-                  <td>{Number(s.DonGiaThuc ?? s.DonGia).toLocaleString()}₫</td>   
-                  <td>{s.MoTa}</td>
-                  <td>
-                    <span className={s.TrangThai ? "status-instock" : "status-inactive"}>
-                      {s.TrangThai ? "Kích hoạt" : "Không hoạt động"}
-                    </span>
-                  </td>
-                  <td>
-                    <button onClick={() => openModal("edit", s)} className="action-icon edit">
-                      <Edit className="icon" />
-                    </button>
-                    <button onClick={() => handleDelete(s.MaDV)} className="action-icon delete">
-                      <Trash className="icon" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        <div className="service-actions">
-        <button onClick={handleSearchService} className="action-button">
-            Tra cứu dịch vụ
-        </button>
-         <button onClick={handleReloadServices} className="action-button">
-            Reload danh sách
-        </button>
-        <button onClick={handlePrintServicePDF} className="action-button">
-            In phiếu dịch vụ
-        </button>
-        </div>
+      <div className="tabs">
+        {[
+          { key: "list-dichvu", label: "Danh sách dịch vụ hiện có" },
+          { key: "list-phieudichvu", label: "Danh sách các phiếu dịch vụ" },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            className={selectedTab === tab.key ? "tab active" : "tab"}
+            onClick={() => setSelectedTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
-    )}
-    {selectedTab === "list-phieudichvu" && (
-      <div>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Mã phiếu</th>
-              <th>Mã KH</th>
-              <th>Ngày lập</th>
-              <th>Tổng tiền</th>
-              <th>Trả trước</th>
-              <th>Ghi chú</th>
-              <th>Trạng thái</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {phieuDichVuList.length === 0 ? (
-              <tr><td colSpan="8">Không có phiếu dịch vụ nào.</td></tr>
-            ) : (
-              phieuDichVuList.map((p) => (
-                <tr key={p.MaPDV}>
-                  <td>{p.MaPDV}</td>
-                  <td>{p.MaKH}</td>
-                  <td>{p.NgayLap}</td>
-                  <td>{Number(p.TongTien).toLocaleString()}₫</td>
-                  <td>{Number(p.TraTruoc).toLocaleString()}₫</td>
-                  <td>{p.GhiChu}</td>
-                  <td>{p.TrangThai}</td>
-                  <td>
-                    <button onClick={() => handleXemChiTiet(p.MaPDV)} className="action-icon view">
-                      <Eye className="icon" />
-                    </button>
-                    <button onClick={() => handleXoaPhieu(p.MaPDV)} className="action-icon delete">
-                      <Trash className="icon" />
-                    </button>
-                    <button onClick={() => handleInChiTiet(p.MaPDV)} className="action-icon print">
-                      <Printer className="icon" />
-                     </button>
-                  </td>
-                </tr>
-              ))
+
+ {selectedTab === "list-dichvu" && (
+  
+  <div className="table-container">
+    
+    
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th onClick={() => sortData("MaDV")}>ID <ArrowUpDown className="sort-icon" /></th>
+          <th onClick={() => sortData("TenDV")}>Tên <ArrowUpDown className="sort-icon" /></th>
+          <th onClick={() => sortData("DonGia")}>Giá dịch vụ <ArrowUpDown className="sort-icon" /></th>
+          {/* Nếu không có DonGiaThuc thì xóa dòng này */}
+          {/* <th onClick={() => sortData("DonGiaThuc")}>Giá thực tế <ArrowUpDown className="sort-icon" /></th> */}
+          <th onClick={() => sortData("MoTa")}>Mô tả <ArrowUpDown className="sort-icon" /></th>
+          <th className="relative">
+            Trạng thái
+            <Filter className="sort-icon" onClick={() => setShowServiceStatusFilter(!showServiceStatusFilter)} style={{ cursor: "pointer" }} />
+            {showServiceStatusFilter && (
+              <div className="filter-popup">
+                <select value={selectedServiceStatus} onChange={handleServiceStatusFilterChange}>
+                  <option value="">Tất cả</option>
+                  <option value="true">Kích hoạt</option>
+                  <option value="false">Không hoạt động</option>
+                </select>
+              </div>
             )}
-          </tbody>
-        </table>
-        <div className="service-actions">
+          </th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {dataServices.length === 0 ? (
+          <tr><td colSpan={7}>Không có dịch vụ nào.</td></tr>
+        ) : (
+          dataServices
+            .filter(s => {
+              if (selectedServiceStatus === "") return true;
+              return String(s.TrangThai) === selectedServiceStatus;
+            })
+            .map((s) => (
+              <tr key={s.MaDV}>
+                <td>{s.MaDV}</td>
+                <td>{mapTenDVHienThi(s.TenDV)}</td>
+                <td>{Number(s.DonGia || 0).toLocaleString()}₫</td>
+                {/* Nếu muốn giữ DonGiaThuc tạm thời, có thể dùng lại DonGia */}
+                {/* <td>{Number(s.DonGiaThuc ?? s.DonGia).toLocaleString()}₫</td> */}
+                <td>{s.MoTa}</td>
+                <td>
+                  <span className={s.TrangThai ? "status-instock" : "status-inactive"}>
+                    {s.TrangThai ? "Kích hoạt" : "Không hoạt động"}
+                  </span>
+                </td>
+                <td>
+                  <button onClick={() => openModal("edit", s)} className="action-icon edit">
+                    <Edit className="icon" />
+                  </button>
+                  <button onClick={() => handleDelete(s.MaDV)} className="action-icon delete">
+                    <Trash className="icon" />
+                  </button>
+                </td>
+              </tr>
+            ))
+        )}
+      </tbody>
+    </table>
+    {/* <div className="service-actions">
+      <button onClick={handleSearchService} className="action-button">
+        Tra cứu dịch vụ
+      </button>
+      <button onClick={handleReloadServices} className="action-button">
+        Reload danh sách
+      </button>
+      <button onClick={handlePrintServicePDF} className="action-button">
+        In phiếu dịch vụ
+      </button>
+    </div> */}
+  </div>
+)}
+
+{selectedTab === "list-phieudichvu" && (
+  <div>
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th onClick={() => sortData("MaPDV", false)}>Mã phiếu <ArrowUpDown className="sort-icon" /></th>
+          <th onClick={() => sortData("HoTen", false)}>Khách hàng <ArrowUpDown className="sort-icon" /></th>
+          <th onClick={() => sortData("NgayLap", false)}>Ngày lập <ArrowUpDown className="sort-icon" /></th>
+          <th onClick={() => sortData("TongTien", false)}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
+          <th onClick={() => sortData("TraTruoc", false)}>Trả trước <ArrowUpDown className="sort-icon" /></th>
+          <th onClick={() => sortData("TienConLai", false)}>Còn lại <ArrowUpDown className="sort-icon" /></th>
+          <th className="relative">
+            Trạng thái
+            <Filter className="sort-icon" onClick={() => setShowPhieuStatusFilter(!showPhieuStatusFilter)} style={{ cursor: "pointer" }} />
+            {showPhieuStatusFilter && (
+              <div className="filter-popup">
+                <select value={selectedPhieuStatus} onChange={handlePhieuStatusFilterChange}>
+                  <option value="">Tất cả</option>
+                  {Array.from(new Set(phieuDichVuList.map(p => p.TrangThai))).map((status, index) => (
+                    <option key={index} value={status}>{status}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {dataPhieuDichVu.length === 0 ? (
+          <tr><td colSpan="8">Không có phiếu dịch vụ nào.</td></tr>
+        ) : (
+          dataPhieuDichVu.map((p) => (
+            <tr key={p.MaPDV}>
+              <td>{p.MaPDV}</td>
+              <td>{p.HoTen}</td>
+              <td>{p.NgayLap}</td>
+              <td>{Number(p.TongTien).toLocaleString()}₫</td>
+              <td>{Number(p.TraTruoc).toLocaleString()}₫</td>
+              <td>{Number(p.TienConLai).toLocaleString()}₫</td>
+              <td>{p.TrangThai}</td>
+              <td>
+
+                <button onClick={() => handleXemChiTiet(p.MaPDV)} className="action-icon edit">
+                  <Edit className="icon" />
+                </button>
+                <button onClick={() => handleXoaPhieu(p.MaPDV)} className="action-icon delete">
+                  <Trash className="icon" />
+                </button>
+                <button onClick={() => handleInChiTiet(p.MaPDV)} className="action-icon print">
+                  <Printer className="icon" />
+                </button>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+      {/* <div className="service-actions">
         <button onClick={handleThemPhieuDichVu} className="action-button">
           Thêm phiếu dịch vụ
-          </button>
-        </div>
-        <Pagination />
-      </div>
-    )}
+        </button>
+          <button onClick={handlePrintAllPDF} className="action-button">
+          Xuất danh sách phiếu dịch vụ
+        </button>
+      </div> */}
+    <Pagination />
+  </div>
+)}
+
 
       {modalVisible && (
         <GeneralModalForm

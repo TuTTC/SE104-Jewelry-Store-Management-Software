@@ -24,10 +24,12 @@ const handleResponse = async (res) => {
   }
 
   if (!res.ok) {
-    const error = new Error(data.error || "Có lỗi xảy ra");
-    error.status = res.status;
-    throw error;
+      const error = new Error(data.message || "Có lỗi xảy ra");
+      error.status = res.status;
+      throw error;
   }
+
+
 
   return data;
 };

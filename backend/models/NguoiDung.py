@@ -28,7 +28,7 @@
 #         assert '@' in email, "Email không hợp lệ"
 #         return email
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, func, Boolean
 from sqlalchemy.orm import relationship, validates
 from database import db
 from models.Relationships import user_permissions
@@ -47,7 +47,8 @@ class NGUOIDUNG(db.Model):
     HoTen = Column(String(100), nullable=False)
     SoDienThoai = Column(String(15), nullable=False)
     DiaChi = Column(Text)
-    
+    TrangThai = Column(Boolean, default=True)
+
     # Quan hệ với vai trò
     vaitro = relationship("VAITRO", backref="nguoidungs")
 

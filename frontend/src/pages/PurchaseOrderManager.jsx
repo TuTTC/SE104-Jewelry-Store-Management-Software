@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { ArrowUpDown, Download, Search, Filter, Edit, Trash, Plus  } from "lucide-react";
+import { ArrowUpDown, Download, Search, Filter, Edit, Trash, Plus } from "lucide-react";
 import { LuEye, LuPrinter } from "react-icons/lu";
 import { FiEye } from "react-icons/fi";
-import GeneralModalForm from "../components/GeneralModalForm"; // Điều chỉnh path nếu cần
+import GeneralModalForm from "../components/GeneralModalForm";
 import * as orderApi from "../services/purchaseOrderApi";
 import SearchModal from '../components/SearchModal';
 import FilterModal from '../components/FilterModal';
 import PurchaseOrderForm from "forms/AddPurchaseOrderForm";
 import Pagination from '../components/Pagination';
+
 function PurchaseOrderManager() {
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalMode, setModalMode] = useState("add"); // "add" | "edit"
+  const [modalMode, setModalMode] = useState("add");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [error, setError] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -22,12 +23,13 @@ function PurchaseOrderManager() {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [showStatusFilter, setShowStatusFilter] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [selectedStatus, setSelectedStatus] = useState("");
-
   const [formData, setFormData] = useState({
     code: "",
     supplier: "",
-    user:"",
+    user: "",
     date: "",
     total: "",
     status: "",
@@ -41,50 +43,76 @@ function PurchaseOrderManager() {
   const openFilterModal = () => setShowFilterModal(true);
   const closeSearchModal = () => setShowSearchModal(false);
   const closeFilterModal = () => setShowFilterModal(false);
-  // Fetch danh sách phiếu nhập từ backend
+
   useEffect(() => {
     fetchPurchaseOrders();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1); // Đặt lại trang khi bộ lọc thay đổi
+  }, [selectedDate, selectedStatus]);
+
   const fetchPurchaseOrders = async () => {
     try {
       const res = await orderApi.getAllOrders();
-     
       if (res.status === "success") {
-         console.log(res.data)
-        setPurchaseOrders(res.data);
+        console.log(res.data);
+        setPurchaseOrders(Array.isArray(res.data) ? res.data : []);
       } else {
         alert("Lỗi khi tải dữ liệu!");
+        setPurchaseOrders([]);
       }
     } catch (error) {
       if (error.status === 403) {
-          alert("Bạn không có quyền xem!");
+        alert("Bạn không có quyền xem!");
       } else if (error.status === 401) {
-          alert("Vui lòng đăng nhập!");
+        alert("Vui lòng đăng nhập!");
       } else {
-          console.error("Lỗi khi lấy dữ liệu:", error);
-          console.error("Error:", error);
-          alert(error.message);
+        console.error("Lỗi khi lấy dữ liệu:", error);
+        console.error("Error:", error);
+        alert(error.message);
+        setPurchaseOrders([]);
       }
       
     }
   };
+
   const handleEdit = async (maPN) => {
-  try {
-    const res = await orderApi.getOrderById(maPN);
-    if (res.status === "success") {
-      openModal("edit", res.data);
-    } else {
-      alert("Lấy chi tiết phiếu nhập thất bại!");
+    try {
+      const res = await orderApi.getOrderById(maPN);
+      if (res.status === "success") {
+        openModal("edit", res.data);
+      } else {
+        alert("Lấy chi tiết phiếu nhập thất bại!");
+      }
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết phiếu nhập:", err);
+      alert(err.message);
     }
-  } catch (err) {
-    console.error("Lỗi khi lấy chi tiết phiếu nhập:", err);
-    alert(err.message);
-  }
-};
+  };
 
+  // Logic phân trang
+  const filteredData = (purchaseOrders || []).filter((po) => {
+    const matchDate = selectedDate ? po.NgayNhap === selectedDate : true;
+    const matchStatus = selectedStatus ? po.TrangThai === selectedStatus : true;
+    return matchDate && matchStatus;
+  });
 
-  // Xử lý mở modal
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
+
+  // Đảm bảo currentPage không vượt quá totalPages
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    } else if (totalPages === 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  // Các hàm bị thiếu để khắc phục lỗi ESLint
   function openModal(mode, order = null) {
     console.log("Mở modal:", mode, order);
 
@@ -142,55 +170,51 @@ function PurchaseOrderManager() {
     }));
   }
 
-    const handleSearchInputChange = (e) => {
+  function handleSearchInputChange(e) {
     const { name, value } = e.target;
     setSearchFormData({ ...searchFormData, [name]: value });
-  };
+  }
 
-  const handleFilterInputChange = (e) => {
+  function handleFilterInputChange(e) {
     const { name, value } = e.target;
     setFilterFormData({ ...filterFormData, [name]: value });
-  };
-
-const sortData = (key) => {
-  let direction = 'asc';
-  if (sortConfig.key === key && sortConfig.direction === 'asc') {
-    direction = 'desc';
   }
-  setSortConfig({ key, direction });
 
-  const sortedData = [...purchaseOrders].sort((a, b) => {
-    let valA = a[key];
-    let valB = b[key];
-
-    // So sánh số
-    if (typeof valA === 'number' && typeof valB === 'number') {
-      return direction === 'asc' ? valA - valB : valB - valA;
+  const sortData = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
     }
+    setSortConfig({ key, direction });
 
-    // So sánh ngày
-    if (key === 'NgayNhap' && valA && valB) {
-      const dateA = new Date(valA);
-      const dateB = new Date(valB);
-      return direction === 'asc' ? dateA - dateB : dateB - dateA;
-    }
+    const sortedData = [...(purchaseOrders || [])].sort((a, b) => {
+      let valA = a[key];
+      let valB = b[key];
 
-    // So sánh chuỗi (coi null/undefined là rỗng)
-    valA = valA ? valA.toString().toLowerCase() : '';
-    valB = valB ? valB.toString().toLowerCase() : '';
-    
-    if (valA < valB) return direction === 'asc' ? -1 : 1;
-    if (valA > valB) return direction === 'asc' ? 1 : -1;
-    return 0;
-  });
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return direction === 'asc' ? valA - valB : valB - valA;
+      }
 
-  setPurchaseOrders(sortedData);
-};
+      if (key === 'NgayNhap' && valA && valB) {
+        const dateA = new Date(valA);
+        const dateB = new Date(valB);
+        return direction === 'asc' ? dateA - dateB : dateB - dateA;
+      }
 
+      valA = valA ? valA.toString().toLowerCase() : '';
+      valB = valB ? valB.toString().toLowerCase() : '';
+      
+      if (valA < valB) return direction === 'asc' ? -1 : 1;
+      if (valA > valB) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    setPurchaseOrders(sortedData);
+  };
 
   const exportToCSV = () => {
     const headers = ['Mã Phiếu Nhập,Mã NCC,Người lập,Ngày nhập,Tổng tiền,Trạng thái'];
-    const rows = purchaseOrders.map(item => [
+    const rows = (purchaseOrders || []).map(item => [
       item.MaPN,
       item.TenNCC || item.MaNCC,
       item.UserID,
@@ -213,19 +237,18 @@ const sortData = (key) => {
   // Submit form
   async function handleSubmit(e) {
     e.preventDefault();
-
     try {
       const data = {
-          MaNCC: formData.supplier,
-          UserID: formData.user,
-          NgayNhap: formData.date,
-          TrangThai: formData.status,
-          ChiTiet: formData.ChiTiet.map(item => ({
-            MaSP: item.MaSP,
-            SoLuong: parseInt(item.SoLuong, 10),
-            DonGiaNhap: parseFloat(item.DonGiaNhap)
-          }))
-        };
+        MaNCC: formData.supplier,
+        UserID: formData.user,
+        NgayNhap: formData.date,
+        TrangThai: formData.status,
+        ChiTiet: formData.ChiTiet.map(item => ({
+          MaSP: item.MaSP,
+          SoLuong: parseInt(item.SoLuong, 10),
+          DonGiaNhap: parseFloat(item.DonGiaNhap)
+        }))
+      };
 
       if (modalMode === "add") {
         const res = await orderApi.addOrder(data);
@@ -238,7 +261,7 @@ const sortData = (key) => {
       } else if (modalMode === "edit") {
         const res = await orderApi.updateOrder(formData.code, data);
         if (res.status === "success") {
-          alert("Cập nhật phiếu nhập thành công!"); 
+          alert("Cập nhật phiếu nhập thành công!");
           handleSuccess();
         } else {
           alert("Cập nhật thất bại: " + res.message);
@@ -273,39 +296,23 @@ const sortData = (key) => {
   function exportPDF(maPN) {
     orderApi.exportOrderPDF(maPN);
   }
-  const handleSearchSubmit = () => {
-    // Placeholder cho API call
+
+  function handleSearchSubmit() {
     closeSearchModal();
-  };
+  }
 
-  const handleFilterSubmit = () => {
-    // Placeholder cho API call
+  function handleFilterSubmit() {
     closeFilterModal();
-  };
-
-  // const getSupplierName = (supplierId) => {
-  //   const supplier = initialSuppliers.find(s => s.id === supplierId);
-  //   return supplier ? supplier.name : 'Không xác định';
-  // };
-  const filteredPurchaseOrders = purchaseOrders.filter(po => {
-  const matchDate = selectedDate ? po.NgayNhap === selectedDate : true;
-  const matchStatus = selectedStatus ? po.TrangThai === selectedStatus : true;
-  return matchDate && matchStatus;
-  });
+  }
 
   return (
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title"></h2>
-        {/* <button onClick={() => openModal("add")} className="action-button">
-          <Plus className="icon" /> Thêm phiếu nhập
-        </button> */}
-        {/* <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
-        <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button> */}
-    <div className="action-buttons">
-      <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
-      <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
-    </div>
+        <div className="action-buttons">
+          <button onClick={() => openModal('add')} className="action-button">Thêm phiếu nhập</button>
+          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
+        </div>
       </div>
 
       <div className="table-container">
@@ -322,22 +329,22 @@ const sortData = (key) => {
                   <div className="filter-popup">
                     <select value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
                       <option value="">Tất cả</option>
-                      {Array.from(new Set(purchaseOrders.map(p => p.NgayNhap))).map((date, index) => (
+                      {Array.from(new Set((purchaseOrders || []).map(p => p.NgayNhap))).map((date, index) => (
                         <option key={index} value={date}>{date}</option>
                       ))}
                     </select>
                   </div>
                 )}
               </th>
-             <th onClick={() => sortData('TongTien')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData('TongTien')}>Tổng tiền <ArrowUpDown className="sort-icon" /></th>
               <th className="relative">
-                Trạng thái 
+                Trạng thái
                 <Filter className="sort-icon" onClick={() => setShowStatusFilter(!showStatusFilter)} style={{ cursor: "pointer" }} />
                 {showStatusFilter && (
                   <div className="filter-popup">
                     <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
                       <option value="">Tất cả</option>
-                      {Array.from(new Set(purchaseOrders.map(p => p.TrangThai))).map((status, index) => (
+                      {Array.from(new Set((purchaseOrders || []).map(p => p.TrangThai))).map((status, index) => (
                         <option key={index} value={status}>{status}</option>
                       ))}
                     </select>
@@ -348,31 +355,40 @@ const sortData = (key) => {
             </tr>
           </thead>
           <tbody>
-            {purchaseOrders.map((po) => (
-              <tr key={po.MaPN}>
-                <td>{po.MaPN}</td>
-                <td>{po.TenNCC || po.MaNCC}</td>
-                <td>{po.TenNguoiNhap}</td>
-                <td>{po.NgayNhap}</td>
-                <td>{formatCurrency(po.TongTien)}</td>
-                <td>{po.TrangThai}</td>
-                <td>
-                  <button onClick={() => handleEdit(po.MaPN)} className="action-icon edit">
-                    <Edit className="icon" />
-                  </button>
-                  <button onClick={() => handleDelete(po.MaPN)} className="action-icon delete">
-                    <Trash className="icon" />
-                  </button>
-                  <button onClick={() => exportPDF(po.MaPN)} className="action-icon export">
-                    <LuPrinter className="icon"/>
-                  </button>
-                  
-                </td>
+            {(!currentItems || currentItems.length === 0) ? (
+              <tr>
+                <td colSpan="7">Không có phiếu nhập để hiển thị.</td>
               </tr>
-            ))}
+            ) : (
+              currentItems.map((po) => (
+                <tr key={po.MaPN}>
+                  <td>{po.MaPN}</td>
+                  <td>{po.TenNCC || po.MaNCC}</td>
+                  <td>{po.TenNguoiNhap}</td>
+                  <td>{po.NgayNhap}</td>
+                  <td>{formatCurrency(po.TongTien)}</td>
+                  <td>{po.TrangThai}</td>
+                  <td>
+                    <button onClick={() => handleEdit(po.MaPN)} className="action-icon edit">
+                      <Edit className="icon" />
+                    </button>
+                    <button onClick={() => handleDelete(po.MaPN)} className="action-icon delete">
+                      <Trash className="icon" />
+                    </button>
+                    <button onClick={() => exportPDF(po.MaPN)} className="action-icon export">
+                      <LuPrinter className="icon" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-        <Pagination />
+        <Pagination
+          totalPages={totalPages}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+        />
       </div>
 
       {/* {modalVisible && (
