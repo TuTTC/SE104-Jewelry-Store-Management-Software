@@ -57,7 +57,7 @@ const RegisterForm = ({ formData, onChange, onSubmit, onSwitch, error, onGoogleL
         required
       >
         <option value="customer">Khách hàng</option>
-        <option value="admin">Admin</option>
+        {/* <option value="admin">Admin</option> */}
         <option value="employee">Nhân viên</option>
       </select>
     </div>
