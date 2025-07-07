@@ -2,9 +2,10 @@ from flask import Blueprint, request, jsonify, send_file
 from datetime import datetime
 from models.BaoCao import BAOCAO
 from models.DonHang import DONHANG
-from models.KhachHang import KHACHHANG
 from models.NguoiDung import NGUOIDUNG 
 from models.NhaCungCap import NHACUNGCAP
+from models.PhieuDichVu import PHIEUDICHVU
+from models.ChiTietPhieuDichVu import CHITIETPHIEUDICHVU
 from models.PhieuNhap import PHIEUNHAP
 from models.ChiTietPhieuNhap import CHITIETPHIEUNHAP
 from database import db
@@ -18,6 +19,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from calendar import monthrange
 import os
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity, jwt_required
 FONT_PATH = os.path.join(os.path.dirname(__file__), "..", "fonts", "times.ttf")
 
 pdfmetrics.registerFont(TTFont("TimesVN", FONT_PATH)) 
@@ -84,6 +87,8 @@ def tao_bao_cao():
 
 # Cập nhật báo cáo
 @baocao_bp.route('/baocao/<int:id>', methods=['PUT'])
+@jwt_required()
+@permission_required("reports:edit")
 def update_baocao(id):
     try:
         data = request.get_json()
@@ -109,6 +114,8 @@ def update_baocao(id):
 
 # Xóa báo cáo
 @baocao_bp.route('/baocao/<int:id>', methods=['DELETE'])
+@jwt_required()
+@permission_required("reports:delete")
 def delete_baocao(id):
     bc = BAOCAO.query.get_or_404(id)
     db.session.delete(bc)
@@ -117,6 +124,8 @@ def delete_baocao(id):
 
 # Lấy danh sách tất cả báo cáo
 @baocao_bp.route('/baocao', methods=['GET'])
+@jwt_required()
+@permission_required("reports:view")
 def list_baocao():
     reports = BAOCAO.query.order_by(BAOCAO.TuNgay.desc()).all()
     result = []
@@ -124,15 +133,28 @@ def list_baocao():
     for r in reports:
         du_lieu = {}
 
-        # Tổng doanh thu từ đơn hàng
-        total_doanh_thu = db.session.query(
+        # Tổng doanh thu từ đơn hàng (chỉ lấy đơn đã hoàn thành)
+        tong_don_hang = db.session.query(
             func.coalesce(func.sum(DONHANG.TongTien), 0)
         ).filter(
             DONHANG.NgayDat >= r.TuNgay,
-            DONHANG.NgayDat <= r.DenNgay
+            DONHANG.NgayDat <= r.DenNgay,
+            DONHANG.TrangThai == "Completed"
         ).scalar() or 0
 
-        # Tổng tiền nhập từ phiếu nhập
+        # Tổng doanh thu từ dịch vụ đã giao
+        tong_dich_vu = db.session.query(
+            func.coalesce(func.sum(CHITIETPHIEUDICHVU.ThanhTien), 0)
+        ).join(PHIEUDICHVU).filter(
+            PHIEUDICHVU.NgayLap >= r.TuNgay,
+            PHIEUDICHVU.NgayLap <= r.DenNgay,
+            CHITIETPHIEUDICHVU.TinhTrang == "Đã giao"
+        ).scalar() or 0
+
+        # Tổng doanh thu = đơn hàng + dịch vụ
+        total_doanh_thu = tong_don_hang + tong_dich_vu
+
+        # Tổng tiền nhập từ phiếu nhập (chi phí đầu vào)
         tong_tien_nhap = db.session.query(
             func.coalesce(
                 func.sum(CHITIETPHIEUNHAP.SoLuong * CHITIETPHIEUNHAP.DonGiaNhap), 0
@@ -142,8 +164,10 @@ def list_baocao():
             PHIEUNHAP.NgayNhap <= r.DenNgay
         ).scalar() or 0
 
-        loi_nhuan = total_doanh_thu - tong_tien_nhap
+        # Lợi nhuận = doanh thu - chi phí nhập hàng
+        loi_nhuan = tong_don_hang - tong_tien_nhap
 
+        # Tùy loại báo cáo mà gán dữ liệu
         if r.LoaiBaoCao == "Doanh thu":
             du_lieu = {
                 "DoanhThu": total_doanh_thu
@@ -170,6 +194,8 @@ def list_baocao():
 
 # Báo cáo tồn kho
 @baocao_bp.route('/baocao/tonkho', methods=['GET'])
+@jwt_required()
+@permission_required("reports:add")
 def baocao_ton_kho():
     reports = BAOCAO.query.filter(BAOCAO.LoaiBaoCao == 'Tồn kho').all()
     data = [r.to_dict() for r in reports]
@@ -177,6 +203,8 @@ def baocao_ton_kho():
 
 # Xem/print báo cáo ra PDF
 @baocao_bp.route("/baocao/<int:id>/print", methods=["GET"])
+@jwt_required()
+@permission_required("reports:view")
 def print_bao_cao(id):
     bc = BAOCAO.query.get_or_404(id)
     tu_ngay = bc.TuNgay
@@ -189,10 +217,10 @@ def print_bao_cao(id):
     styles.add(ParagraphStyle(name='TitleTimes', fontName='TimesVN', fontSize=16, alignment=1))
     elements = []
 
-    # Tiêu đề
+    # ===== TIÊU ĐỀ =====
     elements.append(Paragraph(f"BÁO CÁO {bc.LoaiBaoCao.upper()}", styles['TitleTimes']))
 
-    # Thời gian
+    # ===== THỜI GIAN =====
     if tu_ngay.day == 1 and den_ngay.day == monthrange(den_ngay.year, den_ngay.month)[1] and tu_ngay.month == den_ngay.month:
         elements.append(Paragraph(f"Tháng: {tu_ngay.month}/{tu_ngay.year}", styles['NormalTimes']))
     elif tu_ngay.month == 1 and den_ngay.month == 12 and tu_ngay.day == 1 and den_ngay.day == 31:
@@ -205,20 +233,33 @@ def print_bao_cao(id):
 
     elements.append(Spacer(1, 12))
 
-    # === DOANH THU ===
+    # === BÁO CÁO DOANH THU ===
     if bc.LoaiBaoCao == "Doanh thu":
-        orders = db.session.query(DONHANG.MaDH, DONHANG.NgayDat, KHACHHANG.HoTen, DONHANG.TongTien) \
-            .join(NGUOIDUNG, DONHANG.UserID == NGUOIDUNG.UserID) \
-            .filter(DONHANG.NgayDat >= tu_ngay, DONHANG.NgayDat <= den_ngay) \
-            .order_by(DONHANG.NgayDat).all()
+        # Chỉ lấy đơn hoàn thành để tính doanh thu
+        orders = db.session.query(
+            DONHANG.MaDH, DONHANG.NgayDat, NGUOIDUNG.HoTen, DONHANG.TongTien
+        ).join(NGUOIDUNG, DONHANG.UserID == NGUOIDUNG.UserID) \
+         .filter(
+            DONHANG.NgayDat >= tu_ngay,
+            DONHANG.NgayDat <= den_ngay,
+            DONHANG.TrangThai == "Completed"
+        ).order_by(DONHANG.NgayDat).all()
 
-        total = sum(o.TongTien for o in orders)
+        # Tránh lặp MaDH nếu có lỗi dữ liệu
+        seen_madh = set()
+        data = [[Paragraph(cell, styles["NormalTimes"]) for cell in ["STT", "Mã đơn hàng", "Ngày đặt", "Khách hàng", "Tổng tiền", "Đơn vị tính"]]]
+        total = 0
+        stt = 1
 
-        headers = ["ST", "Mã đơn hàng", "Ngày đặt", "Khách hàng", "Tổng tiền", "Đơn vị tính"]
-        data = [[Paragraph(cell, styles["NormalTimes"]) for cell in headers]]
-        for idx, o in enumerate(orders, start=1):
+        for o in orders:
+            if o.MaDH in seen_madh:
+                continue  # bỏ trùng
+            seen_madh.add(o.MaDH)
+
+            total += o.TongTien
+
             row = [
-                Paragraph(str(idx), styles["NormalTimes"]),
+                Paragraph(str(stt), styles["NormalTimes"]),
                 Paragraph(str(o.MaDH), styles["NormalTimes"]),
                 Paragraph(o.NgayDat.strftime("%d/%m/%Y"), styles["NormalTimes"]),
                 Paragraph(o.HoTen, styles["NormalTimes"]),
@@ -226,7 +267,7 @@ def print_bao_cao(id):
                 Paragraph("VNĐ", styles["NormalTimes"])
             ]
             data.append(row)
-
+            stt += 1
 
         table = Table(data, colWidths=[30, 80, 80, 150, 80, 50])
         table.setStyle(TableStyle([
@@ -239,13 +280,12 @@ def print_bao_cao(id):
 
         elements.append(table)
         elements.append(Spacer(1, 12))
-        elements.append((
+        elements.append(
             Paragraph(f"<b>Tổng doanh thu: {total:,.0f} VNĐ</b>", styles["NormalTimes"])
-        ))
-
+        )
     # === LỢI NHUẬN ===
     elif bc.LoaiBaoCao == "Lợi nhuận":
-        # Lấy các phiếu nhập trong khoảng thời gian
+        # Lọc phiếu nhập trong khoảng thời gian
         phieu_nhaps = db.session.query(
             PHIEUNHAP.MaPN,
             PHIEUNHAP.NgayNhap,
@@ -253,23 +293,29 @@ def print_bao_cao(id):
             NHACUNGCAP.TenNCC,
             func.sum(CHITIETPHIEUNHAP.SoLuong * CHITIETPHIEUNHAP.DonGiaNhap).label("TongTienNhap")
         ).join(NHACUNGCAP, PHIEUNHAP.MaNCC == NHACUNGCAP.MaNCC) \
-         .join(CHITIETPHIEUNHAP, PHIEUNHAP.MaPN == CHITIETPHIEUNHAP.MaPN) \
-         .join(NGUOIDUNG, PHIEUNHAP.UserID == NGUOIDUNG.UserID) \
-         .filter(PHIEUNHAP.NgayNhap >= tu_ngay, PHIEUNHAP.NgayNhap <= den_ngay) \
-         .group_by(PHIEUNHAP.MaPN, PHIEUNHAP.NgayNhap, NGUOIDUNG.HoTen, NHACUNGCAP.TenNCC) \
-         .order_by(PHIEUNHAP.NgayNhap).all()
+        .join(CHITIETPHIEUNHAP, PHIEUNHAP.MaPN == CHITIETPHIEUNHAP.MaPN) \
+        .join(NGUOIDUNG, PHIEUNHAP.UserID == NGUOIDUNG.UserID) \
+        .filter(PHIEUNHAP.NgayNhap >= tu_ngay, PHIEUNHAP.NgayNhap <= den_ngay) \
+        .group_by(PHIEUNHAP.MaPN, PHIEUNHAP.NgayNhap, NGUOIDUNG.HoTen, NHACUNGCAP.TenNCC) \
+        .order_by(PHIEUNHAP.NgayNhap).all()
 
-        # Tổng doanh thu
+        # Tổng doanh thu từ các đơn hàng đã hoàn thành
         total_doanh_thu = db.session.query(
             func.coalesce(func.sum(DONHANG.TongTien), 0)
-        ).filter(DONHANG.NgayDat >= tu_ngay, DONHANG.NgayDat <= den_ngay).scalar() or 0
+        ).filter(
+            DONHANG.NgayDat >= tu_ngay,
+            DONHANG.NgayDat <= den_ngay,
+            DONHANG.TrangThai == "Completed"
+        ).scalar() or 0
 
-        # Tổng tiền nhập & lợi nhuận
+        # Tính tổng tiền nhập
         tong_tien_nhap = sum(p.TongTienNhap for p in phieu_nhaps)
+
+        # Lợi nhuận
         loi_nhuan = total_doanh_thu - tong_tien_nhap
 
-        # === Tạo bảng dữ liệu ===
-        headers = ["ST", "Tên nhà cung cấp", "Ngày nhập", "Người lập", "Tổng tiền nhập", "Đơn vị tính"]
+        # === Xuất bảng ===
+        headers = ["STT", "Tên nhà cung cấp", "Ngày nhập", "Người lập", "Tổng tiền nhập", "Đơn vị tính"]
         data = [[Paragraph(h, styles["NormalTimes"]) for h in headers]]
 
         for idx, p in enumerate(phieu_nhaps, start=1):
@@ -282,7 +328,7 @@ def print_bao_cao(id):
                 Paragraph("VNĐ", styles["NormalTimes"]),
             ])
 
-        table = Table(data, colWidths=[30, 120, 80, 80, 100, 50])
+        table = Table(data, colWidths=[30, 120, 80, 100, 100, 50])
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
@@ -294,8 +340,7 @@ def print_bao_cao(id):
         elements.append(table)
         elements.append(Spacer(1, 12))
         elements.append(Paragraph(
-            f"<b>Tổng lợi nhuận:</b> {loi_nhuan:,.0f} VNĐ",
-            styles["NormalTimes"]
+            f"<b>Tổng lợi nhuận: {loi_nhuan:,.0f} VNĐ</b>", styles["NormalTimes"]
         ))
     else:
         elements.append(Paragraph("Loại báo cáo không được hỗ trợ để in.", styles['NormalTimes']))

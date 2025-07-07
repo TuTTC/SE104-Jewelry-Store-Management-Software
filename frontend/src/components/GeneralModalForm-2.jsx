@@ -56,6 +56,12 @@ const GeneralModalForm = ({
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
+    
+    if (name === "status") {
+      let parsedValue = value;
+      parsedValue = value === "true";  // chuyển "true"/"false" string → boolean
+    }
+
     // Xử lý riêng cho section reports
     if (section === "reports") {
       if (name === "thoiGianLoai") {
@@ -183,12 +189,12 @@ const GeneralModalForm = ({
               />
               <select
                 name="status"
-                value={formData.status === true ? "true" : "false"}
+                value={formData.status || "true"}
                 onChange={handleInputChange}
                 required
               >
-                <option value="true">Kích hoạt</option>
-                <option value="false">Không hoạt động</option>
+              <option value={true}>Kích hoạt</option>
+              <option value={false}>Không hoạt động</option>
               </select>
 
             </>

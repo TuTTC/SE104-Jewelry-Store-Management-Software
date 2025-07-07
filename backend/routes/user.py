@@ -123,14 +123,31 @@ def get_user_details(user_id):
 def update_user_by_id(user_id):
     user = NGUOIDUNG.query.get_or_404(user_id)
     data = request.get_json()
+
     if 'TenDangNhap' in data:
         user.TenDangNhap = data['TenDangNhap']
     if 'Email' in data:
         user.Email = data['Email']
-    if 'MatKhau' in data:
+    if 'MatKhau' in data and data['MatKhau']:
         user.MatKhau = generate_password_hash(data['MatKhau'])
+    if 'HoTen' in data:
+        user.HoTen = data['HoTen']
+    if 'DiaChi' in data:
+        user.DiaChi = data['DiaChi']
+    if 'SoDienThoai' in data:
+        user.SoDienThoai = data['SoDienThoai']
+    if 'TrangThai' in data:
+        if isinstance(data['TrangThai'], bool):
+            user.TrangThai = data['TrangThai']
+        elif str(data['TrangThai']).lower() == "true":
+            user.TrangThai = True
+        else:
+            user.TrangThai = False
+
+
     db.session.commit()
     return jsonify({'message': 'Cập nhật tài khoản thành công'}), 200
+
 
 
 # 6. Xóa tài khoản

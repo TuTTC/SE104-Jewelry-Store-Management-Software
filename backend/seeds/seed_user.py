@@ -80,7 +80,7 @@ def seed_them_khach_hang(so_luong=30):
         khachhang_role = VAITRO.query.filter_by(TenVaiTro="Khách hàng").first()
 
         if not khachhang_role:
-            print("❌ Chưa có vai trò Khách hàng, hãy seed VAITRO trước.")
+            print("Chưa có vai trò Khách hàng, hãy seed VAITRO trước.")
             return
 
         ho_list = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Đặng", "Bùi", "Đỗ"]
@@ -116,8 +116,8 @@ def seed_them_khach_hang(so_luong=30):
                 db.session.add(user)
 
         db.session.commit()
-        print(f"✅ Đã seed thêm {so_luong} khách hàng thành công!")
+        print(f"Đã seed thêm {so_luong} khách hàng thành công!")
 
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Lỗi khi seed khách hàng: {e}")
+        print(f"Lỗi khi seed khách hàng: {e}")

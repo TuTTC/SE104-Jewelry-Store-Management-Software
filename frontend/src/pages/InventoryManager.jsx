@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpDown, Download, Search, Edit, Trash, X, Filter } from 'lucide-react'; // Added Filter icon
+import { ArrowUpDown, Download, Search, Edit, Trash, X, Filter, Eye } from 'lucide-react'; // Added Filter icon
 import GeneralModalForm from '../components/GeneralModalForm';
 import SearchModal from '../components/SearchModal';
 import inventoryApi from "../services/inventoryApi";
@@ -358,7 +358,7 @@ const InventoryManager = () => {
                 <td>{i.warning}</td>
                 <td>
                   <button onClick={() => openModal('edit', i)} className="action-icon edit">
-                    <Edit className="icon" />
+                    <Eye className="icon" />
                   </button>
                 </td>
               </tr>

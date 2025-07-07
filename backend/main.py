@@ -76,7 +76,7 @@ with app.app_context():
     # seed_don_hang()
     # seed_bao_cao()
     # seed_chi_tiet_don_hang()
-    # seed_them_khach_hang(20)
+    # seed_them_khach_hang(30)
     # seed_phieu_dich_vu()
     # seed_chi_tiet_phieu_dich_vu()
     # seed_phieudichvu()

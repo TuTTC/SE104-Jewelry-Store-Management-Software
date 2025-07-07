@@ -135,25 +135,39 @@ const openModal = (mode, data = null) => {
     }));
   };
 
-  const submitForm = async (e) => {
-    e.preventDefault();
-    if (!formData.username || !formData.email || !formData.role || (modalMode === "add" && !formData.password)) {
-      setError("Vui lòng điền đầy đủ các trường bắt buộc!");
-      return;
+const submitForm = async (e) => {
+  e.preventDefault();
+  if (!formData.username || !formData.email || !formData.role || (modalMode === "add" && !formData.password)) {
+    setError("Vui lòng điền đầy đủ các trường bắt buộc!");
+    return;
+  }
+
+  const payload = {
+  TenDangNhap: formData.username,
+  MatKhau: formData.password || undefined, // Không gửi nếu sửa mà không nhập
+  Email: formData.email,
+  HoTen: formData.fullName,
+  SoDienThoai: formData.phone,
+  DiaChi: formData.address,
+  TaoNgay: formData.createdAt,
+  VaiTro: convertRoleNameToValue(formData.role),  // Hàm chuyển "customer" => "Khách hàng", v.v.
+  TrangThai: formData.status === "true" || formData.status === true, // Ép về boolean thật
+};
+
+  try {
+    if (modalMode === "add") {
+      await userApi.createUser(payload);
+    } else if (modalMode === "edit" && selectedAccount) {
+      await userApi.updateUser(selectedAccount.UserID, payload);
     }
-    try {
-      if (modalMode === "add") {
-        await userApi.createUser(formData);
-      } else if (modalMode === "edit" && selectedAccount) {
-        await userApi.updateUser(selectedAccount.UserID, formData);
-      }
-      fetchAccounts();
-      closeModal();
-    } catch (err) {
-      console.error(err);
-      setError("Đã xảy ra lỗi khi lưu dữ liệu.");
-    }
-  };
+    fetchAccounts();
+    closeModal();
+  } catch (err) {
+    console.error(err);
+    setError("Đã xảy ra lỗi khi lưu dữ liệu.");
+  }
+};
+
 
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc muốn xóa tài khoản này?")) {

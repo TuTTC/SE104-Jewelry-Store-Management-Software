@@ -41,18 +41,20 @@ const OrdersManager = () => {
     try {
       const res = await danhSachDonHang();
       if (res.status === "success") {
-        const data = res.data.map(o => ({
-          ...o,
-          customerId: o.customerId ?? o.MaKH,
-          id: o.id ?? o.MaDH,
-          orderCode: o.orderCode ?? o.MaDH,
-          customer: o.customer ?? o.TenKH,
-          date: o.date ?? o.NgayDat,
-          total: o.total ?? o.TongTien,
-          status: o.status ?? o.TrangThai,
-          paymentMethod: o.paymentMethod ?? o.PhuongThucThanhToan,
-          deliveryAddress: o.deliveryAddress ?? o.DiaChiGiao
-        }));
+     const data = res.data.map(o => ({
+  ...o,
+  id: o.id,
+  customerId: o.customerId,
+  orderCode: o.orderCode,
+  customer: o.customer,
+  date: o.date,
+  total: o.total,
+  status: o.status,
+  paymentMethod: o.paymentMethod,
+  deliveryAddress: o.deliveryAddress
+}));
+
+
         console.log("▶️ Mapped orders:", data);
         setOrders(data);
         setData(data);
@@ -136,33 +138,66 @@ const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
     setData(sortedData);
   };
 
-  const handleStatusChange = (e) => {
-    const value = e.target.value;
-    setSelectedStatus(value);
-    if (value === "") {
-      setData(orders);
-    } else {
-      const filteredData = orders.filter((item) => item.status === value);
-      setData(filteredData);
+  const handleStatusChange = async (id, value) => {
+    try {
+      // Gọi API cập nhật trạng thái đơn hàng
+      const response = await fetch(`http://localhost:5000/api/donhang/${id}/trangthai`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ TrangThai: value }),
+      });
+
+      const result = await response.json();
+
+      if (result.status === "success") {
+        // Cập nhật lại UI
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === id ? { ...order, status: value } : order
+          )
+        );
+        setData((prev) =>
+          prev.map((order) =>
+            order.id === id ? { ...order, status: value } : order
+          )
+        );
+      } else {
+        alert("Cập nhật trạng thái thất bại!");
+      }
+    } catch (err) {
+      console.error("Lỗi khi cập nhật trạng thái:", err);
+      alert("Có lỗi xảy ra khi cập nhật trạng thái.");
     }
   };
 
-  const openModal = (section, type, data = {}) => {
-    if (section !== "orders") return;
-    setModalType(type);
-    const transformedData = type === "edit" ? {
-      id: data.id || data.MaDH,
-      customerId: data.MaKH || '',
-      date: data.NgayDat?.slice(0, 16) || '',
-      total: data.TongTien || '',
-      status: data.TrangThai || 'Pending',
-      paymentMethod: data.PhuongThucThanhToan || '',
-      deliveryAddress: data.DiaChiGiao || ''
-    } : {};
-    setFormData(transformedData);
-    setSelectedOrder(data);
-    setShowModal(true);
+const openModal = (section, type, data = {}) => {
+  if (section !== "orders") return;
+  setModalType(type);
+
+  const transformedData = type === "edit" ? {
+    id: data.id || data.MaDH,
+    customerId: data.UserID || '',
+    date: data.NgayDat?.slice(0, 16) || '',
+    total: data.TongTien || '',
+    status: data.TrangThai || 'Pending',
+    paymentMethod: data.PhuongThucThanhToan || '',
+    deliveryAddress: data.DiaChiGiao || ''
+  } : {
+    customerId: '',
+    date: '',
+    total: 0,
+    status: 'Pending',
+    paymentMethod: '',
+    deliveryAddress: ''
   };
+
+  setFormData(transformedData);
+  setSelectedOrder(data);
+  setShowModal(true);
+};
+
 
   const closeModal = () => {
     setShowModal(false);
@@ -217,10 +252,10 @@ const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
   const handleFormSubmit = async (formData, chiTietList) => {
     const payload = {
-      MaKH: parseInt(formData.customerId, 10),
+      UserID: parseInt(formData.customerId, 10),
       NgayDat: formData.date,
       TongTien: parseFloat(formData.total) || 0,
-      TrangThai: formData.status,
+      TrangThai: formData.status || "Pending",
       PhuongThucThanhToan: formData.paymentMethod,
       DiaChiGiao: formData.deliveryAddress,
       ChiTiet: (chiTietList || []).map(ct => ({

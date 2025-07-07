@@ -6,7 +6,7 @@ import {
   danhSachDichVu,
   themDichVu,
   suaDichVu,
-  // xoaDichVu,
+  xoaDichVu,
   traCuuDichVu
 } from "../services/dichvuApi";
 
@@ -190,14 +190,14 @@ function ServiceManager() {
     }
   };
 
-  // const handleDelete = async (id) => {
-  //   if (window.confirm("Bạn có chắc muốn xoá dịch vụ này?")) {
-  //     const res = await xoaDichVu(id);
-  //     if (res.status === "success") {
-  //       fetchDichVu();
-  //     } else alert("Lỗi xoá dịch vụ: " + res.message);
-  //   }
-  // };
+  const handleDelete = async (id) => {
+    if (window.confirm("Bạn có chắc muốn xoá dịch vụ này?")) {
+      const res = await xoaDichVu(id);
+      if (res.status === "success") {
+        fetchDichVu();
+      } else alert("Lỗi xoá dịch vụ: " + res.message);
+    }
+  };
 
   const handleXoaPhieu = async (maPDV) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa phiếu dịch vụ này?")) {
@@ -430,9 +430,9 @@ const handleLuuPhieuDichVu = async (payload) => {
                   <button onClick={() => openModal("edit", s)} className="action-icon edit">
                     <Edit className="icon" />
                   </button>
-                  {/* <button onClick={() => handleDelete(s.MaDV)} className="action-icon delete">
+                  <button onClick={() => handleDelete(s.MaDV)} className="action-icon delete">
                     <Trash className="icon" />
-                  </button> */}
+                  </button>
                 </td>
               </tr>
             ))

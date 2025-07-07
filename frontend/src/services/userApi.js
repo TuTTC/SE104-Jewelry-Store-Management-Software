@@ -70,7 +70,7 @@ const userApi = {
   },
 
   // 5. Cập nhật người dùng theo ID
-  updateUserById: async (id, data) => {
+  updateUser: async (id, data) => {
     const res = await fetch(`${BASE_URL}/users/${id}`, {
       method: "PUT",
       headers: getAuthHeader(),
