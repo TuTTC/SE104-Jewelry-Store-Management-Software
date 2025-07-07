@@ -28,6 +28,8 @@ pdfmetrics.registerFont(TTFont("TimesVN", FONT_PATH))
 baocao_bp = Blueprint("baocao", __name__, url_prefix="/api")
 
 @baocao_bp.route("/baocao", methods=["POST"])
+@jwt_required()
+@permission_required("reports:add")
 def tao_bao_cao():
     data = request.get_json()
     loai       = data["LoaiBaoCao"]
@@ -283,6 +285,54 @@ def print_bao_cao(id):
         elements.append(
             Paragraph(f"<b>Tổng doanh thu: {total:,.0f} VNĐ</b>", styles["NormalTimes"])
         )
+        # --- PHẦN BÁO CÁO DỊCH VỤ ---
+        dich_vu_list = db.session.query(
+            PHIEUDICHVU.MaPDV,
+            PHIEUDICHVU.NgayLap,
+            NGUOIDUNG.HoTen,
+            func.sum(CHITIETPHIEUDICHVU.ThanhTien).label("TongTien")
+        ).join(NGUOIDUNG, PHIEUDICHVU.UserID == NGUOIDUNG.UserID) \
+        .join(CHITIETPHIEUDICHVU, PHIEUDICHVU.MaPDV == CHITIETPHIEUDICHVU.MaPDV) \
+        .filter(
+            PHIEUDICHVU.NgayLap >= tu_ngay,
+            PHIEUDICHVU.NgayLap <= den_ngay,
+            CHITIETPHIEUDICHVU.TinhTrang == "Đã giao"
+        ).group_by(PHIEUDICHVU.MaPDV, PHIEUDICHVU.NgayLap, NGUOIDUNG.HoTen) \
+        .order_by(PHIEUDICHVU.NgayLap).all()
+
+        if dich_vu_list:
+            elements.append(Spacer(1, 24))
+            elements.append(Paragraph("DOANH THU DỊCH VỤ", styles["TitleTimes"]))
+            elements.append(Spacer(1, 24))
+            headers = ["STT", "Mã phiếu DV", "Ngày đặt", "Khách hàng", "Tổng tiền", "Đơn vị tính"]
+            data = [[Paragraph(cell, styles["NormalTimes"]) for cell in headers]]
+
+            total_dv = 0
+            for idx, dv in enumerate(dich_vu_list, 1):
+                total_dv += dv.TongTien
+                data.append([
+                    Paragraph(str(idx), styles["NormalTimes"]),
+                    Paragraph(str(dv.MaPDV), styles["NormalTimes"]),
+                    Paragraph(dv.NgayLap.strftime("%d/%m/%Y"), styles["NormalTimes"]),
+                    Paragraph(dv.HoTen, styles["NormalTimes"]),
+                    Paragraph(f"{dv.TongTien:,.0f}", styles["NormalTimes"]),
+                    Paragraph("VNĐ", styles["NormalTimes"]),
+                ])
+
+            table = Table(data, colWidths=[30, 80, 80, 150, 80, 50])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ]))
+
+            elements.append(table)
+            elements.append(Spacer(1, 12))
+            elements.append(
+                Paragraph(f"<b>Tổng doanh thu dịch vụ: {total_dv:,.0f} VNĐ</b>", styles["NormalTimes"])
+            )
     # === LỢI NHUẬN ===
     elif bc.LoaiBaoCao == "Lợi nhuận":
         # Lọc phiếu nhập trong khoảng thời gian

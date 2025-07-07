@@ -7,6 +7,7 @@ import FilterModal from '../components/FilterModal';
 import * as productApi from "../services/productApi";
 import { uploadImage } from "../services/upload_imgApi";
 import Pagination from '../components/Pagination';
+import * as supplierApi from "../services/supplierApi";
 const ProductManager = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -35,6 +36,21 @@ const ProductManager = () => {
   const [allProducts, setAllProducts] = useState([]);
 
    const totalPages = Math.ceil(allProducts.length / pageSize);
+   const [suppliers, setSuppliers] = useState([]);
+
+useEffect(() => {
+  fetchSuppliers();
+}, []);
+
+const fetchSuppliers = async () => {
+  try {
+    const res = await supplierApi.getAllSuppliers();
+    setSuppliers(res);
+  } catch (err) {
+    console.error("Lỗi khi lấy nhà cung cấp:", err);
+  }
+};
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -315,7 +331,10 @@ const ProductManager = () => {
                 <td>{formatCurrency(p.GiaBan)}</td>
                 <td>{p.TenDM}</td>
                 <td>{p.SoLuongTon}</td>
-                <td>{p.TenNCC}</td>
+                <td>
+  {suppliers.find((s) => s.MaNCC === p.MaNCC)?.TenNCC || "Không rõ"}
+</td>
+
                 <td>
                   <img
                     src={p.HinhAnh}
@@ -391,6 +410,7 @@ const ProductManager = () => {
         error={error}
         handleImageUpload={handleImageUpload}
         categories={categories}
+        suppliers = {suppliers}
       />
     </div>
     

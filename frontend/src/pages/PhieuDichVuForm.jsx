@@ -124,10 +124,7 @@ useEffect(() => {
     const thanhTien = donGiaDuocTinh * soLuong;
 
     updated[index].ThanhTien = thanhTien;
-    updated[index].TienTraTruoc = Math.max(
-      parseFloat(updated[index].TienTraTruoc) || 0,
-      Math.ceil(thanhTien * 0.5)
-    );
+    updated[index].TienTraTruoc = Math.max(0, parseFloat(updated[index].TienTraTruoc) || 0);
 
     setChiTiet(updated);
   };

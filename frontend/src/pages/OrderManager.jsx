@@ -349,7 +349,7 @@ const handlePrint = async () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý đơn hàng</h2>
+        <h2 className="table-title"></h2>
         <button onClick={() => openModal("orders", "add")} className="action-button">
           Thêm đơn hàng
         </button>
@@ -690,6 +690,7 @@ const handlePrint = async () => {
         handleInputChange={handleInputChange}
         error={error}
         initialData={selectedOrder}
+        
       />
     </div>
   );

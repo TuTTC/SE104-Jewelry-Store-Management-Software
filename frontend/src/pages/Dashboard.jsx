@@ -37,6 +37,14 @@ const Dashboard = () => {
     const [categoryData, setCategoryData] = useState([]); // Dữ liệu phân loại sản phẩm
     const [bestSellingProduct, setBestSellingProduct] = useState("Không biết"); // Tên sản phẩm bán chạy nhất
   // Khởi tạo dữ liệu giả lập
+    const productCategories = [
+    { name: "Nhẫn", value: 35, color: "#F59E0B" },
+    { name: "Dây chuyền", value: 25, color: "#8B5CF6" },
+    { name: "Bông tai", value: 20, color: "#EF4444" },
+    { name: "Lắc tay", value: 15, color: "#10B981" },
+    { name: "Khác", value: 5, color: "#6B7280" },
+  ];
+
   useEffect(() => {
     async function fetchRevenue() {
       const res = await danhSachDonHang();
@@ -483,32 +491,32 @@ const Dashboard = () => {
         </div>
       </div>
 
-        {/* Product Categories */}
+{/* Product Categories */}
         <div className="card">
           <div className="card-content">
             <h2 className="card-title">Phân loại sản phẩm</h2>
             <p className="card-description">Tỷ lệ bán hàng theo danh mục sản phẩm</p>
             <div className="chart-container">
               <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value}%`, "Tỷ lệ"]} />
-              </PieChart>
+                <PieChart>
+                  <Pie
+                    data={productCategories}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={120}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {productCategories.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value}%`, "Tỷ lệ"]} />
+                </PieChart>
               </ResponsiveContainer>
               <div className="category-legend">
-                {categoryData.map((category, index) => (
+                {productCategories.map((category, index) => (
                   <div key={index} className="legend-item">
                     <div
                       className="legend-color"

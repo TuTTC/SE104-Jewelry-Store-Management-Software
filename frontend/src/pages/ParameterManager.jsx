@@ -156,11 +156,11 @@ const ParameterManager = () => {
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title"></h2>
-        <div>
+        {/* <div>
           <button onClick={openSearchModal} className="action-button"><Search className="icon" /> Tìm kiếm</button>
           <button onClick={openFilterModal} className="action-button"><Filter className="icon" /> Lọc</button>
-          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
-        </div>
+          <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất Báo Cáo </button>
+        </div> */}
       </div>
       <div className="table-container">
         <table className="data-table">

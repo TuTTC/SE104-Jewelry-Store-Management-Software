@@ -13,7 +13,8 @@ const GeneralModalForm = ({
   error,
   modalMode,
   handleImageUpload,
-  categories
+  categories,
+  suppliers
 }) => {
   if (!showModal) return null;
   
@@ -45,8 +46,22 @@ const GeneralModalForm = ({
                 </select>
             <label>Số lượng tồn</label>
             <input type="number" name="SoLuongTon" value={formData.SoLuongTon || ""} onChange={handleInputChange} placeholder="Số lượng tồn" required />
-            <label>Tên nhà cung cấp</label>
-            <input type="text" name="TenNCC" value={formData.TenNCC || ""} onChange={handleInputChange} placeholder="Tên nhà cung cấp" required/>
+            {/* <label>Tên nhà cung cấp</label> */}
+            {/* <input type="text" name="TenNCC" value={formData.TenNCC || ""} onChange={handleInputChange} placeholder="Tên nhà cung cấp" required/> */}
+            <label>Nhà cung cấp</label>
+            <select
+              name="MaNCC"
+              value={formData.MaNCC || ""}
+              onChange={handleInputChange}
+              requireds
+            >
+              <option value="">Chọn nhà cung cấp</option>
+              {suppliers.map((ncc) => (
+                <option key={ncc.MaNCC} value={ncc.MaNCC}>
+                  {ncc.TenNCC}
+                </option>
+              ))}
+            </select>
 
             {/* <input type="text" name="HinhAnh" value={formData.HinhAnh || ""} onChange={handleInputChange} placeholder="URL hình ảnh" required/> */}
               {/* Upload ảnh */}
