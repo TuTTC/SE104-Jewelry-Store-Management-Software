@@ -119,15 +119,87 @@ phieunhap_bp = Blueprint('phieunhap_bp', __name__)
 #         db.session.rollback()
 #         return jsonify({'status': 'error', 'message': str(e)}), 400
 
+# @phieunhap_bp.route('/phieunhap', methods=['POST'])
+# @jwt_required()
+# @permission_required("purchaseOrders:add")
+# def create_phieu_nhap():
+#     data = request.get_json()
+#     try:
+#         ma_ncc = data['MaNCC']
+#         user_id = data['UserID']
+#         ngay_nhap = data.get('NgayNhap')
+#         trang_thai = data.get('TrangThai', 'Đang xử lý')
+#         chi_tiet = data.get('ChiTiet', [])
+
+#         # Kiểm tra nhà cung cấp tồn tại
+#         ncc = NHACUNGCAP.query.get(ma_ncc)
+#         if not ncc:
+#             return jsonify({'status': 'error', 'message': 'Nhà cung cấp không tồn tại'}), 400
+
+#         # Kiểm tra người nhập tồn tại và ở trạng thái kích hoạt
+#         user = NGUOIDUNG.query.get(user_id)
+#         if not user:
+#             return jsonify({'status': 'error', 'message': 'Người nhập không tồn tại'}), 400
+#         if user.TrangThai is not True:
+#             return jsonify({'status': 'error', 'message': 'Tài khoản người nhập đang bị khóa, không thể thực hiện thao tác'}), 400
+
+#         if not chi_tiet:
+#             return jsonify({'status': 'error', 'message': 'Danh sách chi tiết phiếu nhập trống'}), 400
+
+#         # Tính tổng tiền
+#         tong_tien = sum(item['SoLuong'] * item['DonGiaNhap'] for item in chi_tiet)
+
+#         # Tạo phiếu nhập
+#         phieu = PHIEUNHAP(
+#             MaNCC=ma_ncc,
+#             UserID=user_id,
+#             NgayNhap=ngay_nhap,
+#             TongTien=tong_tien,
+#             TrangThai=trang_thai,
+#         )
+#         db.session.add(phieu)
+#         db.session.flush()
+
+#         # Xử lý chi tiết phiếu nhập và cập nhật tồn kho
+#         for item in chi_tiet:
+#             ma_sp = item['MaSP']
+#             so_luong = item['SoLuong']
+#             don_gia_nhap = item['DonGiaNhap']
+
+#             product = SANPHAM.query.get(ma_sp)
+#             if not product:
+#                 return jsonify({'status': 'error', 'message': f'Sản phẩm {ma_sp} không tồn tại'}), 400
+
+#             # Cập nhật tồn kho
+#             product.SoLuongTon += so_luong
+
+#             # Thêm chi tiết phiếu nhập
+#             ct = CHITIETPHIEUNHAP(
+#                 MaPN=phieu.MaPN,
+#                 MaSP=ma_sp,
+#                 SoLuong=so_luong,
+#                 DonGiaNhap=don_gia_nhap,
+#                 ThanhTien=so_luong * don_gia_nhap
+#             )
+#             db.session.add(ct)
+        
+#         db.session.commit()
+#         return jsonify({'status': 'success', 'message': 'Tạo phiếu nhập thành công', 'MaPN': phieu.MaPN}), 201
+
+#     except Exception as e:
+#         db.session.rollback()
+#         return jsonify({'status': 'error', 'message': str(e)}), 400
+
 @phieunhap_bp.route('/phieunhap', methods=['POST'])
 @jwt_required()
 @permission_required("purchaseOrders:add")
 def create_phieu_nhap():
+    from flask_jwt_extended import get_jwt_identity
     data = request.get_json()
     try:
         ma_ncc = data['MaNCC']
-        user_id = data['UserID']
-        ngay_nhap = data.get('NgayNhap')
+        user_id = get_jwt_identity()  # ✅ Lấy từ token, không nhận từ client
+        ngay_nhap = data.get('NgayNhap') or datetime.utcnow().date()
         trang_thai = data.get('TrangThai', 'Đang xử lý')
         chi_tiet = data.get('ChiTiet', [])
 

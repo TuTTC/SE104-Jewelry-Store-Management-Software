@@ -159,14 +159,14 @@ const fetchSuppliers = async () => {
       !formData.GiaBan ||
       !formData.MaDM ||
       !formData.SoLuongTon ||
-      !formData.MaNCC ||
+      // !formData.MaNCC ||
       !formData.HinhAnh
     ) {
       setError("Vui lòng điền đầy đủ các trường bắt buộc.");
       return false;
     }
 
-    if (isNaN(parseFloat(formData.GiaBan)) || parseFloat(formData.GiaBan) <= 0) {
+    if (isNaN(parseFloat(formData.GiaBan)) || parseFloat(formData.GiaBan) < 0) {
       setError("Giá phải là số dương.");
       return false;
     }

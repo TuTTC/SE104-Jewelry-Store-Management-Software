@@ -267,9 +267,17 @@ const GeneralModalForm = ({
             <label>Giá trị</label>
             <input type="number" name="paraValue" value={formData.GiaTri || ""} onChange={handleInputChange} placeholder="Giá trị" required />
             <label>Mô tả</label>
-            <input type="text" name="paraDescribe" value={formData.MoTa || ""}  placeholder="Mô tả" required disabled />
+            <input type="text" name="paraDescribe" value={formData.MoTa || ""}  placeholder="Mô tả" required />
             <label>Kích hoạt</label>
-            <input type="text" name="paraKH" value={formData.KichHoat ? "Có": "Không" || ""} onChange={handleInputChange} placeholder="Kích hoạt" required />
+            <select
+              name="paraKH"
+              value={formData.KichHoat ? "Có" : "Không"}
+              onChange={handleInputChange}
+              required
+            >
+              <option value="Có">Có</option>
+              <option value="Không">Không</option>
+            </select>
 
           </>
         )

@@ -61,7 +61,8 @@ def get_danh_sach_donhang():
 def tao_don_hang():
     try:
         data = request.get_json()
-        user_id = int(data.get("UserID"))  # Đổi tên cho rõ, không dùng MaKH nữa
+        user_id = int(data.get("UserID"))
+        chi_tiet = data.get("ChiTiet", [])  # ✅ lấy danh sách chi tiết đơn hàng nếu có
 
         khach = NGUOIDUNG.query.get(user_id)
         if not khach:
@@ -73,19 +74,44 @@ def tao_don_hang():
         if khach.TrangThai is not True:
             return jsonify({"status": "error", "message": "Tài khoản khách hàng đang bị khóa."}), 400
 
+        # ✅ Khởi tạo đơn hàng nhưng để tạm TongTien = 0
         donhang = DONHANG(
             UserID=user_id,
             NgayDat=datetime.strptime(data.get("NgayDat"), "%Y-%m-%d"),
-            TongTien=Decimal(data.get("TongTien", 0)),
-            TrangThai=data.get("TrangThai", "Pending")
+            TongTien=Decimal(0),
+            TrangThai=data.get("TrangThai", "Pending"),
+            # PhuongThucThanhToan=data.get("PhuongThucThanhToan", ""),
+            # DiaChiGiao=data.get("DiaChiGiao", "")
         )
-
         db.session.add(donhang)
+        db.session.flush()  # 🔁 Lấy MaDH ngay sau khi thêm
+
+        # ✅ Duyệt và thêm chi tiết đơn hàng
+        tong_tien = Decimal(0)
+        for item in chi_tiet:
+            ma_sp = item.get("MaSP")
+            so_luong = int(item.get("SoLuong", 1))
+            gia_ban = Decimal(item.get("GiaBan", 0))
+            thanh_tien = Decimal(item.get("ThanhTien", gia_ban * so_luong))
+
+            chi_tiet_dh = CHITIETDONHANG(
+                MaDH=donhang.MaDH,
+                MaSP=ma_sp,
+                SoLuong=so_luong,
+                GiaBan=gia_ban,
+                ThanhTien=thanh_tien
+            )
+            db.session.add(chi_tiet_dh)
+            tong_tien += thanh_tien
+
+        # ✅ Cập nhật lại tổng tiền của đơn hàng
+        donhang.TongTien = tong_tien
+
         db.session.commit()
 
         return jsonify({
             "status": "success",
-            "message": "Tạo đơn hàng thành công.",
+            "message": "Tạo đơn hàng và chi tiết thành công.",
             "id": donhang.MaDH
         })
 
@@ -175,32 +201,46 @@ def sua_don_hang(id):
         if not donhang:
             return jsonify({"status": "error", "message": "Đơn hàng không tồn tại"}), 404
 
+        # --- (1) Validate UserID như bạn đã làm ---
         user_id = data.get("UserID")
         if not user_id:
             return jsonify({"status": "error", "message": "Thiếu UserID"}), 400
-
         khach = NGUOIDUNG.query.get(user_id)
         if not khach:
             return jsonify({"status": "error", "message": "Người dùng không tồn tại"}), 404
-
         if not khach.vaitro or khach.vaitro.TenVaiTro.lower() != "khách hàng":
             return jsonify({"status": "error", "message": "Người dùng này không phải khách hàng."}), 400
-
         if khach.TrangThai is not True:
             return jsonify({"status": "error", "message": "Tài khoản khách hàng đang bị khóa."}), 400
 
+        # --- (2) Cập nhật DONHANG ---
         donhang.UserID = user_id
         donhang.NgayDat = datetime.strptime(data.get("NgayDat"), "%Y-%m-%d")
-        donhang.TongTien = data.get("TongTien")
+        donhang.TongTien = Decimal(str(data.get("TongTien", 0)))
         donhang.TrangThai = data.get("TrangThai")
 
+        # --- (3) Xoá hết chi tiết cũ ---
+        CHITIETDONHANG.query.filter_by(MaDH=id).delete()
+
+        # --- (4) Thêm lại chi tiết mới ---
+        for ct in data.get("ChiTiet", []):
+            # Bắt buộc có MaSP, SoLuong, GiaBan, ThanhTien
+            new_ct = CHITIETDONHANG(
+                MaDH = id,
+                MaSP = ct["MaSP"],
+                SoLuong = ct["SoLuong"],
+                GiaBan = ct["GiaBan"],
+                ThanhTien = ct["ThanhTien"]
+            )
+            db.session.add(new_ct)
+
+        # --- (5) Commit tất cả ---
         db.session.commit()
-        return jsonify({"status": "success", "message": "Đã cập nhật đơn hàng."})
-        
+        return jsonify({"status": "success", "message": "Đã cập nhật đơn hàng và chi tiết."})
+
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 # GET /api/donhang/<id>/chitiet - Lấy chi tiết đơn hàng
 @donhang_bp.route("/donhang/<int:id>/chitiet", methods=["GET"])
@@ -356,8 +396,9 @@ def xuat_pdf_chi_tiet_don(id):
                 p.showPage()
                 p.setFont("DejaVu", 10)
                 y = height - 2 * cm
-
+        
         p.showPage()
+
         p.save()
 
         buffer.seek(0)

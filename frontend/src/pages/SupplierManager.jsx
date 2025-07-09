@@ -127,33 +127,44 @@ const SupplierManager = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const payload = {
-      TenNCC: formData.name,
-      SoDienThoai: formData.phone,
-      Email: formData.email,
-      DiaChi: formData.address,
-      NgayHopTac: formData.date,
-      GhiChu: formData.note
-    };
-
-    if (modalMode === "add") {
-      supplierApi.addSupplier(payload)
-        .then(() => {
-          fetchSuppliers();
-          closeModal();
-        })
-        .catch(err => setError(err.message));
-    } else if (modalMode === "edit" && selectedSupplier) {
-      supplierApi.updateSupplier(selectedSupplier.MaNCC, payload)
-        .then(() => {
-          fetchSuppliers();
-          closeModal();
-        })
-        .catch(err => setError(err.message));
-    }
+const handleSubmit = (e) => {
+  e.preventDefault();
+  const payload = {
+    TenNCC: formData.name,
+    SoDienThoai: formData.phone,
+    Email: formData.email,
+    DiaChi: formData.address,
+    NgayHopTac: formData.date,
+    GhiChu: formData.note,
   };
+
+  if (modalMode === "add") {
+    supplierApi.addSupplier(payload)
+      .then((res) => {
+        alert("Thêm nhà cung cấp thành công!");
+        fetchSuppliers();
+        closeModal();
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("Thêm nhà cung cấp thất bại: " + err.message);
+        setError(err.message);
+      });
+  } else if (modalMode === "edit" && selectedSupplier) {
+    supplierApi.updateSupplier(selectedSupplier.MaNCC, payload)
+      .then((res) => {
+        alert("Cập nhật nhà cung cấp thành công!");
+        fetchSuppliers();
+        closeModal();
+      })
+      .catch((err) => {
+        console.error(err);
+        alert("Cập nhật thất bại: " + err.message);
+        setError(err.message);
+      });
+  }
+};
+
 
 const handleDelete = (id) => {
   if (window.confirm("Bạn có chắc muốn xoá nhà cung cấp này?")) {

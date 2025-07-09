@@ -142,9 +142,18 @@ def login():
 
     if not ten_dang_nhap or not mat_khau:
         return jsonify({'message': 'Vui lòng cung cấp đầy đủ thông tin'}), 400
-
+    
     user = NGUOIDUNG.query.filter_by(TenDangNhap=ten_dang_nhap).first()
+    
+    if not user:
+        return jsonify({'message': 'Tên đăng nhập không tồn tại'}), 404
 
+    if not user.TrangThai:
+        return jsonify({'message': 'Tài khoản đã bị khóa hoặc chưa được kích hoạt'}), 403
+
+    if not check_password_hash(user.MatKhau, mat_khau):
+        return jsonify({'message': 'Mật khẩu không đúng'}), 401
+    
     if user and user.vaitro and check_password_hash(user.MatKhau, mat_khau):
         identity = str(user.UserID)  # Identity chỉ là string hoặc int
         additional_claims = {"role": user.vaitro.TenVaiTro}
@@ -160,7 +169,9 @@ def login():
             'token': access_token,
             'user': {
                 'id': user.UserID,
-                'role': user.vaitro.TenVaiTro
+                'role': user.vaitro.TenVaiTro,
+                'name': user.HoTen,
+                'username': user.TenDangNhap
             }
         }), 200
 

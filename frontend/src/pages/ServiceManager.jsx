@@ -6,11 +6,19 @@ import {
   danhSachDichVu,
   themDichVu,
   suaDichVu,
-  xoaDichVu,
-  traCuuDichVu
+  xoaDichVu
 } from "../services/dichvuApi";
 
-import { getPhieuDichVuList } from "../services/phieudichvuApi";
+import { 
+  getPhieuDichVuList, 
+  getPhieuDichVuById,
+  themPhieuDichVu,
+  xoaPhieuDichVu,
+  capNhatPhieuDichVu,
+  printDanhSachPhieuDichVu,
+  printChiTietPhieuDichVu,
+  searchPhieuDichVu
+  } from "../services/phieudichvuApi";
 
 import Pagination from '../components/Pagination';
 
@@ -167,13 +175,13 @@ function ServiceManager() {
     setSelectedService(null);
   };
 
-  const handleFormSubmit = async (data) => {
-    console.log("Giá trị trạng thái:", data.status, typeof data.status);
+  const handleServiceSave = async (formDataFromModal) => {
+    console.log("Giá trị trạng thái:", formDataFromModal.status, typeof formDataFromModal.status);
     const payload = {
-      TenDV: data.name,
-      DonGia: parseFloat(data.price),
-      MoTa: data.description,
-      TrangThai: data.status === "true",
+      TenDV: formDataFromModal.name,
+      DonGia: parseFloat(formDataFromModal.price),
+      MoTa: formDataFromModal.description,
+      TrangThai: formDataFromModal.status === "true",
     };
     if (modalMode === "add") {
       const res = await themDichVu(payload);
@@ -199,24 +207,23 @@ function ServiceManager() {
     }
   };
 
-  const handleXoaPhieu = async (maPDV) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa phiếu dịch vụ này?")) {
-      try {
-        const res = await fetch(`http://localhost:5000/api/phieudichvu/${maPDV}`, {
-          method: "DELETE",
-        });
-        const json = await res.json();
-        if (json.status === "success") {
-          setPhieuDichVuList((prev) => prev.filter((p) => p.MaPDV !== maPDV));
-          setDataPhieuDichVu((prev) => prev.filter((p) => p.MaPDV !== maPDV));
-        } else {
-          alert("Lỗi xoá phiếu dịch vụ: " + json.message);
-        }
-      } catch (err) {
-        alert("Lỗi kết nối: " + err.message);
+const handleXoaPhieu = async (maPDV) => {
+  if (window.confirm("Bạn có chắc chắn muốn xóa phiếu dịch vụ này?")) {
+    try {
+      const json = await xoaPhieuDichVu(maPDV);
+
+      if (json.status === "success") {
+        // Cập nhật lại danh sách phiếu dịch vụ sau khi xoá
+        setPhieuDichVuList((prev) => prev.filter((p) => p.MaPDV !== maPDV));
+        setDataPhieuDichVu((prev) => prev.filter((p) => p.MaPDV !== maPDV));
+      } else {
+        alert("Lỗi xoá phiếu dịch vụ: " + json.message);
       }
+    } catch (err) {
+      alert("Lỗi kết nối: " + err.message);
     }
-  };
+  }
+};
 
 const handleThemPhieuDichVu = () => {
   setSelectedPhieu(null);
@@ -225,10 +232,9 @@ const handleThemPhieuDichVu = () => {
 };
 
 
- const handleSuaPhieuDichVu = async (maPDV) => {
+const handleSuaPhieuDichVu = async (maPDV) => {
   try {
-    const res = await fetch(`http://localhost:5000/api/phieudichvu/${maPDV}`);
-    const json = await res.json();
+    const json = await getPhieuDichVuById(maPDV);
 
     if (json.status === "success") {
       setSelectedPhieu(json.data);
@@ -242,66 +248,33 @@ const handleThemPhieuDichVu = () => {
   }
 };
 
+  const handleLuuPhieuDichVu = async (payload) => {
+    try {
+      console.log("Payload gửi API:", payload);
 
-const handleLuuPhieuDichVu = async (payload) => {
-  try {
-    console.log("Payload gửi API:", payload);
+      let json;
+      if (modePhieu === "add") {
+        json = await themPhieuDichVu(payload);
+      } else if (modePhieu === "edit" && selectedPhieu) {
+        json = await capNhatPhieuDichVu(selectedPhieu.MaPDV, payload);
+      }
 
-    if (modePhieu === "add") {
-      // Thêm mới
-      const res = await fetch("http://localhost:5000/api/phieudichvu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-      if (json.status === "success") {
-        alert("Lưu phiếu thành công");
+      if (json?.status === "success") {
+        alert(modePhieu === "add" ? "Lưu phiếu thành công" : "Cập nhật phiếu thành công");
         setModalPhieuVisible(false);
         fetchPhieuDichVu();
       } else {
-        alert("Lỗi khi lưu phiếu: " + json.message);
+        alert("Lỗi khi lưu phiếu: " + (json?.message || "Không rõ"));
       }
-    } else if (modePhieu === "edit" && selectedPhieu) {
-      // Cập nhật
-      const res = await fetch(`http://localhost:5000/api/phieudichvu/${selectedPhieu.MaPDV}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-      if (json.status === "success") {
-        alert("Cập nhật phiếu thành công");
-        setModalPhieuVisible(false);
-        fetchPhieuDichVu();
-      } else {
-        alert("Lỗi khi cập nhật phiếu: " + json.message);
-      }
-    }
-  } catch (err) {
-    alert("Kết nối thất bại: " + err.message);
-  }
-};
-
-
-  const handleSearchService = async () => {
-    const keyword = prompt("Nhập từ khóa để tra cứu dịch vụ:");
-    if (keyword) {
-      const res = await traCuuDichVu(keyword);
-      if (res.status === "success") {
-        setServices(res.data);
-        setDataServices(res.data);
-      } else {
-        alert("Không tìm thấy dịch vụ.");
-      }
+    } catch (err) {
+      alert("Kết nối thất bại: " + err.message);
     }
   };
+
    const handleSearchServiceForm = async () => {
     const keyword = prompt("Nhập từ khóa để tra cứu dịch vụ:");
     if (keyword) {
-      const res = await traCuuDichVu(keyword);
+      const res = await searchPhieuDichVu(keyword);
       if (res.status === "success") {
         setPhieuDichVuList(res.data);
         setDataPhieuDichVu(res.data);
@@ -310,25 +283,19 @@ const handleLuuPhieuDichVu = async (payload) => {
       }
     }
   };
+
   const handlePrintAllPDF = async () => {
-  try {
-    const res = await fetch("http://localhost:5000/api/phieudichvu/print-danhsach", {
-      method: "GET",
-    });
-
-    if (!res.ok) throw new Error("Không thể lấy PDF");
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    window.open(url); // Mở tab mới xem trước
-  } catch (err) {
-    alert("Lỗi khi in danh sách: " + err.message);
-  }
-};
+    try {
+      const blob = await printDanhSachPhieuDichVu();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url); // Mở tab xem PDF
+    } catch (err) {
+      alert("Lỗi khi in danh sách: " + err.message);
+    }
+  };
 
   const handleInChiTiet = (maPDV) => {
-    const printUrl = `http://localhost:5000/api/phieudichvu/${maPDV}/print`;
-    window.open(printUrl, "_blank");
+    printChiTietPhieuDichVu(maPDV); // Mở tab chi tiết
   };
 
   return (
@@ -531,7 +498,7 @@ const handleLuuPhieuDichVu = async (payload) => {
           mode={modalMode}
           initialData={selectedService}
           onClose={closeModal}
-          onSubmit={handleFormSubmit}
+          onSubmit={handleServiceSave}
           showModal={modalVisible}
         />
       )}

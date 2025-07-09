@@ -113,41 +113,46 @@ function PurchaseOrderManager() {
   }, [totalPages, currentPage]);
 
   // Các hàm bị thiếu để khắc phục lỗi ESLint
-  function openModal(mode, order = null) {
-    console.log("Mở modal:", mode, order);
+function openModal(mode, order = null) {
+  console.log("Mở modal:", mode, order);
 
-    setModalMode(mode);
-    setSelectedOrder(order);
-    setModalVisible(true);
+  const currentUser = JSON.parse(localStorage.getItem("user")); // 👈 Lấy người đăng nhập
 
-    const statusMap = {
-      "Đã nhập": "da_nhap",
-      "Đang xử lý": "dang_xu_ly",
-      "Hủy": "huy",
-    };
-    if (order) {
-      setFormData({
-        code: order.MaPN,
-        supplier: order.MaNCC,
-        user: order.UserID,
-        date: order.NgayNhap?.slice(0, 10),
-        total: order.TongTien,
-        status: statusMap[order.TrangThai] || "",
-        ChiTiet: order.ChiTiet || [],
-      });
-    } else {
-      setFormData({
-        code: "",
-        supplier: "",
-        user: "",
-        date: "",
-        total: "",
-        status: "",
-        ChiTiet: [],
-      });
-    }
+  setModalMode(mode);
+  setSelectedOrder(order);
+  setModalVisible(true);
 
+  const statusMap = {
+    "Đã nhập": "da_nhap",
+    "Đang xử lý": "dang_xu_ly",
+    "Hủy": "huy",
+  };
+
+  if (order) {
+    setFormData({
+      code: order.MaPN,
+      supplier: order.MaNCC,
+      user: order.UserID,
+      userName: order.TenNguoiNhap || "",   // 👈 dùng khi sửa để hiển thị tên
+      date: order.NgayNhap?.slice(0, 10),
+      total: order.TongTien,
+      status: statusMap[order.TrangThai] || "",
+      ChiTiet: order.ChiTiet || [],
+    });
+  } else {
+    setFormData({
+      code: "",
+      supplier: "",
+      user: currentUser?.id || "",           // 👈 ID người đăng nhập (gửi API)
+      userName: currentUser?.name || "",     // 👈 tên để hiển thị
+      date: new Date().toISOString().slice(0, 10),
+      total: 0,
+      status: "dang_xu_ly",
+      ChiTiet: [],
+    });
   }
+}
+
 
   // Đóng modal
   function closeModal() {
@@ -235,43 +240,43 @@ function PurchaseOrderManager() {
 
 
   // Submit form
-  async function handleSubmit(e) {
-    e.preventDefault();
-    try {
-      const data = {
-        MaNCC: formData.supplier,
-        UserID: formData.user,
-        NgayNhap: formData.date,
-        TrangThai: formData.status,
-        ChiTiet: formData.ChiTiet.map(item => ({
-          MaSP: item.MaSP,
-          SoLuong: parseInt(item.SoLuong, 10),
-          DonGiaNhap: parseFloat(item.DonGiaNhap)
-        }))
-      };
+    async function handleSubmit(e) {
+      e.preventDefault();
+      try {
+        const data = {
+          MaNCC: formData.supplier,
+          UserID: formData.user,
+          NgayNhap: formData.date,
+          TrangThai: formData.status,
+          ChiTiet: formData.ChiTiet.map(item => ({
+            MaSP: item.MaSP,
+            SoLuong: parseInt(item.SoLuong, 10),
+            DonGiaNhap: parseFloat(item.DonGiaNhap)
+          }))
+        };
 
-      if (modalMode === "add") {
-        const res = await orderApi.addOrder(data);
-        if (res.status === "success") {
-          alert("Thêm phiếu nhập thành công!");
-          handleSuccess();
-        } else {
-          alert("Thêm thất bại: " + res.message);
+        if (modalMode === "add") {
+          const res = await orderApi.addOrder(data);
+          if (res.status === "success") {
+            alert("Thêm phiếu nhập thành công!");
+            handleSuccess();
+          } else {
+            alert("Thêm thất bại: " + res.message);
+          }
+        } else if (modalMode === "edit") {
+          const res = await orderApi.updateOrder(formData.code, data);
+          if (res.status === "success") {
+            alert("Cập nhật phiếu nhập thành công!");
+            handleSuccess();
+          } else {
+            alert("Cập nhật thất bại: " + res.message);
+          }
         }
-      } else if (modalMode === "edit") {
-        const res = await orderApi.updateOrder(formData.code, data);
-        if (res.status === "success") {
-          alert("Cập nhật phiếu nhập thành công!");
-          handleSuccess();
-        } else {
-          alert("Cập nhật thất bại: " + res.message);
-        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert(error.message);
       }
-    } catch (error) {
-      console.error("Error:", error);
-      alert(error.message);
     }
-  }
 
   // Xoá phiếu nhập
   async function handleDelete(maPN) {

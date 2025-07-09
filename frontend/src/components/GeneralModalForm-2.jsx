@@ -163,6 +163,7 @@ const GeneralModalForm = ({
         <form onSubmit={handleFormSubmit} className="modal-form">
           {section === "services" && (
             <>
+            <label htmlFor="name">Tên dịch vụ</label>
               <input
                 type="text"
                 name="name"
@@ -171,6 +172,7 @@ const GeneralModalForm = ({
                 placeholder="Tên dịch vụ"
                 required
               />
+              <label htmlFor="price">Giá dịch vụ</label>
               <input
                 type="number"
                 step="0.01"
@@ -180,6 +182,7 @@ const GeneralModalForm = ({
                 placeholder="Giá dịch vụ"
                 required
               />
+              <label htmlFor="chiphirieng">Mô tả</label>
               <input
                 type="text"
                 name="description"
@@ -187,14 +190,15 @@ const GeneralModalForm = ({
                 onChange={handleInputChange}
                 placeholder="Mô tả"
               />
+              <label htmlFor="chiphirieng">Trạng thái</label>
               <select
                 name="status"
-                value={formData.status || "true"}
+                value={formData.status ?? "true"} // dùng ?? để giữ giá trị mặc định
                 onChange={handleInputChange}
                 required
               >
-              <option value={true}>Kích hoạt</option>
-              <option value={false}>Không hoạt động</option>
+                <option value="true">Kích hoạt</option>
+                <option value="false">Không hoạt động</option>
               </select>
 
             </>

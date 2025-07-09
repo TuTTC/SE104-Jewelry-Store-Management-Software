@@ -40,21 +40,22 @@ export async function xoaPhieuDichVu(id) {
   return await res.json();
 }
 
-// Xuất PDF phiếu dịch vụ
-export async function xuatPDFPhieuDichVu(id) {
-  const res = await fetch(`${API_BASE}/phieudichvu/${id}/export-pdf`, {
+// In toàn bộ danh sách phiếu dịch vụ (PDF blob)
+export async function printDanhSachPhieuDichVu() {
+  const res = await fetch(`${API_BASE}/phieudichvu/print-danhsach`, {
     method: "GET",
   });
+  if (!res.ok) throw new Error("Không thể lấy PDF danh sách phiếu dịch vụ");
+  return await res.blob();
+}
 
-  // Lấy dữ liệu PDF từ response blob
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
+// In chi tiết phiếu dịch vụ theo mã
+export function printChiTietPhieuDichVu(maPDV) {
+  const url = `${API_BASE}/phieudichvu/${maPDV}/print`;
+  window.open(url, "_blank"); // Mở tab mới luôn
+}
 
-  // Tự động mở/tải PDF
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `phieu_dich_vu_${id}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+export async function searchPhieuDichVu(keyword) {
+  const res = await fetch(`${API_BASE}/phieudichvu/search?keyword=${encodeURIComponent(keyword)}`);
+  return await res.json();
 }

@@ -77,31 +77,31 @@ useEffect(() => {
   }, [selectedTab]);
 
 const convertRoleNameToValue = (name) => {
-  if (name === "Admin") return "admin";
-  if (name === "Nhân viên") return "employee";
-  if (name === "Khách hàng") return "customer";
+  if (name === "customer") return 1;
+  if (name === "employee") return 3;
+  if (name === "admin") return 2;
+  return null; // hoặc throw error
+};
+
+const convertRoleLabelToCode = (label) => {
+  if (!label) return "";
+  const normalized = label.trim().toLowerCase();
+
+  if (["khách hàng", "customer"].includes(normalized)) return "customer";
+  if (["nhân viên", "employee"].includes(normalized)) return "employee";
+  if (["quản trị", "admin"].includes(normalized)) return "admin";
   return "";
 };
+
+
 
 // Modal tài khoản
 const openModal = (mode, data = null) => {
   setModalMode(mode);
   setSelectedAccount(data);
 
-  if (mode === "add" || mode === "edit") {
-    setFormData({
-      username: data?.TenDangNhap || "",
-      password: "",
-      email: data?.Email || "",
-      fullName: data?.HoTen || "",
-      phone: data?.SoDienThoai || "",
-      address: data?.DiaChi || "",
-      createdAt: data?.TaoNgay ? data.TaoNgay.slice(0, 10) : "",
-      role: convertRoleNameToValue(data?.VaiTro) || "",
-      status: data?.TrangThai === "Kích hoạt" ? "true" : "false"
-    });
-
-  } else {
+  if (mode === "add") {
+    // Modal thêm mới
     setFormData({
       username: "",
       password: "",
@@ -109,15 +109,31 @@ const openModal = (mode, data = null) => {
       fullName: "",
       phone: "",
       address: "",
-      createdAt: "",
+      createdAt: new Date().toISOString().slice(0, 10),
       role: "",
-      status: ""
+      status: "true"
+    });
+  } else if (mode === "edit" && data) {
+    // Modal sửa
+    console.log("VaiTro:", data?.VaiTro); // ← Kiểm tra có khoảng trắng không
+
+    setFormData({
+      username: data.TenDangNhap || "",
+      password: "", // không load password cũ
+      email: data.Email || "",
+      fullName: data.HoTen || "",
+      phone: data.SoDienThoai || "",
+      address: data.DiaChi || "",
+      createdAt: data.TaoNgay ? data.TaoNgay.slice(0, 10) : "",
+      role: convertRoleLabelToCode(data.VaiTro) || "",
+      status: data.TrangThai === "Kích hoạt" ? "true" : "false"
     });
   }
 
   setError("");
   setIsModalOpen(true);
 };
+
 
 
   const closeModal = () => {
@@ -141,18 +157,19 @@ const submitForm = async (e) => {
     setError("Vui lòng điền đầy đủ các trường bắt buộc!");
     return;
   }
-
-  const payload = {
-  TenDangNhap: formData.username,
-  MatKhau: formData.password || undefined, // Không gửi nếu sửa mà không nhập
-  Email: formData.email,
-  HoTen: formData.fullName,
-  SoDienThoai: formData.phone,
-  DiaChi: formData.address,
-  TaoNgay: formData.createdAt,
-  VaiTro: convertRoleNameToValue(formData.role),  // Hàm chuyển "customer" => "Khách hàng", v.v.
-  TrangThai: formData.status === "true" || formData.status === true, // Ép về boolean thật
+  
+const payload = {
+  username: formData.username,
+  password: formData.password || undefined,
+  email: formData.email,
+  fullName: formData.fullName,
+  phone: formData.phone,
+  address: formData.address,
+  role: convertRoleNameToValue(formData.role), // số: 1,2,3
+  status: formData.status === "true" || formData.status === true,
 };
+
+  console.log("Payload gửi:", payload);
 
   try {
     if (modalMode === "add") {
@@ -372,7 +389,13 @@ const submitForm = async (e) => {
                   <td>{a.VaiTro}</td>
                   
                   <td>{new Date(a.TaoNgay).toLocaleDateString()}</td>
-                  <td>{a.TrangThai}</td>
+                  <td>
+                    {a.TrangThai === "Kích hoạt" ? (
+                      <span className="status-instock">Kích hoạt</span>
+                    ) : (
+                      <span className="status-inactive">Khóa</span>
+                    )}
+                  </td>
                   <td>
                     <button onClick={() => openPermissionModal(a)} className="action-icon">
                       <ShieldCheck className="icon" />

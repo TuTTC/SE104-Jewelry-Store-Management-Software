@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Edit, Trash, X, ArrowUpDown, Filter } from "lucide-react";
+import { Edit, Trash, ArrowUpDown, Filter } from "lucide-react";
+import userApi from "../services/userApi";
 import {
   danhSachDonHang,
   capNhatTrangThaiDonHang,
@@ -11,9 +12,8 @@ import {
   suaDonHang,
   getChiTietDonHang,
   capNhatChiTietDonHang,
-  inChiTietDonHang
+  inChiTietDonHang,
 } from "../services/donhangApi";
-import GeneralModalForm from "../components/GeneralModalForm-2";
 import OrderDetailModal from "../components/OrderDetailModal"; // Import new modal
 import Pagination from '../components/Pagination';
 import * as productApi from "../services/productApi";
@@ -27,40 +27,46 @@ const OrdersManager = () => {
   const [selectedTab, setSelectedTab] = useState("list");
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState("add");
-  const [formData, setFormData] = useState({});
-  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    customerId: '',
+    date: '',
+    status: 'Pending',
+    paymentMethod: '',
+    deliveryAddress: ''
+  });
+    const [error, setError] = useState("");
   const [selectedOrderDetails, setSelectedOrderDetails] = useState([]);
   const [viewModal, setViewModal] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const itemsPerPage = 10;
+  const [customers, setCustomers] = useState([]);
+  const [users, setUsers] = useState([]); // Danh sách khách hàng
 
   const fetchOrders = async () => {
     try {
       const res = await danhSachDonHang();
       if (res.status === "success") {
-     const data = res.data.map(o => ({
-  ...o,
-  id: o.id,
-  customerId: o.customerId,
-  orderCode: o.orderCode,
-  customer: o.customer,
-  date: o.date,
-  total: o.total,
-  status: o.status,
-  paymentMethod: o.paymentMethod,
-  deliveryAddress: o.deliveryAddress
-}));
-
-
-        console.log("▶️ Mapped orders:", data);
+        const data = res.data.map(o => ({
+          ...o,
+          id: o.id,
+          customerId: o.customerId,
+          orderCode: o.orderCode,
+          customer: o.customer,
+          date: o.date,
+          total: o.total,
+          status: o.status,
+          paymentMethod: o.paymentMethod,
+          deliveryAddress: o.deliveryAddress
+        }));
+        console.log("Mapped orders:", data);
         setOrders(data);
         setData(data);
-      } else {
-        throw new Error(res.message);
-      }
+          } else {
+            throw new Error(res.message);
+          }
     } catch (err) {
       alert("Lỗi khi lấy dữ liệu đơn hàng: " + err.message);
     }
@@ -69,6 +75,7 @@ const OrdersManager = () => {
   useEffect(() => {
     fetchOrders();
     loadProducts();
+    loadCustomers();
   }, []);
 
   useEffect(() => {
@@ -137,73 +144,73 @@ const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
 
     setData(sortedData);
   };
-
-  const handleStatusChange = async (id, value) => {
+    
+  const loadCustomers = async () => {
     try {
-      // Gọi API cập nhật trạng thái đơn hàng
-      const response = await fetch(`http://localhost:5000/api/donhang/${id}/trangthai`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ TrangThai: value }),
-      });
-
-      const result = await response.json();
-
-      if (result.status === "success") {
-        // Cập nhật lại UI
-        setOrders((prev) =>
-          prev.map((order) =>
-            order.id === id ? { ...order, status: value } : order
-          )
-        );
-        setData((prev) =>
-          prev.map((order) =>
-            order.id === id ? { ...order, status: value } : order
-          )
-        );
-      } else {
-        alert("Cập nhật trạng thái thất bại!");
-      }
+      const res = await userApi.getAllUsers(); // trả về mảng [{ UserID, HoTen, VaiTro, TrangThai, ... }, …]
+      // Chỉ lấy khách hàng đang hoạt động
+      const customers = res.filter(
+        u => u.VaiTro === "Khách hàng" && u.TrangThai === "Kích hoạt"
+      );
+      setUsers(customers);
     } catch (err) {
-      console.error("Lỗi khi cập nhật trạng thái:", err);
-      alert("Có lỗi xảy ra khi cập nhật trạng thái.");
+      console.error("Lỗi load khách hàng:", err);
+    }
+  };
+  const handleStatusChange = (e) => {
+    const value = e.target.value;
+    setSelectedStatus(value);
+    if (value === "") {
+      setData(orders); // hiện tất cả
+    } else {
+      const filteredData = orders.filter((item) => item.status === value);
+      setData(filteredData);
     }
   };
 
-const openModal = (section, type, data = {}) => {
-  if (section !== "orders") return;
-  setModalType(type);
+const openOrderModal = (mode, order = null) => {
+  setModalType(mode);
+  setSelectedOrder(order);
+  setViewModal(true); // mở modal chi tiết
+};
 
-  const transformedData = type === "edit" ? {
-    id: data.id || data.MaDH,
-    customerId: data.UserID || '',
-    date: data.NgayDat?.slice(0, 16) || '',
-    total: data.TongTien || '',
-    status: data.TrangThai || 'Pending',
-    paymentMethod: data.PhuongThucThanhToan || '',
-    deliveryAddress: data.DiaChiGiao || ''
-  } : {
-    customerId: '',
-    date: '',
-    total: 0,
-    status: 'Pending',
-    paymentMethod: '',
-    deliveryAddress: ''
-  };
+const openModal = async (mode, data = {}) => {
+  setModalType(mode);           // "add" hoặc "edit"
+  let details = data.ChiTiet;   // nếu data đã có ChiTiet thì dùng luôn
 
-  setFormData(transformedData);
-  setSelectedOrder(data);
+  // Nếu edit mà chưa có details, fetch từ API
+  if (mode === "edit" && !details) {
+    const json = await getChiTietDonHang(data.id);
+    if (json.status === "success") details = json.data;
+    else return alert("Không lấy được chi tiết đơn hàng!");
+  }
+
+  // Khởi tạo formData chung
+  setFormData({
+    id: data.id || null,
+    customerId: data.customerId ?? data.MaKH ?? "",
+    date:       (data.date ?? data.NgayDat ?? "").slice(0,10),
+    status:     data.status ?? data.TrangThai ?? "Pending",
+    paymentMethod:   data.paymentMethod ?? data.PhuongThucThanhToan ?? "",
+    deliveryAddress: data.deliveryAddress ?? data.DiaChiGiao ?? ""
+  });
+
+  // Thiết lập chi tiết
+  setSelectedOrderDetails(details || []);
+  setSelectedOrderId(data.id || null);
+
+  // Mở modal
   setShowModal(true);
 };
 
-
-  const closeModal = () => {
-    setShowModal(false);
-    setFormData({});
-    setError("");
-  };
+const closeModal = () => {
+  setShowModal(false);
+  setFormData({
+    customerId: '', date: '', status: 'Pending',
+    paymentMethod: '', deliveryAddress: ''
+  });
+  setSelectedOrderDetails([]);
+};
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -236,58 +243,80 @@ const openModal = (section, type, data = {}) => {
   };
 
   const saveOrderDetails = async () => {
-    try {
-      const json = await capNhatChiTietDonHang(selectedOrderId, selectedOrderDetails);
-      if (json.status === "success") {
-        alert("Đã lưu chi tiết đơn hàng.");
-        setViewModal(false);
-        fetchOrders();
-      } else {
-        alert("Lỗi khi lưu: " + json.message);
-      }
-    } catch (err) {
-      alert("Lỗi kết nối: " + err.message);
-    }
-  };
+      const tongTien = selectedOrderDetails.reduce(
+      (sum, item) => sum + item.SoLuong * item.GiaBan,
+      0
+    );
 
-  const handleFormSubmit = async (formData, chiTietList) => {
     const payload = {
-      UserID: parseInt(formData.customerId, 10),
-      NgayDat: formData.date,
-      TongTien: parseFloat(formData.total) || 0,
-      TrangThai: formData.status || "Pending",
-      PhuongThucThanhToan: formData.paymentMethod,
-      DiaChiGiao: formData.deliveryAddress,
-      ChiTiet: (chiTietList || []).map(ct => ({
-        MaSP: parseInt(ct.MaSP, 10),
-        SoLuong: parseInt(ct.SoLuong, 10),
+      ...formData,
+      TongTien: tongTien,
+      ChiTiet: selectedOrderDetails.map((ct) => ({
+        MaSP: ct.MaSP,
+        SoLuong: parseInt(ct.SoLuong),
         GiaBan: parseFloat(ct.GiaBan),
-        ThanhTien: parseFloat(ct.SoLuong * ct.GiaBan)
-      }))
+        ThanhTien: parseInt(ct.SoLuong) * parseFloat(ct.GiaBan),
+      })),
     };
 
-    if (modalType === "edit" && selectedOrder?.MaDH) {
-      payload.id = selectedOrder.MaDH;
-    }
-
-    console.log("Payload:", payload);
+    console.log("Payload gửi đi:", payload);
 
     try {
-      const res = modalType === "add"
-        ? await taoDonHang(payload)
-        : await suaDonHang(formData.id, payload);
-
+      const res = await suaDonHang(payload); // hoặc suaDonHang(payload)
       if (res.status === "success") {
-        alert(modalType === "edit" ? "Cập nhật đơn hàng thành công." : "Đơn hàng đã được tạo.");
+        alert("Lưu đơn hàng thành công");
         fetchOrders();
-        closeModal();
+        setShowModal(false);
       } else {
-        alert("Lỗi: " + res.message);
+        alert("Lỗi khi lưu đơn hàng");
       }
     } catch (err) {
-      alert("Lỗi kết nối: " + err.message);
+      alert("Lỗi khi gửi request: " + err.message);
     }
   };
+
+const handleFormSubmit = async (formData, chiTietList) => {
+  // Tính tổng
+  const tongTien = chiTietList.reduce(
+    (s, ct) => s + ct.SoLuong * ct.GiaBan, 0
+  );
+
+  // Chuẩn bị payload
+  const payload = {
+    UserID: parseInt(formData.customerId, 10),
+    NgayDat: formData.date,
+    TongTien: tongTien,
+    TrangThai: formData.status,
+    PhuongThucThanhToan: formData.paymentMethod,
+    DiaChiGiao: formData.deliveryAddress,
+    ChiTiet: chiTietList.map(ct => ({
+      MaSP: parseInt(ct.MaSP,10),
+      SoLuong: parseInt(ct.SoLuong,10),
+      GiaBan: parseFloat(ct.GiaBan),
+      ThanhTien: ct.SoLuong*ct.GiaBan
+    }))
+  };
+
+  try {
+    let res;
+    if (modalType === "edit") {
+      // **Chú ý**: suaDonHang nhận (id, payload)
+      res = await suaDonHang(formData.id, payload);
+    } else {
+      // taoDonHang nhận payload
+      res = await taoDonHang(payload);
+    }
+    if (res.status === "success") {
+      alert(modalType==="edit"?"Cập nhật thành công":"Tạo đơn thành công");
+      fetchOrders();
+      closeModal();
+    } else {
+      alert("Lỗi: "+res.message);
+    }
+  } catch(err) {
+    alert("Lỗi kết nối: "+err.message);
+  }
+};
 
   const handleDelete = async (section, id) => {
     if (section !== "orders") return;
@@ -320,20 +349,6 @@ const openModal = (section, type, data = {}) => {
     }
   };
 
-  const handleViewDetails = async (orderId) => {
-    try {
-      const json = await getChiTietDonHang(orderId);
-      if (json.status === "success") {
-        setSelectedOrderId(orderId);
-        setSelectedOrderDetails(json.data);
-        setViewModal(true);
-      } else {
-        alert("Không thể lấy chi tiết đơn hàng.");
-      }
-    } catch (err) {
-      alert("Lỗi khi kết nối API: " + err.message);
-    }
-  };
 const handlePrint = async () => {
   try {
     const blob = await inChiTietDonHang(selectedOrderId);
@@ -349,8 +364,8 @@ const handlePrint = async () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title"></h2>
-        <button onClick={() => openModal("orders", "add")} className="action-button">
+        <h2 className="table-title">Quản lý đơn hàng</h2>
+        <button onClick={() => openModal("add")} className="action-button">
           Thêm đơn hàng
         </button>
       </div>
@@ -375,20 +390,6 @@ const handlePrint = async () => {
       </div>
 
       <div className="tab-content">
-        <OrderDetailModal
-          showModal={viewModal}
-          onClose={() => setViewModal(false)}
-          selectedOrderDetails={selectedOrderDetails}
-          setSelectedOrderDetails={setSelectedOrderDetails}
-          products={products}
-          updateOrderDetail={updateOrderDetail}
-          removeOrderDetail={removeOrderDetail}
-          addOrderDetail={addOrderDetail}
-          saveOrderDetails={saveOrderDetails}
-          selectedOrderId={selectedOrderId}
-          inChiTietDonHang={handlePrint}
-        />
-
         {selectedTab === "list" && (
           <table className="data-table">
             <thead>
@@ -425,7 +426,7 @@ const handlePrint = async () => {
                   <td>{o.total.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</td>
                   <td>{o.status}</td>
                   <td>
-                    <button onClick={() => handleViewDetails(o.id)} className="action-icon edit">
+                    <button onClick={() => openModal("edit", o)} className="action-icon edit">
                       <Edit className="icon" />
                     </button>
                     <button
@@ -464,7 +465,7 @@ const handlePrint = async () => {
                   <td>{o.total.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</td>
                   <td>{o.status}</td>
                   <td>
-                    <button onClick={() => openModal("orders", "edit", o)} className="action-icon edit">
+                    <button onClick={() => openModal("edit", o)} className="action-icon edit">
                       <Edit className="icon" />
                     </button>
                   </td>
@@ -602,7 +603,7 @@ const handlePrint = async () => {
                   <td>{o.orderCode}</td>
                   <td>{o.status}</td>
                   <td>
-                    <select onChange={(e) => handleStatusChange(o.id, e.target.value)} value={o.status}>
+                    <select onChange={(e) => handleOrderStatusChange(o.id, e.target.value)} value={o.status}>
                       <option value="Pending">Chờ xử lý</option>
                       <option value="Shipped">Đã giao</option>
                       <option value="Completed">Hoàn thành</option>
@@ -681,16 +682,20 @@ const handlePrint = async () => {
         />
       </div>
 
-      <GeneralModalForm
-        section="orders"
-        mode={modalType}
-        onClose={closeModal}
-        onSubmit={handleFormSubmit}
+      <OrderDetailModal
         showModal={showModal}
+        onClose={closeModal}
+        formData={formData}
         handleInputChange={handleInputChange}
-        error={error}
-        initialData={selectedOrder}
-        
+        selectedOrderDetails={selectedOrderDetails}
+        products={products}
+        updateOrderDetail={updateOrderDetail}
+        removeOrderDetail={removeOrderDetail}
+        addOrderDetail={addOrderDetail}
+        saveOrderDetails={() => handleFormSubmit(formData, selectedOrderDetails)}
+        selectedOrderId={selectedOrderId}
+        inChiTietDonHang={inChiTietDonHang}
+        users={users}
       />
     </div>
   );

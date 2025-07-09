@@ -144,9 +144,16 @@ def update_user_by_id(user_id):
         else:
             user.TrangThai = False
 
+    # ✅ Cập nhật vai trò
+    if 'role' in data:
+        try:
+            user.MaVaiTro = int(data['role'])
+        except ValueError:
+            return jsonify({'message': 'Vai trò không hợp lệ'}), 400
 
     db.session.commit()
     return jsonify({'message': 'Cập nhật tài khoản thành công'}), 200
+
 
 
 
@@ -233,7 +240,6 @@ def update_user_permissions(user_id):
 #     except IntegrityError:
 #         db.session.rollback()
 #         return jsonify({'message': 'Lỗi hệ thống, vui lòng thử lại'}), 500
-
 @user_bp.route('/add', methods=['POST'])
 def create_user():
     data = request.get_json()
@@ -244,7 +250,8 @@ def create_user():
     ho_ten = data.get('fullName')
     so_dien_thoai = data.get('phone')
     dia_chi = data.get('address')
-    ma_vai_tro = data.get('role')  # role ở đây truyền MaVaiTro dạng số
+    ma_vai_tro = data.get('role')  # Vai trò dạng số (1, 2, 3)
+    trang_thai = data.get('status', True)  # ✅ Mặc định là True nếu không gửi lên
 
     # Kiểm tra thông tin bắt buộc
     if not all([ten_dang_nhap, email, mat_khau, ho_ten, so_dien_thoai, ma_vai_tro]):
@@ -267,14 +274,15 @@ def create_user():
         HoTen=ho_ten,
         SoDienThoai=so_dien_thoai,
         DiaChi=dia_chi,
-        MaVaiTro=ma_vai_tro
+        MaVaiTro=ma_vai_tro,
+        TrangThai=bool(trang_thai)  # ✅ ép kiểu rõ ràng
     )
 
     try:
         db.session.add(new_user)
-        db.session.flush()  # Đảm bảo có UserID trước khi commit
+        db.session.flush()
 
-        # Nếu là khách hàng (MaVaiTro == 1), thêm vào bảng KHACHHANG
+        # Nếu là khách hàng
         if int(ma_vai_tro) == 1:
             khach_hang = KHACHHANG(
                 UserID=new_user.UserID,
@@ -291,3 +299,4 @@ def create_user():
     except IntegrityError:
         db.session.rollback()
         return jsonify({'message': 'Lỗi hệ thống, vui lòng thử lại'}), 500
+

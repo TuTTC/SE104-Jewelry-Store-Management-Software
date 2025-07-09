@@ -63,8 +63,8 @@ const RegisterForm = ({ formData, onChange, onSubmit, onSwitch, error, onGoogleL
     </div>
 
     <button type="submit" className="action-button">Đăng ký</button>
-    <button type="button" onClick={() => onSwitch("login")} className="action-button cancel">Đã có tài khoản? Đăng nhập</button>
-    <button type="button" onClick={onGoogleLogin} className="action-button google">Đăng ký với Google</button>
+    {/* <button type="button" onClick={() => onSwitch("login")} className="action-button cancel">Đã có tài khoản? Đăng nhập</button>
+    <button type="button" onClick={onGoogleLogin} className="action-button google">Đăng ký với Google</button> */}
   </form>
 );
 

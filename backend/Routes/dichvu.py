@@ -23,8 +23,6 @@ def debug_dv():
 
 # Thêm dịch vụ mới
 @dichvu_bp.route('/dichvu', methods=['POST'])
-@jwt_required()
-@permission_required("services:add")
 def create_dichvu():
     data = request.get_json()
     try:
@@ -47,8 +45,6 @@ def create_dichvu():
 
 # Xóa mềm dịch vụ
 @dichvu_bp.route('/dichvu/<int:id>', methods=['DELETE'])
-@jwt_required()
-@permission_required("services:delete")
 def delete_dichvu(id):
     dv = DICHVU.query.get(id)
     if not dv:
@@ -60,8 +56,6 @@ def delete_dichvu(id):
 
 # Cập nhật dịch vụ
 @dichvu_bp.route('/dichvu/<int:id>', methods=['PUT'])
-@jwt_required()
-@permission_required("services:edit")
 def update_dichvu(id):
     data = request.get_json()
     dv = DICHVU.query.get(id)
@@ -100,8 +94,6 @@ def search_dichvu():
 
 # Lấy tất cả dịch vụ còn hoạt động
 @dichvu_bp.route('/dichvu', methods=['GET'])
-@jwt_required()
-@permission_required("services:view")
 def get_all_dichvu():
     services = DICHVU.query.filter_by(IsDisable=False).all()
     data = [
@@ -119,8 +111,6 @@ def get_all_dichvu():
 
 # Xuất danh sách dịch vụ ra PDF
 @dichvu_bp.route('/dichvu/pdf', methods=['GET'])
-@jwt_required()
-@permission_required("services:view")
 def export_dichvu_pdf():
     buffer = BytesIO()
     p = canvas.Canvas(buffer)
@@ -175,3 +165,5 @@ def search_phieudichvu():
         })
 
     return jsonify({"status": "success", "data": data})
+
+

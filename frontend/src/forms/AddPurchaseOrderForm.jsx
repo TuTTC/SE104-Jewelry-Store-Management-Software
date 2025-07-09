@@ -135,20 +135,15 @@ function PurchaseOrderForm({
             ))}
           </select>
 
-          <label>Người lập:</label>
-          <select
-            name="user"
-            value={formData.user || ""}
-            onChange={handleInputChange}
-            required
-          >
-            <option value="">Chọn người lập</option>
-            {users.map((nguoiDung) => (
-              <option key={nguoiDung.UserID} value={nguoiDung.UserID}>
-                {nguoiDung.Email}
-              </option>
-            ))}
-          </select>
+         <label>Người lập:</label>
+<input
+  type="text"
+  name="userName"
+  value={formData.userName || "Không rõ"}
+  disabled
+  className="form-control"
+/>
+
 
           <label>Ngày nhập:</label>
           <input

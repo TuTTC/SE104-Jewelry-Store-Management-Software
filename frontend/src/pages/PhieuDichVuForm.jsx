@@ -1,51 +1,70 @@
 import React, { useEffect, useState } from "react";
 import { X, Plus, Trash } from "lucide-react";
 import "../App.css";
+import userApi from "../services/userApi"; 
+import { danhSachDichVu as fetchDichVuApi } from "../services/dichvuApi";
 
 const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData = {} }) => {
-  const [maKH, setMaKH] = useState("");
+  const [users, setUsers] = useState([]);
   const [ngayLap, setNgayLap] = useState("");
   const [ghiChu, setGhiChu] = useState("");
   const [trangThai, setTrangThai] = useState("Chưa giao");
-  const [danhSachDichVu, setDanhSachDichVu] = useState([]);
+  const [servicesList, setServicesList] = useState([]);
   const [chiTiet, setChiTiet] = useState([]);
   const [userID, setUserID] = useState("");
 
+  // useEffect(() => {
+  //   async function fetchDichVu() {
+  //     try {
+  //       const json = await danhSachDichVu();
+  //       if (json.status === "success") {
+  //         setDanhSachDichVu(json.data);
+  //       } else {
+  //         console.error("Lỗi lấy danh sách dịch vụ:", json.message);
+  //       }
+  //     } catch (err) {
+  //       console.error("Lỗi kết nối API dịch vụ:", err);
+  //     }
+  //   }
+
+  //   fetchDichVu();
+  // }, []);
+
+  // 1) Load danh sách khách hàng khi component mount
   useEffect(() => {
-    async function fetchDichVu() {
-      const res = await fetch("http://localhost:5000/api/dichvu");
-      const json = await res.json();
-      if (json.status === "success") setDanhSachDichVu(json.data);
-    }
-    fetchDichVu();
-  }, []);
+    const loadCustomers = async () => {
+      try {
+        const all = await userApi.getAllUsers();
+        // Backend trả về mảng đối tượng { UserID, HoTen, VaiTro, TrangThai, … }
+        const customers = all.filter(u =>
+          u.VaiTro === "Khách hàng" &&
+          (u.TrangThai === true || u.TrangThai === "Kích hoạt")
+        );
+        setUsers(customers);
+      } catch (err) {
+        console.error("Lỗi load khách hàng:", err);
+      }
+    };
+    if (visible) loadCustomers();
+  }, [visible]);
 
-//   useEffect(() => {
-//   if (visible) {
-//     if (mode === "add") {
-//       // Reset toàn bộ các trường khi thêm mới
-//       // setMaKH("");
-//       setUserID("");
-//       setNgayLap("");
-//       setGhiChu("");
-//       setTrangThai("Chưa giao");
-//       setChiTiet([]);
-//     } else if (mode === "edit" || mode === "view") {
-//       // Nếu sửa hoặc xem, nạp dữ liệu từ initialData
-//       setUserID(initialData.UserID || "");
-//       // // setMaKH(initialData.MaKH || "");
-//       // const ngayLapFormat = initialData.NgayLap
-//       //   ? initialData.NgayLap.replace(" ", "T").slice(0, 16)
-//       //   : "";
+  // 2) Load danh sách dịch vụ khi modal mở
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        const json = await fetchDichVuApi();
+        if (json.status === "success") {
+          setServicesList(json.data);
+        } else {
+          console.error("Lỗi lấy danh sách dịch vụ:", json.message);
+        }
+      } catch (err) {
+        console.error("API dịch vụ lỗi kết nối:", err);
+      }
+    };
+    if (visible) loadServices();
+  }, [visible]);
 
-//       // setNgayLap(ngayLapFormat);
-//       setNgayLap(initialData.NgayLap || "");
-//       setGhiChu(initialData.GhiChu || "");
-//       setTrangThai(initialData.TrangThai || "Chưa giao");
-//       setChiTiet(initialData.ChiTiet || []);
-//     }
-//   }
-// }, [visible, mode, initialData]);
 useEffect(() => {
   if (visible) {
     if (mode === "add") {
@@ -107,7 +126,7 @@ useEffect(() => {
     updated[index][field] = value;
 
     if (field === "MaDV") {
-      const dv = danhSachDichVu.find((d) => d.MaDV === parseInt(value));
+      const dv = servicesList.find((d) => d.MaDV === parseInt(value));
       updated[index].DonGia = dv?.DonGia || 0;
 
       // Nếu các trường chưa được gán lần nào thì gán mặc định
@@ -174,13 +193,19 @@ useEffect(() => {
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form scrollable">
-          <input
-          type="number"
-          placeholder="Mã khách hàng"
+        {/* === Combobox chọn khách hàng === */}
+        <select
           value={userID}
-          onChange={(e) => setUserID(e.target.value)}
+          onChange={e => setUserID(e.target.value)}
           required
-        />
+        >
+          <option value="" disabled>-- Chọn khách hàng --</option>
+          {users.map(u => (
+            <option key={u.UserID} value={u.UserID}>
+              {u.HoTen} (#{u.UserID})
+            </option>
+          ))}
+        </select>
 
           <input
             type="datetime-local"
@@ -254,9 +279,9 @@ useEffect(() => {
                       style={{ width: "100%" }}
                     >
                       <option value="">-- Chọn dịch vụ --</option>
-                      {danhSachDichVu
-                        .filter((dv) => dv.TrangThai === 1 || dv.TrangThai === true || dv.TrangThai === "true")
-                        .map((dv) => (
+                      {servicesList
+                        .filter(dv => dv.TrangThai === true || dv.TrangThai === 1)
+                        .map(dv => (
                           <option key={dv.MaDV} value={dv.MaDV}>
                             {dv.TenDV}
                           </option>
