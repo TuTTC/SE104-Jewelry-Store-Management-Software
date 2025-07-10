@@ -346,7 +346,7 @@ const InventoryManager = () => {
           </thead>
           <tbody>
             {inventory.map((i, index) => (
-              <tr key={index}>
+              <tr key={index} className={i.tonCuoi < 10 ? "low-stock" : ""}>
                 <td>{index + 1}</td>
                 <td>{i.productName}</td>
                 <td>{i.tonDau}</td>

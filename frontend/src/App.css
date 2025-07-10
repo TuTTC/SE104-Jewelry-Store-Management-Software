@@ -2331,3 +2331,8 @@ body {
 .filter-popup select:focus {
   background-color: #f0f0f0;
 }
+
+.low-stock {
+  color: red;
+  font-weight: bold;
+}

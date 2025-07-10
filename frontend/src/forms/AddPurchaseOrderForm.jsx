@@ -111,7 +111,14 @@ function PurchaseOrderForm({
     <div className="modal-overlay">
       <div className="modal" style={{ width: "auto", maxWidth: "90vw" }}>
         <div className="modal-header">
-          <h2>{modalType === "add" ? "Thêm Phiếu nhập" : "Sửa Phiếu nhập"}</h2>
+         <h2>
+            {modalType === "add"
+              ? "Thêm Phiếu nhập"
+              : modalType === "edit"
+              ? "Sửa Phiếu nhập"
+              : "Xem Phiếu nhập"}
+          </h2>
+
           <button onClick={closeModal} className="modal-close">
             <X className="icon" />
           </button>
@@ -136,13 +143,13 @@ function PurchaseOrderForm({
           </select>
 
          <label>Người lập:</label>
-<input
-  type="text"
-  name="userName"
-  value={formData.userName || "Không rõ"}
-  disabled
-  className="form-control"
-/>
+          <input
+            type="text"
+            name="userName"
+            value={formData.userName || "Không rõ"}
+            disabled
+            className="form-control"
+          />
 
 
           <label>Ngày nhập:</label>

@@ -300,3 +300,4 @@ def create_user():
         db.session.rollback()
         return jsonify({'message': 'Lỗi hệ thống, vui lòng thử lại'}), 500
 
+

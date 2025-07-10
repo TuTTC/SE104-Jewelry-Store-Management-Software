@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Edit, Trash, ArrowUpDown, Filter } from "lucide-react";
+import { Edit, Trash, ArrowUpDown, Filter, Eye } from "lucide-react";
 import userApi from "../services/userApi";
 import {
   danhSachDonHang,
@@ -17,6 +17,7 @@ import {
 import OrderDetailModal from "../components/OrderDetailModal"; // Import new modal
 import Pagination from '../components/Pagination';
 import * as productApi from "../services/productApi";
+
 
 const OrdersManager = () => {
   const [orders, setOrders] = useState([]);
@@ -44,6 +45,7 @@ const OrdersManager = () => {
   const itemsPerPage = 10;
   const [customers, setCustomers] = useState([]);
   const [users, setUsers] = useState([]); // Danh sách khách hàng
+  const [role, setRole] = useState("");
 
   const fetchOrders = async () => {
     try {
@@ -73,10 +75,31 @@ const OrdersManager = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
-    loadProducts();
-    loadCustomers();
+    const init = async () => {
+      try {
+        // Lấy người dùng hiện tại
+        const currentUser = await userApi.getCurrentUser();
+        const userRole = currentUser?.VaiTro || "";
+        setRole(userRole); //Cập nhật state
+
+        // Luôn gọi đơn hàng
+        await fetchOrders();
+
+        if (["Admin", "Nhân viên"].includes(userRole)) {
+          await loadProducts();
+          await loadCustomers();
+        } else if (userRole === "Khách hàng") {
+          await loadProducts();
+          setCustomers([currentUser]); // Chỉ thêm chính khách hàng vào danh sách
+        }
+      } catch (err) {
+        console.error("Lỗi khi khởi tạo dữ liệu:", err);
+      }
+    };
+
+    init();
   }, []);
+
 
   useEffect(() => {
     let filteredData = orders;
@@ -175,33 +198,35 @@ const openOrderModal = (mode, order = null) => {
 };
 
 const openModal = async (mode, data = {}) => {
-  setModalType(mode);           // "add" hoặc "edit"
-  let details = data.ChiTiet;   // nếu data đã có ChiTiet thì dùng luôn
+  setModalType(mode);           // "add", "edit", hoặc "view"
+  let details = data.ChiTiet;
 
-  // Nếu edit mà chưa có details, fetch từ API
-  if (mode === "edit" && !details) {
+  // Nếu là edit hoặc view mà chưa có chi tiết, thì gọi API
+  if ((mode === "edit" || mode === "view") && !details) {
     const json = await getChiTietDonHang(data.id);
     if (json.status === "success") details = json.data;
     else return alert("Không lấy được chi tiết đơn hàng!");
   }
 
-  // Khởi tạo formData chung
+  // Khởi tạo formData (dùng chung cho cả add, edit, view)
   setFormData({
     id: data.id || null,
     customerId: data.customerId ?? data.MaKH ?? "",
-    date:       (data.date ?? data.NgayDat ?? "").slice(0,10),
-    status:     data.status ?? data.TrangThai ?? "Pending",
-    paymentMethod:   data.paymentMethod ?? data.PhuongThucThanhToan ?? "",
+    customerName: data.customer ?? data.HoTen ?? "", // tên khách hàng
+    date: (data.date ?? data.NgayDat ?? "").slice(0, 10),
+    status: data.status ?? data.TrangThai ?? "Pending",
+    paymentMethod: data.paymentMethod ?? data.PhuongThucThanhToan ?? "",
     deliveryAddress: data.deliveryAddress ?? data.DiaChiGiao ?? ""
   });
 
-  // Thiết lập chi tiết
+  // Thiết lập chi tiết đơn hàng
   setSelectedOrderDetails(details || []);
   setSelectedOrderId(data.id || null);
 
-  // Mở modal
+  // Hiển thị modal
   setShowModal(true);
 };
+
 
 const closeModal = () => {
   setShowModal(false);
@@ -364,10 +389,13 @@ const handlePrint = async () => {
   return (
     <div className="table-card">
       <div className="table-header">
-        <h2 className="table-title">Quản lý đơn hàng</h2>
+        <h2 className="table-title"></h2>
+       {role !== "Khách hàng" && (
         <button onClick={() => openModal("add")} className="action-button">
           Thêm đơn hàng
         </button>
+      )}
+
       </div>
 
       <div className="tabs">
@@ -378,16 +406,19 @@ const handlePrint = async () => {
           { key: "shipping", label: "Đóng gói & giao hàng" },
           { key: "return", label: "Trả/Đổi hàng" },
           { key: "status", label: "Cập nhật trạng thái" },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            className={selectedTab === tab.key ? "tab active" : "tab"}
-            onClick={() => setSelectedTab(tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
+        ]
+          .filter(tab => !(role === "Khách hàng" && tab.key === "status")) // ⛔ Ẩn tab "status" nếu là khách
+          .map((tab) => (
+            <button
+              key={tab.key}
+              className={selectedTab === tab.key ? "tab active" : "tab"}
+              onClick={() => setSelectedTab(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
       </div>
+
 
       <div className="tab-content">
         {selectedTab === "list" && (
@@ -426,16 +457,28 @@ const handlePrint = async () => {
                   <td>{o.total.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</td>
                   <td>{o.status}</td>
                   <td>
-                    <button onClick={() => openModal("edit", o)} className="action-icon edit">
-                      <Edit className="icon" />
-                    </button>
+                  {role === "Khách hàng" ? (
                     <button
-                      onClick={() => handleDelete("orders", o.id)}
-                      className="action-icon delete"
+                      onClick={() => openModal("view", o)} // mở modal xem chi tiết
+                      className="action-icon edit"
                     >
-                      <Trash className="icon" />
+                      <Eye className="icon" />
                     </button>
-                  </td>
+                  ) : (
+                    <>
+                      <button onClick={() => openModal("edit", o)} className="action-icon edit">
+                        <Edit className="icon" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete("orders", o.id)}
+                        className="action-icon delete"
+                      >
+                        <Trash className="icon" />
+                      </button>
+                    </>
+                  )}
+                </td>
+
                 </tr>
               ))}
             </tbody>
@@ -464,11 +507,24 @@ const handlePrint = async () => {
                   <td>{new Date(o.date).toLocaleString('vi-VN')}</td>
                   <td>{o.total.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</td>
                   <td>{o.status}</td>
-                  <td>
+                <td>
+                {role === "Khách hàng" ? (
+                  <button
+                    onClick={() => openModal("view", o)} // mở modal xem chi tiết
+                    className="action-icon edit"
+                  >
+                    <Eye className="icon" />
+                  </button>
+                ) : (
+                  <>
                     <button onClick={() => openModal("edit", o)} className="action-icon edit">
                       <Edit className="icon" />
                     </button>
-                  </td>
+                    
+                  </>
+                )}
+              </td>
+
                 </tr>
               ))}
             </tbody>
@@ -587,33 +643,38 @@ const handlePrint = async () => {
         )}
 
         {selectedTab === "status" && (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th onClick={() => sortData("id")}>ID <ArrowUpDown className="sort-icon" /></th>
-                <th onClick={() => sortData("orderCode")}>Mã đơn <ArrowUpDown className="sort-icon" /></th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.map((o, index) => (
-                <tr key={o.id}>
-                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td>{o.orderCode}</td>
-                  <td>{o.status}</td>
-                  <td>
-                    <select onChange={(e) => handleOrderStatusChange(o.id, e.target.value)} value={o.status}>
-                      <option value="Pending">Chờ xử lý</option>
-                      <option value="Shipped">Đã giao</option>
-                      <option value="Completed">Hoàn thành</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th onClick={() => sortData("id")}>
+              ID <ArrowUpDown className="sort-icon" />
+            </th>
+            <th onClick={() => sortData("orderCode")}>
+              Mã đơn <ArrowUpDown className="sort-icon" />
+            </th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentItems.map((o, index) => (
+            <tr key={o.id}>
+              <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+              <td>{o.orderCode}</td>
+              <td>{o.status}</td>
+              <td>
+                <select onChange={(e) => handleOrderStatusChange(o.id, e.target.value)} value={o.status}>
+                  <option value="Pending">Chờ xử lý</option>
+                  <option value="Shipped">Đã giao</option>
+                  <option value="Completed">Hoàn thành</option>
+                </select>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+
 
         {selectedTab === "return" && (
           <table className="data-table">
@@ -696,6 +757,8 @@ const handlePrint = async () => {
         selectedOrderId={selectedOrderId}
         inChiTietDonHang={inChiTietDonHang}
         users={users}
+        role={role}
+        modalType={modalType}
       />
     </div>
   );

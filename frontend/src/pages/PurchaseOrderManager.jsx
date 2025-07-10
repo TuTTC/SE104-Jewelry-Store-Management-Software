@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ArrowUpDown, Download, Search, Filter, Edit, Trash, Plus } from "lucide-react";
+import { ArrowUpDown, Download, Search, Filter, Edit, Trash, Plus, Eye } from "lucide-react";
 import { LuEye, LuPrinter } from "react-icons/lu";
 import { FiEye } from "react-icons/fi";
 import GeneralModalForm from "../components/GeneralModalForm";
@@ -90,7 +90,7 @@ function PurchaseOrderManager() {
       alert(err.message);
     }
   };
-
+  
   // Logic phân trang
   const filteredData = (purchaseOrders || []).filter((po) => {
     const matchDate = selectedDate ? po.NgayNhap === selectedDate : true;
@@ -116,9 +116,9 @@ function PurchaseOrderManager() {
 function openModal(mode, order = null) {
   console.log("Mở modal:", mode, order);
 
-  const currentUser = JSON.parse(localStorage.getItem("user")); // 👈 Lấy người đăng nhập
+  const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  setModalMode(mode);
+  setModalMode(mode); // "add", "edit", or "view"
   setSelectedOrder(order);
   setModalVisible(true);
 
@@ -133,7 +133,7 @@ function openModal(mode, order = null) {
       code: order.MaPN,
       supplier: order.MaNCC,
       user: order.UserID,
-      userName: order.TenNguoiNhap || "",   // 👈 dùng khi sửa để hiển thị tên
+      userName: order.TenNguoiNhap || "",
       date: order.NgayNhap?.slice(0, 10),
       total: order.TongTien,
       status: statusMap[order.TrangThai] || "",
@@ -143,8 +143,8 @@ function openModal(mode, order = null) {
     setFormData({
       code: "",
       supplier: "",
-      user: currentUser?.id || "",           // 👈 ID người đăng nhập (gửi API)
-      userName: currentUser?.name || "",     // 👈 tên để hiển thị
+      user: currentUser?.id || "",
+      userName: currentUser?.name || "",
       date: new Date().toISOString().slice(0, 10),
       total: 0,
       status: "dang_xu_ly",
@@ -165,7 +165,19 @@ function openModal(mode, order = null) {
     closeModal();
     fetchPurchaseOrders();
   }
-
+  const handleView = async (maPN) => {
+    try {
+      const res = await orderApi.getOrderById(maPN);
+      if (res.status === "success") {
+        openModal("view", res.data);
+      } else {
+        alert("Lấy chi tiết phiếu nhập thất bại!");
+      }
+    } catch (err) {
+      console.error("Lỗi khi lấy chi tiết phiếu nhập:", err);
+      alert(err.message);
+    }
+  };
   // Xử lý input form
   function handleInputChange(e) {
     const { name, value } = e.target;
@@ -374,16 +386,31 @@ function openModal(mode, order = null) {
                   <td>{formatCurrency(po.TongTien)}</td>
                   <td>{po.TrangThai}</td>
                   <td>
-                    <button onClick={() => handleEdit(po.MaPN)} className="action-icon edit">
-                      <Edit className="icon" />
-                    </button>
-                    <button onClick={() => handleDelete(po.MaPN)} className="action-icon delete">
-                      <Trash className="icon" />
-                    </button>
-                    <button onClick={() => exportPDF(po.MaPN)} className="action-icon export">
-                      <LuPrinter className="icon" />
-                    </button>
-                  </td>
+                  {po.TrangThai === "Đang xử lý" && (
+                    <>
+                      <button onClick={() => handleEdit(po.MaPN)} className="action-icon edit">
+                        <Edit className="icon" />
+                      </button>
+                      {/* <button onClick={() => handleDelete(po.MaPN)} className="action-icon delete">
+                        <Trash className="icon" />
+                      </button> */}
+                    </>
+                  )}
+
+                  {["Đã nhập", "Hủy"].includes(po.TrangThai) && (
+                    <>
+                      <button onClick={() => handleView(po.MaPN)} className="action-icon view">
+                        <Eye className="icon" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* In PDF luôn được phép */}
+                  <button onClick={() => exportPDF(po.MaPN)} className="action-icon export">
+                    <LuPrinter className="icon" />
+                  </button>
+                </td>
+
                 </tr>
               ))
             )}

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response
+from flask import Blueprint, request, jsonify, make_response, g
 from models.DonHang import DONHANG
 from models.KhachHang import KHACHHANG
 from models.NguoiDung import NGUOIDUNG
@@ -28,14 +28,23 @@ donhang_bp = Blueprint("donhang", __name__, url_prefix="/api")
 
 # GET /api/donhang - Lấy danh sách đơn hàng
 @donhang_bp.route("/donhang", methods=["GET"])
+@jwt_required()
+@permission_required("orders:view", "orders:view_own")
 def get_danh_sach_donhang():
     try:
-        donhangs = DONHANG.query.all()
+        current_user = g.current_user
+        permissions = g.permissions
+
+        # Nếu có quyền xem tất cả đơn hàng
+        if "orders:view" in permissions:
+            donhangs = DONHANG.query.all()
+        else:
+            # Nếu chỉ có quyền xem đơn hàng của chính mình
+            donhangs = DONHANG.query.filter_by(UserID=current_user.UserID).all()
+
         data = []
         for dh in donhangs:
-            # Tính tổng tiền thực tế từ các dòng chi tiết đơn hàng
             true_total = sum(ct.ThanhTien for ct in dh.chitietdonhang_list)
-
             nguoidung = NGUOIDUNG.query.get(dh.UserID)
 
             data.append({
@@ -56,8 +65,9 @@ def get_danh_sach_donhang():
         return jsonify({"status": "error", "message": str(e)})
 
 
-
 @donhang_bp.route("/donhang", methods=["POST"])
+@jwt_required()
+@permission_required("orders:add")
 def tao_don_hang():
     try:
         data = request.get_json()
@@ -122,6 +132,8 @@ def tao_don_hang():
 
 # PUT /api/donhang/<id>/trangthai - Cập nhật trạng thái đơn hàng
 @donhang_bp.route("/donhang/<int:id>/trangthai", methods=["PUT"])
+@jwt_required()
+@permission_required("orders:edit")
 def cap_nhat_trang_thai(id):
     try:
         data = request.get_json()
@@ -137,6 +149,8 @@ def cap_nhat_trang_thai(id):
 
 # POST /api/donhang/<id>/thanhtoan - Xác nhận thanh toán
 @donhang_bp.route("/donhang/<int:id>/thanhtoan", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def xac_nhan_thanh_toan(id):
     try:
         donhang = DONHANG.query.get(id)
@@ -151,6 +165,8 @@ def xac_nhan_thanh_toan(id):
 
 # POST /api/donhang/<id>/giaohang - Đóng gói và giao hàng
 @donhang_bp.route("/donhang/<int:id>/giaohang", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def dong_goi_giao_hang(id):
     try:
         donhang = DONHANG.query.get(id)
@@ -165,6 +181,8 @@ def dong_goi_giao_hang(id):
 
 # POST /api/donhang/<id>/doitra - Tạo yêu cầu trả/đổi hàng
 @donhang_bp.route("/donhang/<int:id>/doitra", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def doi_tra_don_hang(id):
     try:
         donhang = DONHANG.query.get(id)
@@ -179,6 +197,8 @@ def doi_tra_don_hang(id):
 
 # DELETE /api/donhang/<id> - Xóa đơn hàng
 @donhang_bp.route("/donhang/<int:id>", methods=["DELETE"])
+@jwt_required()
+@permission_required("orders:delete")
 def xoa_don_hang(id):
     try:
         donhang = DONHANG.query.get(id)
@@ -194,6 +214,8 @@ def xoa_don_hang(id):
 # Sửa thông tin đơn hàng
 # PUT /api/donhang/<id> - Cập nhật thông tin đơn hàng
 @donhang_bp.route("/donhang/<int:id>", methods=["PUT"])
+@jwt_required()
+@permission_required("orders:edit")
 def sua_don_hang(id):
     try:
         data = request.get_json()
@@ -244,6 +266,7 @@ def sua_don_hang(id):
 
 # GET /api/donhang/<id>/chitiet - Lấy chi tiết đơn hàng
 @donhang_bp.route("/donhang/<int:id>/chitiet", methods=["GET"])
+
 def chi_tiet_don_hang(id):
     try:
         ctdh_list = CHITIETDONHANG.query.filter_by(MaDH=id).all()
@@ -262,6 +285,8 @@ def chi_tiet_don_hang(id):
     
 # POST /api/donhang/<id>/chitiet - Cập nhật chi tiết đơn hàng
 @donhang_bp.route("/donhang/<int:id>/chitiet", methods=["POST"])
+@jwt_required()
+@permission_required("orders:edit")
 def cap_nhat_chi_tiet_don_hang(id):
     try:
         data = request.get_json()  # list of { MaCTDH?, MaSP, SoLuong, GiaBan }
@@ -397,7 +422,13 @@ def xuat_pdf_chi_tiet_don(id):
                 p.setFont("DejaVu", 10)
                 y = height - 2 * cm
         
-        p.showPage()
+        # p.showPage()
+        label_x = width - 2 * cm - 6 * cm  # Đặt nhãn "Tổng tiền" bên trái
+        value_x = width - 2 * cm           # Số tiền nằm sát lề phải
+
+        p.setFont("DejaVu", 11)
+        p.drawRightString(label_x, y, "Tổng tiền:")
+        p.drawRightString(value_x, y, f"{float(don_hang.TongTien):,.2f} VNĐ")
 
         p.save()
 

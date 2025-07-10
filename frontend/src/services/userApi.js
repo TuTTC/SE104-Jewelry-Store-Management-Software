@@ -117,6 +117,12 @@ const userApi = {
     });
     return handleResponse(res);
   },
+    // 10. Lấy vai trò (role) hiện tại của người dùng
+  getCurrentUserRole: async () => {
+    const user = await userApi.getCurrentUser();
+    return user.data?.role || "";
+  },
 };
+
 
 export default userApi;

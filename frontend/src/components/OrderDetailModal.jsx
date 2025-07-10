@@ -16,6 +16,8 @@ const OrderDetailModal = ({
   selectedOrderId,
   inChiTietDonHang,
   users = [], // Thêm tham số customers
+  role,
+  modalType
 }) => {
   if (!showModal) return null;
 
@@ -24,14 +26,22 @@ const OrderDetailModal = ({
   <form onSubmit={e => { e.preventDefault(); saveOrderDetails(); }}>
     <div className="modal" style={{ width: "auto", maxWidth: "90vw", padding: "20px" }}>
       <div className="modal-header">
-        <h2>{formData?.id ? `Sửa đơn hàng #${formData.id}` : "Thêm đơn hàng"}</h2>
-        <button onClick={onClose} className="modal-close">
-          <X className="icon" />
-        </button>
-      </div>
+  <h2>
+    {modalType === "view"
+      ? `Xem đơn hàng #${formData?.id}`
+      : formData?.id
+        ? `Sửa đơn hàng #${formData.id}`
+        : "Thêm đơn hàng"}
+  </h2>
+  <button onClick={onClose} className="modal-close">
+    <X className="icon" />
+  </button>
+</div>
+
 
       {/* === Form thông tin đơn hàng === */}
       <div className="modal-form">
+         {role !== "Khách hàng" ? (
           <select
             name="customerId"
             value={formData.customerId || ""}
@@ -45,6 +55,17 @@ const OrderDetailModal = ({
               </option>
             ))}
           </select>
+        ) : (
+          <>
+            <label>Khách hàng</label>
+            <input
+              type="text"
+              value={formData.customerName || ""}
+              disabled
+              readOnly
+            />
+          </>
+        )}
         <input
           type="date"
           name="date"
@@ -152,9 +173,12 @@ const OrderDetailModal = ({
             ))}
           </tbody>
         </table>
+      {role !== "Khách hàng" && (
         <button type="button" className="action-button" onClick={addOrderDetail}>
           Thêm sản phẩm
         </button>
+      )}
+
       </div>
 
       {/* === Hành động === */}
@@ -176,9 +200,11 @@ const OrderDetailModal = ({
             In chi tiết đơn hàng
           </button>
         )}
+        {role !== "Khách hàng" && (
         <button type="submit" className="action-button">
           Lưu
         </button>
+        )}
         <button type="button" className="action-button cancel" onClick={onClose}>
           Đóng
         </button>
