@@ -13,7 +13,6 @@ def seed_role_permissions():
             print("Thiếu dữ liệu Vai Trò, vui lòng seed Vai Trò trước!")
             return
 
-        # Kiểm tra nếu Admin đã có quyền thì không seed lại
         if admin_role.permissions:
             print("Quyền cho các vai trò đã được thiết lập, bỏ qua seed.")
             return
@@ -24,28 +23,33 @@ def seed_role_permissions():
         # Gán toàn bộ quyền cho Admin
         admin_role.permissions = list(all_permissions)
 
-        # Nhân viên:
+        # Gán quyền cho Nhân viên
         nhanvien_role.permissions = []
         for quyen in all_permissions:
             # Loại bỏ quyền xem tài khoản
             if quyen.TenQuyen == "accounts:view":
                 continue
 
-            # Quyền xem tất cả trừ accounts
+            # Quyền view tất cả trừ accounts
             if quyen.TenQuyen.endswith(":view"):
                 nhanvien_role.permissions.append(quyen)
 
-            # Quyền edit/add/delete cho các module chỉ định
-            for prefix in ["orders", "services", "purchaseOrders", "suppliers", "products"]:
+            # Cho phép edit/add/delete các module chỉ định
+            for prefix in ["orders", "services", "serviceticket", "purchaseOrders", "suppliers", "products"]:
                 if quyen.TenQuyen.startswith(f"{prefix}:edit") or \
                    quyen.TenQuyen.startswith(f"{prefix}:add") or \
                    quyen.TenQuyen.startswith(f"{prefix}:delete"):
                     nhanvien_role.permissions.append(quyen)
 
-        # Khách hàng: Xem dashboard, sản phẩm, dịch vụ + xem đơn hàng & dịch vụ của chính mình
+        # Gán quyền cho Khách hàng
         khachhang_role.permissions = []
-        for ten_quyen in ["dashboard:view", "products:view", "services:view",
-                          "orders:view_own", "services:view_own"]:
+        for ten_quyen in [
+            "dashboard:view",
+            "products:view",
+            "services:view",
+            "orders:view_own",
+            "serviceticket:view_own"
+        ]:
             if ten_quyen in permissions_dict:
                 khachhang_role.permissions.append(permissions_dict[ten_quyen])
 

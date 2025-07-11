@@ -1,13 +1,31 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../App.css';
 
 const IntroPage = () => {
   const navigate = useNavigate();
+  
+  // Tạo refs cho các phần features9 và groupParent
+  const featuresRef = useRef(null);
+  const groupParentRef = useRef(null);
 
   const handleLoginClick = () => {
     console.log('Login button clicked');
     navigate('/login');
+  };
+
+  // Hàm cuộn đến phần features9
+  const scrollToFeatures = () => {
+    if (featuresRef.current) {
+      featuresRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Hàm cuộn đến phần groupParent
+  const scrollToGroupParent = () => {
+    if (groupParentRef.current) {
+      groupParentRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -62,7 +80,8 @@ const IntroPage = () => {
           </div>
           <div className="extraInfoItem" />
         </div>
-        <div className="groupParent">
+        {/* Gắn ref vào groupParent */}
+        <div className="groupParent" ref={groupParentRef}>
           <div className="rectangleWrapper">
             <div className="groupChild" />
           </div>
@@ -86,7 +105,8 @@ const IntroPage = () => {
             <div className="aboutUs2">ABOUT US</div>
           </div>
         </div>
-        <div className="features9">
+        {/* Gắn ref vào features9 */}
+        <div className="features9" ref={featuresRef}>
           <div className="bg" />
           <div className="list">
             <div className="div">
@@ -133,9 +153,10 @@ const IntroPage = () => {
               <span className="ptvJewelry1">PTV JEWELRY</span>
             </b>
           </div>
+          {/* Thêm onClick vào các mục menu */}
           <div className="menu">
-            <div className="tngQuan">Tổng Quan</div>
-            <div className="chiTit">Chi Tiết</div>
+            <div className="tngQuan" onClick={scrollToFeatures}>Tổng Quan</div>
+            <div className="chiTit" onClick={scrollToGroupParent}>Chi Tiết</div>
             <div className="hTr">Hỗ Trợ</div>
           </div>
           <div className="shopGiftsButton" onClick={handleLoginClick}>

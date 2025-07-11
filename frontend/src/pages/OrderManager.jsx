@@ -390,11 +390,11 @@ const handlePrint = async () => {
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title"></h2>
-       {role !== "Khách hàng" && (
-        <button onClick={() => openModal("add")} className="action-button">
-          Thêm đơn hàng
-        </button>
-      )}
+        {/* {role !== "Khách hàng" && (
+          <button onClick={() => openModal("add")} className="action-button">
+            Thêm đơn hàng
+          </button>
+        )} */}
 
       </div>
 
@@ -532,6 +532,12 @@ const handlePrint = async () => {
         )}
 
         {selectedTab === "payment" && (
+          <div>
+          {role !== "Khách hàng" && (
+        <button onClick={() => openModal("add")} className="action-button">
+          Thêm đơn hàng
+        </button>
+      )}
           <table className="data-table">
             <thead>
               <tr>
@@ -587,6 +593,7 @@ const handlePrint = async () => {
               ))}
             </tbody>
           </table>
+          </div>
         )}
 
         {selectedTab === "shipping" && (

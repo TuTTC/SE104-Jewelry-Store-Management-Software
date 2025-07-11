@@ -16,9 +16,16 @@ from datetime import datetime
 pdfmetrics.registerFont(TTFont('DejaVu', '../fonts/times.ttf'))
 from reportlab.platypus import Table, TableStyle, SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib import colors
-
+from utils.permissions import permission_required
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.styles import ParagraphStyle
+# from decorators import permission_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
+# from permissions import permission_required 
+from flask import g
+
 phieudichvu_bp = Blueprint('phieudichvu_bp', __name__)
 
 # Đăng ký font
@@ -64,6 +71,8 @@ def cap_nhat_trang_thai_phieu(ma_pdv):
 
 
 @phieudichvu_bp.route('/phieudichvu', methods=['POST'])
+@jwt_required()
+@permission_required('serviceticket:add')
 def create_phieu_dich_vu():
     data = request.get_json()
     try:
@@ -169,6 +178,8 @@ def create_phieu_dich_vu():
     
 # DELETE /api/phieudichvu/<id> - Xóa phiếu dịch vụ
 @phieudichvu_bp.route('/phieudichvu/<int:id>', methods=['DELETE'])
+@jwt_required()
+@permission_required('serviceticket:delete')
 def delete_phieu_dichvu(id):
     try:
         db.session.query(CHITIETPHIEUDICHVU).filter_by(MaPDV=id).delete()
@@ -184,9 +195,19 @@ def delete_phieu_dichvu(id):
 
 # GET /api/phieudichvu - Lấy danh sách phiếu dịch vụ
 @phieudichvu_bp.route('/phieudichvu', methods=['GET'])
+@jwt_required()
+@permission_required("serviceticket:view", "serviceticket:view_own")
 def list_phieu_dichvu():
     try:
-        phieus = PHIEUDICHVU.query.all()
+        current_user = g.current_user
+        permissions = g.permissions
+
+        # Nếu có quyền xem tất cả phiếu
+        if "serviceticket:view" in permissions:
+            phieus = PHIEUDICHVU.query.all()
+        else:
+            # Nếu chỉ có quyền xem phiếu của chính mình
+            phieus = PHIEUDICHVU.query.filter_by(UserID=current_user.UserID).all()
         result = []
 
         for p in phieus:
@@ -214,6 +235,8 @@ def list_phieu_dichvu():
 # Xem chi tiết phiếu dịch vụ
 @phieudichvu_bp.route('/phieudichvu/<int:id>', methods=['GET'])
 def detail_phieu_dich_vu(id):
+    # Hinh như có lỗi trong đoạn code này, không thể chạy được
+    # Cần kiểm tra lại trước khi phân quyền
     p = PHIEUDICHVU.query.get_or_404(id)
     details = CHITIETPHIEUDICHVU.query.filter_by(MaPDV=id).all()
 
@@ -252,6 +275,8 @@ def detail_phieu_dich_vu(id):
 
 # Cập nhật 1 dòng chi tiết dịch vụ
 @phieudichvu_bp.route('/phieudichvu/chitiet/<int:id>', methods=['PUT'])
+@jwt_required()
+@permission_required('serviceticket:edit')
 def update_chi_tiet_dich_vu(id):
     ct = CHITIETPHIEUDICHVU.query.get_or_404(id)
     data = request.get_json()
@@ -280,6 +305,8 @@ def update_chi_tiet_dich_vu(id):
 
 # Xóa 1 dòng chi tiết dịch vụ
 @phieudichvu_bp.route('/phieudichvu/chitiet/<int:id>', methods=['DELETE'])
+@jwt_required()
+@permission_required('serviceticket:delete')
 def delete_chi_tiet_dich_vu(id):
     ct = CHITIETPHIEUDICHVU.query.get_or_404(id)
     ma_pdv = ct.MaPDV
@@ -290,6 +317,8 @@ def delete_chi_tiet_dich_vu(id):
 
 # (Tùy chọn) Xoá toàn bộ chi tiết của 1 phiếu dịch vụ
 @phieudichvu_bp.route('/phieudichvu/<int:ma_pdv>/clear', methods=['DELETE'])
+@jwt_required()
+@permission_required('serviceticket:delete')
 def clear_all_chi_tiet(ma_pdv):
     CHITIETPHIEUDICHVU.query.filter_by(MaPDV=ma_pdv).delete()
     db.session.commit()
@@ -307,6 +336,8 @@ def cap_nhat_trang_thai_phieu(ma_pdv):
     db.session.commit()
 
 @phieudichvu_bp.route("/phieudichvu/<int:id>/print", methods=["GET"])
+# @jwt_required()
+# @permission_required('serviceticket:view')
 def print_phieu_dich_vu(id):
     try:
         phieu = PHIEUDICHVU.query.get_or_404(id)
@@ -419,6 +450,8 @@ def print_phieu_dich_vu(id):
 
 
 @phieudichvu_bp.route('/phieudichvu/print-danhsach', methods=['GET'])
+@jwt_required()
+@permission_required('serviceticket:view')
 def print_danh_sach_pdv():
     try:
         # Truy vấn tất cả phiếu dịch vụ
@@ -478,6 +511,8 @@ def print_danh_sach_pdv():
 
     
 @phieudichvu_bp.route("/phieudichvu/<int:id>", methods=["PUT"])
+@jwt_required()
+@permission_required('serviceticket:edit')
 def update_phieu_dich_vu(id):
     try:
         phieu = PHIEUDICHVU.query.get_or_404(id)

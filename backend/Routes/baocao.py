@@ -5,6 +5,8 @@ from models.DonHang import DONHANG
 from models.NguoiDung import NGUOIDUNG 
 from models.NhaCungCap import NHACUNGCAP
 from models.PhieuDichVu import PHIEUDICHVU
+from models.ReturnRequest import RETURNREQUEST
+from models.ReturnItem import RETURNITEM
 from models.ChiTietPhieuDichVu import CHITIETPHIEUDICHVU
 from models.PhieuNhap import PHIEUNHAP
 from models.ChiTietPhieuNhap import CHITIETPHIEUNHAP
@@ -28,8 +30,6 @@ pdfmetrics.registerFont(TTFont("TimesVN", FONT_PATH))
 baocao_bp = Blueprint("baocao", __name__, url_prefix="/api")
 
 @baocao_bp.route("/baocao", methods=["POST"])
-@jwt_required()
-@permission_required("reports:add")
 def tao_bao_cao():
     data = request.get_json()
     loai       = data["LoaiBaoCao"]
@@ -133,9 +133,7 @@ def list_baocao():
     result = []
 
     for r in reports:
-        du_lieu = {}
-
-        # Tổng doanh thu từ đơn hàng (chỉ lấy đơn đã hoàn thành)
+        # --- 1. Doanh thu từ đơn hàng hoàn thành ---
         tong_don_hang = db.session.query(
             func.coalesce(func.sum(DONHANG.TongTien), 0)
         ).filter(
@@ -144,7 +142,7 @@ def list_baocao():
             DONHANG.TrangThai == "Completed"
         ).scalar() or 0
 
-        # Tổng doanh thu từ dịch vụ đã giao
+        # --- 2. Doanh thu từ dịch vụ đã giao ---
         tong_dich_vu = db.session.query(
             func.coalesce(func.sum(CHITIETPHIEUDICHVU.ThanhTien), 0)
         ).join(PHIEUDICHVU).filter(
@@ -153,10 +151,7 @@ def list_baocao():
             CHITIETPHIEUDICHVU.TinhTrang == "Đã giao"
         ).scalar() or 0
 
-        # Tổng doanh thu = đơn hàng + dịch vụ
-        total_doanh_thu = tong_don_hang + tong_dich_vu
-
-        # Tổng tiền nhập từ phiếu nhập (chi phí đầu vào)
+        # --- 3. Tổng tiền nhập hàng (chi phí đầu vào) ---
         tong_tien_nhap = db.session.query(
             func.coalesce(
                 func.sum(CHITIETPHIEUNHAP.SoLuong * CHITIETPHIEUNHAP.DonGiaNhap), 0
@@ -166,10 +161,22 @@ def list_baocao():
             PHIEUNHAP.NgayNhap <= r.DenNgay
         ).scalar() or 0
 
-        # Lợi nhuận = doanh thu - chi phí nhập hàng
-        loi_nhuan = tong_don_hang - tong_tien_nhap
+        # --- 4. Tổng tiền hoàn trả (chỉ những mục trả, IsNewItem = 0) ---
+        tong_hoan_tra = db.session.query(
+            func.coalesce(func.sum(RETURNITEM.Amount), 0)
+        ).join(RETURNREQUEST, RETURNITEM.RequestID == RETURNREQUEST.RequestID).filter(
+            RETURNREQUEST.UpdatedAt >= r.TuNgay,
+            RETURNREQUEST.UpdatedAt <= r.DenNgay,
+            RETURNITEM.IsNewItem == 0
+        ).scalar() or 0
 
-        # Tùy loại báo cáo mà gán dữ liệu
+        # --- Tổng doanh thu sau trừ hoàn trả ---
+        total_doanh_thu = (tong_don_hang - tong_hoan_tra) + tong_dich_vu
+
+        # --- Lợi nhuận = (doanh thu đơn hàng - hoàn trả) - chi phí nhập hàng ---
+        loi_nhuan = (tong_don_hang - tong_hoan_tra) - tong_tien_nhap
+
+        # Chuẩn bị kết quả theo loại báo cáo
         if r.LoaiBaoCao == "Doanh thu":
             du_lieu = {
                 "DoanhThu": total_doanh_thu
@@ -178,6 +185,8 @@ def list_baocao():
             du_lieu = {
                 "LoiNhuan": loi_nhuan
             }
+        else:
+            du_lieu = {}
 
         result.append({
             "MaBC":       r.MaBC,
@@ -191,7 +200,6 @@ def list_baocao():
         })
 
     return jsonify({"status": "success", "data": result})
-
 
 
 # Báo cáo tồn kho
@@ -333,6 +341,64 @@ def print_bao_cao(id):
             elements.append(
                 Paragraph(f"<b>Tổng doanh thu dịch vụ: {total_dv:,.0f} VNĐ</b>", styles["NormalTimes"])
             )
+        # ======== HOÀN TIỀN (RETURN) =========
+        return_data = db.session.query(
+            RETURNREQUEST.OrderID,
+            RETURNREQUEST.UpdatedAt,
+            NGUOIDUNG.HoTen,
+            func.sum(RETURNITEM.Amount).label("TongTien")
+        ).join(NGUOIDUNG, RETURNREQUEST.UserID == NGUOIDUNG.UserID) \
+        .join(RETURNITEM, RETURNITEM.RequestID == RETURNREQUEST.RequestID) \
+        .filter(
+            RETURNREQUEST.UpdatedAt >= tu_ngay,
+            RETURNREQUEST.UpdatedAt <= den_ngay,
+            RETURNITEM.IsNewItem == False
+        ).group_by(RETURNREQUEST.OrderID, RETURNREQUEST.UpdatedAt, NGUOIDUNG.HoTen) \
+        .order_by(RETURNREQUEST.UpdatedAt).all()
+
+        total_hoan = sum(row.TongTien for row in return_data)
+
+        if total_hoan > 0:
+            elements.append(Spacer(1, 24))
+            elements.append(Paragraph("TIỀN HOÀN TRẢ CHO KHÁCH", styles["TitleTimes"]))
+            elements.append(Spacer(1, 12))
+
+            headers = ["STT", "Mã đơn hàng", "Ngày hoàn", "Khách hàng", "Tổng tiền", "Đơn vị tính"]
+            data = [[Paragraph(cell, styles["NormalTimes"]) for cell in headers]]
+
+            for idx, row in enumerate(return_data, 1):
+                data.append([
+                    Paragraph(str(idx), styles["NormalTimes"]),
+                    Paragraph(str(row.OrderID), styles["NormalTimes"]),
+                    Paragraph(row.UpdatedAt.strftime("%d/%m/%Y"), styles["NormalTimes"]),
+                    Paragraph(row.HoTen, styles["NormalTimes"]),
+                    Paragraph(f"{row.TongTien:,.0f}", styles["NormalTimes"]),
+                    Paragraph("VNĐ", styles["NormalTimes"])
+                ])
+
+            table = Table(data, colWidths=[30, 80, 80, 150, 80, 50])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ]))
+
+            elements.append(table)
+            elements.append(Spacer(1, 12))
+            elements.append(
+                Paragraph(f"<b>Tổng tiền hoàn trả cho khách trong khoảng thời gian này: {total_hoan:,.0f} VNĐ</b>", styles["NormalTimes"])
+            )
+
+        # ======= TỔNG CỘNG SAU KHI TRỪ ========
+        tong_con_lai = total + total_dv - total_hoan
+        elements.append(Spacer(1, 24))
+        elements.append(Paragraph(
+            f"<b>Tổng doanh thu sau khi trừ hoàn trả: {tong_con_lai:,.0f} VNĐ</b>",
+            styles["NormalTimes"]
+        ))
+
     # === LỢI NHUẬN ===
     elif bc.LoaiBaoCao == "Lợi nhuận":
         # Lọc phiếu nhập trong khoảng thời gian
@@ -392,8 +458,73 @@ def print_bao_cao(id):
         elements.append(Paragraph(
             f"<b>Tổng lợi nhuận: {loi_nhuan:,.0f} VNĐ</b>", styles["NormalTimes"]
         ))
+
+
+
+        # ======== HOÀN TIỀN (RETURN) =========
+        return_data = db.session.query(
+            RETURNREQUEST.OrderID,
+            RETURNREQUEST.UpdatedAt,
+            NGUOIDUNG.HoTen,
+            func.sum(RETURNITEM.Amount).label("TongTien")
+        ).join(NGUOIDUNG, RETURNREQUEST.UserID == NGUOIDUNG.UserID) \
+        .join(RETURNITEM, RETURNITEM.RequestID == RETURNREQUEST.RequestID) \
+        .filter(
+            RETURNREQUEST.UpdatedAt >= tu_ngay,
+            RETURNREQUEST.UpdatedAt <= den_ngay,
+            RETURNITEM.IsNewItem == False
+        ).group_by(RETURNREQUEST.OrderID, RETURNREQUEST.UpdatedAt, NGUOIDUNG.HoTen) \
+        .order_by(RETURNREQUEST.UpdatedAt).all()
+
+        total_hoan = sum(row.TongTien for row in return_data)
+
+        if total_hoan > 0:
+            elements.append(Spacer(1, 24))
+            elements.append(Paragraph("TIỀN HOÀN TRẢ CHO KHÁCH", styles["TitleTimes"]))
+            elements.append(Spacer(1, 12))
+
+            headers = ["STT", "Mã đơn hàng", "Ngày hoàn", "Khách hàng", "Tổng tiền", "Đơn vị tính"]
+            data = [[Paragraph(cell, styles["NormalTimes"]) for cell in headers]]
+
+            for idx, row in enumerate(return_data, 1):
+                data.append([
+                    Paragraph(str(idx), styles["NormalTimes"]),
+                    Paragraph(str(row.OrderID), styles["NormalTimes"]),
+                    Paragraph(row.UpdatedAt.strftime("%d/%m/%Y"), styles["NormalTimes"]),
+                    Paragraph(row.HoTen, styles["NormalTimes"]),
+                    Paragraph(f"{row.TongTien:,.0f}", styles["NormalTimes"]),
+                    Paragraph("VNĐ", styles["NormalTimes"])
+                ])
+
+            table = Table(data, colWidths=[30, 80, 80, 150, 80, 50])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ]))
+
+            elements.append(table)
+            elements.append(Spacer(1, 12))
+            elements.append(
+                Paragraph(f"<b>Tổng tiền hoàn trả cho khách trong khoảng thời gian này: {total_hoan:,.0f} VNĐ</b>", styles["NormalTimes"])
+            )
+
+        # ======= TỔNG CỘNG SAU KHI TRỪ ========
+        tong_con_lai = loi_nhuan - total_hoan
+        elements.append(Spacer(1, 24))
+        elements.append(Paragraph(
+            f"<b>Tổng lợi nhuận sau khi trừ hoàn trả: {tong_con_lai:,.0f} VNĐ</b>",
+            styles["NormalTimes"]
+        ))
+
+
     else:
         elements.append(Paragraph("Loại báo cáo không được hỗ trợ để in.", styles['NormalTimes']))
+
+
+
 
     doc.build(elements)
     buffer.seek(0)
@@ -405,3 +536,4 @@ def print_bao_cao(id):
     )
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
+

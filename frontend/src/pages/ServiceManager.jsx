@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Edit, Trash, Printer, Filter, ArrowUpDown } from "lucide-react";
+import { Edit, Trash, Printer, Filter, ArrowUpDown, Eye } from "lucide-react";
 import GeneralModalForm from "../components/GeneralModalForm-2.jsx";
 import PhieuDichVuForm from "./PhieuDichVuForm";
 import {
@@ -19,7 +19,7 @@ import {
   printChiTietPhieuDichVu,
   searchPhieuDichVu
   } from "../services/phieudichvuApi";
-
+import userApi from "../services/userApi";
 import Pagination from '../components/Pagination';
 
 const mapTenDVHienThi = (ma) => {
@@ -55,6 +55,7 @@ function ServiceManager() {
   const [modalPhieuVisible, setModalPhieuVisible] = useState(false);
   const [selectedPhieu, setSelectedPhieu] = useState(null);
   const [modePhieu, setModePhieu] = useState("add");
+  const [role, setRole] = useState("");
   const [currentPage, setCurrentPage] = useState(1); // Thêm state cho phân trang
   const itemsPerPage = 10; // Số mục mỗi trang
   useEffect(() => {
@@ -104,6 +105,18 @@ function ServiceManager() {
       alert("Lỗi kết nối khi lấy phiếu dịch vụ: " + err.message);
     }
   };
+  useEffect(() => {
+  const fetchCurrentUser = async () => {
+    try {
+      const currentUser = await userApi.getCurrentUser();
+      setRole(currentUser?.VaiTro || "");
+    } catch (err) {
+      console.error("Lỗi lấy người dùng hiện tại:", err);
+    }
+  };
+
+  fetchCurrentUser();
+}, []);
 
     
   const sortData = (key, isServiceTab = true) => {
@@ -231,6 +244,22 @@ const handleThemPhieuDichVu = () => {
   setModalPhieuVisible(true);
 };
 
+const handleXemPhieuDichVu = async (maPDV) => {
+  try {
+    const json = await getPhieuDichVuById(maPDV);
+
+    if (json.status === "success") {
+      setSelectedPhieu(json.data);
+      setModePhieu("view"); // chuyển sang chế độ xem
+      setModalPhieuVisible(true);
+    } else {
+      alert("Không tìm thấy phiếu dịch vụ #" + maPDV);
+    }
+  } catch (err) {
+    alert("Lỗi khi tải phiếu dịch vụ: " + err.message);
+  }
+};
+
 
 const handleSuaPhieuDichVu = async (maPDV) => {
   try {
@@ -302,27 +331,28 @@ const handleSuaPhieuDichVu = async (maPDV) => {
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title"></h2>
-        {selectedTab === "list-dichvu" && (
-            <button onClick={() => openModal("add")} className="action-button">
-              Thêm dịch vụ
-            </button>
-            
-          )}
+        {selectedTab === "list-dichvu" && ["Admin", "Nhân viên"].includes(role) && (
+          <button onClick={() => openModal("add")} className="action-button">
+            Thêm dịch vụ
+          </button>
+        )}
           {selectedTab === "list-phieudichvu" && (
-            
-              <div>
-                <button onClick={handleThemPhieuDichVu} className="action-button">
-                  Thêm phiếu dịch vụ
-                </button>
-                <button onClick={handlePrintAllPDF} className="action-button">
-                  Xuất danh sách phiếu dịch vụ
-                </button>
-                <button onClick={handleSearchServiceForm} className="action-button">
-                    Tra cứu phiếu dịch vụ
-                </button>
-              </div>
-            
-          )}
+          <div>
+            {role !== "Khách hàng" && (
+              <button onClick={handleThemPhieuDichVu} className="action-button">
+                Thêm phiếu dịch vụ
+              </button>
+            )}
+
+            <button onClick={handlePrintAllPDF} className="action-button">
+              Xuất danh sách phiếu dịch vụ
+            </button>
+
+            <button onClick={handleSearchServiceForm} className="action-button">
+              Tra cứu phiếu dịch vụ
+            </button>
+          </div>
+        )}
 
       </div>
 
@@ -462,18 +492,47 @@ const handleSuaPhieuDichVu = async (maPDV) => {
               <td>{Number(p.TienConLai).toLocaleString()}₫</td>
               <td>{p.TrangThai}</td>
               <td>
+                {role !== "Khách hàng" ? (
+                  <>
+                    <button
+                      onClick={() => handleSuaPhieuDichVu(p.MaPDV)}
+                      className="action-icon edit"
+                    >
+                      <Edit className="icon" />
+                    </button>
 
-                <button onClick={() => handleSuaPhieuDichVu(p.MaPDV)} className="action-icon edit">
-                  <Edit className="icon" />
-                </button>
+                    <button
+                      onClick={() => handleXoaPhieu(p.MaPDV)}
+                      className="action-icon delete"
+                    >
+                      <Trash className="icon" />
+                    </button>
 
-                <button onClick={() => handleXoaPhieu(p.MaPDV)} className="action-icon delete">
-                  <Trash className="icon" />
-                </button>
-                <button onClick={() => handleInChiTiet(p.MaPDV)} className="action-icon print">
-                  <Printer className="icon" />
-                </button>
+                    <button
+                      onClick={() => handleInChiTiet(p.MaPDV)}
+                      className="action-icon print"
+                    >
+                      <Printer className="icon" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleXemPhieuDichVu(p.MaPDV)}
+                      className="action-icon edit"
+                    >
+                      <Eye className="icon" />
+                    </button>
+                  <button
+                    onClick={() => handleInChiTiet(p.MaPDV)}
+                    className="action-icon print"
+                  >
+                    <Printer className="icon" />
+                  </button>
+                  </>
+                )}
               </td>
+
             </tr>
           ))
         )}

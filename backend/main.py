@@ -79,7 +79,7 @@ with app.app_context():
     # seed_them_khach_hang(30)
     # seed_phieu_dich_vu()
     # seed_chi_tiet_phieu_dich_vu()
-    seed_phieudichvu()
+    # seed_phieudichvu()
 
 from Routes import register_routes
 register_routes(app)

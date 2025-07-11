@@ -12,7 +12,8 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
   const [servicesList, setServicesList] = useState([]);
   const [chiTiet, setChiTiet] = useState([]);
   const [userID, setUserID] = useState("");
-
+  const [role, setRole] = useState("");
+  const [customers, setCustomers] = useState([]);
   // useEffect(() => {
   //   async function fetchDichVu() {
   //     try {
@@ -31,39 +32,80 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
   // }, []);
 
   // 1) Load danh sách khách hàng khi component mount
+// useEffect(() => {
+//   const loadCustomers = async () => {
+//     try {
+//       const allUsers = await userApi.getAllUsers();
+
+//       // Lọc khách hàng có vai trò "Khách hàng" và trạng thái kích hoạt
+//       const customers = allUsers.filter(user =>
+//         user.VaiTro === "Khách hàng" &&
+//         (user.TrangThai === true || user.TrangThai === "Kích hoạt")
+//       );
+
+//       setUsers(customers);
+//     } catch (error) {
+//       console.error("Lỗi load khách hàng:", error);
+//     }
+//   };
+
+//   if (visible) {
+//     loadCustomers();
+//   }
+// }, [visible]);
+
+
+//   // 2) Load danh sách dịch vụ khi modal mở
+//   useEffect(() => {
+//     const loadServices = async () => {
+//       try {
+//         const json = await fetchDichVuApi();
+//         if (json.status === "success") {
+//           setServicesList(json.data);
+//         } else {
+//           console.error("Lỗi lấy danh sách dịch vụ:", json.message);
+//         }
+//       } catch (err) {
+//         console.error("API dịch vụ lỗi kết nối:", err);
+//       }
+//     };
+//     if (visible) loadServices();
+//   }, [visible]);
+
   useEffect(() => {
-    const loadCustomers = async () => {
-      try {
-        const all = await userApi.getAllUsers();
-        // Backend trả về mảng đối tượng { UserID, HoTen, VaiTro, TrangThai, … }
-        const customers = all.filter(u =>
-          u.VaiTro === "Khách hàng" &&
-          (u.TrangThai === true || u.TrangThai === "Kích hoạt")
+  const initFormData = async () => {
+    try {
+      // 1. Lấy thông tin người dùng hiện tại
+      const currentUser = await userApi.getCurrentUser();
+      const userRole = currentUser?.VaiTro || "";
+      setRole(userRole);
+
+      // 2. Luôn tải danh sách dịch vụ
+      const dichVuRes = await fetchDichVuApi();
+      if (dichVuRes.status === "success") {
+        setServicesList(dichVuRes.data);
+      } else {
+        console.error("Lỗi lấy danh sách dịch vụ:", dichVuRes.message);
+      }
+
+      // 3. Tùy vai trò mà load khách hàng
+      if (["Admin", "Nhân viên"].includes(userRole)) {
+        const allUsers = await userApi.getAllUsers();
+        const customers = allUsers.filter(user =>
+          user.VaiTro === "Khách hàng" &&
+          (user.TrangThai === true || user.TrangThai === "Kích hoạt")
         );
         setUsers(customers);
-      } catch (err) {
-        console.error("Lỗi load khách hàng:", err);
+      } else if (userRole === "Khách hàng") {
+        setUsers([currentUser]); // khách hàng chỉ có thể chọn chính họ
       }
-    };
-    if (visible) loadCustomers();
-  }, [visible]);
+    } catch (err) {
+      console.error("Lỗi khi khởi tạo dữ liệu phiếu dịch vụ:", err);
+    }
+  };
 
-  // 2) Load danh sách dịch vụ khi modal mở
-  useEffect(() => {
-    const loadServices = async () => {
-      try {
-        const json = await fetchDichVuApi();
-        if (json.status === "success") {
-          setServicesList(json.data);
-        } else {
-          console.error("Lỗi lấy danh sách dịch vụ:", json.message);
-        }
-      } catch (err) {
-        console.error("API dịch vụ lỗi kết nối:", err);
-      }
-    };
-    if (visible) loadServices();
-  }, [visible]);
+  if (visible) initFormData();
+}, [visible]);
 
 useEffect(() => {
   if (visible) {
@@ -358,18 +400,28 @@ useEffect(() => {
             </tbody>
           </table>
           </div>
-          <button type="button" onClick={handleAddDichVu} className="action-button">
-            <Plus size={16} /> Thêm dịch vụ
-          </button>
 
-         <div className="modal-actions">
-          <button type="submit" className="action-button">
-            {mode === "add" ? "Lưu phiếu" : "Cập nhật"}
-          </button>
-          <button type="button" className="action-button cancel" onClick={onClose}>
-            Hủy
-          </button>
-        </div>
+          {/* Nút thêm dịch vụ - chỉ Admin/Nhân viên được thấy */}
+          {role !== "Khách hàng" && (
+            <button type="button" onClick={handleAddDichVu} className="action-button">
+              <Plus size={16} /> Thêm dịch vụ
+            </button>
+          )}
+
+          <div className="modal-actions">
+            {/* Nút Lưu / Cập nhật - ẩn nếu là khách hàng */}
+            {role !== "Khách hàng" && (
+              <button type="submit" className="action-button">
+                {mode === "add" ? "Lưu phiếu" : "Cập nhật"}
+              </button>
+            )}
+
+            {/* Nút hủy luôn hiển thị */}
+            <button type="button" className="action-button cancel" onClick={onClose}>
+              Hủy
+            </button>
+          </div>
+
 
         </form>
       </div>

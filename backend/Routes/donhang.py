@@ -169,12 +169,20 @@ def xac_nhan_thanh_toan(id):
 @permission_required("orders:edit")
 def dong_goi_giao_hang(id):
     try:
+        data = request.get_json()
+        delivery_method = data.get("deliveryMethod")
+
+        if delivery_method not in ["Nhận tại quầy", "Giao hàng tận nơi"]:
+            return jsonify({"status": "error", "message": "Phương thức nhận hàng không hợp lệ."})
+
         donhang = DONHANG.query.get(id)
         if not donhang:
             return jsonify({"status": "error", "message": "Không tìm thấy đơn hàng."})
-        donhang.TrangThai = "Shipped"
+
+        donhang.TrangThai = delivery_method  # Ghi rõ "Nhận tại quầy" hoặc "Giao hàng tận nơi"
         db.session.commit()
-        return jsonify({"status": "success", "message": "Đã cập nhật trạng thái giao hàng."})
+
+        return jsonify({"status": "success", "message": "Đã cập nhật phương thức nhận hàng."})
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)})

@@ -20,3 +20,6 @@ from .PhieuBanHang import PHIEUBANHANG
 from .BaoCao import BAOCAO
 from .Permissions import PERMISSIONS
 from .NhanVien import NHANVIEN
+from .ReturnItem import RETURNITEM
+from .ReturnRequest import RETURNREQUEST
+
