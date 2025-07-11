@@ -17,6 +17,8 @@ import {
 import OrderDetailModal from "../components/OrderDetailModal"; // Import new modal
 import Pagination from '../components/Pagination';
 import * as productApi from "../services/productApi";
+import returnApi from "../services/returnApi"; // Import return API
+import ReturnRequestModal from "../components/ReturnRequestModal"; // Import new modal
 
 
 const OrdersManager = () => {
@@ -46,6 +48,10 @@ const OrdersManager = () => {
   const [customers, setCustomers] = useState([]);
   const [users, setUsers] = useState([]); // Danh sách khách hàng
   const [role, setRole] = useState("");
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnOrder, setReturnOrder]     = useState(null);
+  const [returnMode, setReturnMode] = useState("add");
+  const [returnHistory, setReturnHistory] = useState([]);
 
   const fetchOrders = async () => {
     try {
@@ -196,6 +202,75 @@ const openOrderModal = (mode, order = null) => {
   setSelectedOrder(order);
   setViewModal(true); // mở modal chi tiết
 };
+
+
+const openReturnModal = async (mode, o) => {
+  try {
+    setReturnMode(mode);
+
+    if (mode === "add") {
+      const json = await getChiTietDonHang(o.id);
+      if (json.status === "success") {
+        const items = json.data.map(line => ({
+          ProductID:   line.MaSP,
+          ProductName: line.SanPham,
+          Amount:      line.GiaBan,
+          SoLuong:     line.SoLuong,
+        }));
+        setReturnOrder({ ...o, items });
+        setShowReturnModal(true); // ← đặt ở cuối
+      }
+    }
+
+    if (mode === "view") {
+      const res = await returnApi.getRequestsByOrder(o.id);
+      if (res.status === "success") {
+        setReturnHistory(res.data);
+        const itemsFromHistory = res.data.flatMap(rq =>
+          rq.items.map(it => ({
+            ...it,
+            ProductName: it.Product?.TenSP || 'Không rõ',
+            Amount: parseFloat(it.Amount),
+            Quantity: it.Quantity,
+            selected: true,
+            isHistory: true
+          }))
+        );
+        setReturnOrder({ ...o, items: itemsFromHistory });          // ← phải gọi trước
+        setShowReturnModal(true);   // ← sau khi đã set xong order
+      } else {
+        alert("Không thể tải lịch sử: " + res.message);
+      }
+    }
+
+  } catch (err) {
+    alert("Lỗi kết nối: " + err.message);
+  }
+};
+
+const closeReturnModal = () => {
+  setReturnOrder(null);
+  setShowReturnModal(false);
+};
+
+const handleSubmitReturn = async (payload) => {
+  try {
+    const json = await returnApi.createRequest(payload);
+    if (json.status === 'success') {
+      alert('Gửi yêu cầu thành công!');
+      closeReturnModal();
+      // nếu bạn lưu lại trạng thái order để disable nút
+      fetchOrders();
+    } else {
+      alert('Lỗi: ' + json.message);
+    }
+  } catch(err) {
+    alert('Lỗi kết nối: ' + err.message);
+  }
+};
+
+
+
 
 const openModal = async (mode, data = {}) => {
   setModalType(mode);           // "add", "edit", hoặc "view"
@@ -374,27 +449,16 @@ const handleFormSubmit = async (formData, chiTietList) => {
     }
   };
 
-const handlePrint = async () => {
-  try {
-    const blob = await inChiTietDonHang(selectedOrderId);
-    const url = window.URL.createObjectURL(blob);
-    window.open(url);
-  } catch (error) {
-    alert("Lỗi khi tạo PDF: " + error.message);
-  }
-};
-
-
 
   return (
     <div className="table-card">
       <div className="table-header">
         <h2 className="table-title"></h2>
-        {/* {role !== "Khách hàng" && (
-          <button onClick={() => openModal("add")} className="action-button">
-            Thêm đơn hàng
-          </button>
-        )} */}
+       {role !== "Khách hàng" && (
+        <button onClick={() => openModal("add")} className="action-button">
+          Thêm đơn hàng
+        </button>
+      )}
 
       </div>
 
@@ -404,8 +468,8 @@ const handlePrint = async () => {
           { key: "pending", label: "Cập nhật thông tin đơn" },
           { key: "payment", label: "Xác nhận thanh toán" },
           { key: "shipping", label: "Đóng gói & giao hàng" },
-          { key: "return", label: "Trả/Đổi hàng" },
           { key: "status", label: "Cập nhật trạng thái" },
+          { key: "return", label: "Trả/Đổi hàng" },
         ]
           .filter(tab => !(role === "Khách hàng" && tab.key === "status")) // ⛔ Ẩn tab "status" nếu là khách
           .map((tab) => (
@@ -532,12 +596,6 @@ const handlePrint = async () => {
         )}
 
         {selectedTab === "payment" && (
-          <div>
-          {role !== "Khách hàng" && (
-        <button onClick={() => openModal("add")} className="action-button">
-          Thêm đơn hàng
-        </button>
-      )}
           <table className="data-table">
             <thead>
               <tr>
@@ -558,7 +616,7 @@ const handlePrint = async () => {
                   <td>{o.total.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</td>
                   <td>{o.paymentMethod}</td>
                   <td>
-                    {o.status !== "Paid" ? (
+                    {!["Paid", "Shipped", "Completed"].includes(o.status) ? (
                       <button
                         className="action-button"
                         onClick={async () => {
@@ -593,148 +651,138 @@ const handlePrint = async () => {
               ))}
             </tbody>
           </table>
-          </div>
         )}
+
 
         {selectedTab === "shipping" && (
           <table className="data-table">
             <thead>
               <tr>
-                <th onClick={() => sortData("id")}>ID <ArrowUpDown className="sort-icon" /></th>
-                <th onClick={() => sortData("orderCode")}>Mã đơn <ArrowUpDown className="sort-icon" /></th>
-                <th onClick={() => sortData("deliveryAddress")}>Địa chỉ <ArrowUpDown className="sort-icon" /></th>
+                <th onClick={() => sortData("id")}>
+                  ID <ArrowUpDown className="sort-icon" />
+                </th>
+                <th onClick={() => sortData("orderCode")}>
+                  Mã đơn <ArrowUpDown className="sort-icon" />
+                </th>
+                <th onClick={() => sortData("customer")}>
+                  Khách hàng <ArrowUpDown className="sort-icon" />
+                </th>
                 <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.filter((o) => o.status === "Paid")
-                .map((o, index) => (
-                  <tr key={o.id}>
-                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                    <td>{o.orderCode}</td>
-                    <td>{o.deliveryAddress}</td>
-                    <td>{o.status}</td>
-                    <td>
-                      <button
-                        className="action-button"
-                        onClick={async () => {
-                          try {
-                            const res = await dongGoiGiaoHang(o.id);
-                            if (res.status === "success") {
-                              setOrders((prev) =>
-                                prev.map((ord) =>
-                                  ord.id === o.id ? { ...ord, status: "Shipped" } : ord
-                                )
-                              );
-                              setData((prev) =>
-                                prev.map((ord) =>
-                                  ord.id === o.id ? { ...ord, status: "Shipped" } : ord
-                                )
-                              );
-                            } else {
-                              alert("Giao hàng thất bại");
-                            }
-                          } catch (err) {
-                            alert("Lỗi khi đóng gói: " + err.message);
-                          }
-                        }}
-                      >
-                        Đóng gói
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        )}
-
-        {selectedTab === "status" && (
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th onClick={() => sortData("id")}>
-              ID <ArrowUpDown className="sort-icon" />
-            </th>
-            <th onClick={() => sortData("orderCode")}>
-              Mã đơn <ArrowUpDown className="sort-icon" />
-            </th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentItems.map((o, index) => (
-            <tr key={o.id}>
-              <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-              <td>{o.orderCode}</td>
-              <td>{o.status}</td>
-              <td>
-                <select onChange={(e) => handleOrderStatusChange(o.id, e.target.value)} value={o.status}>
-                  <option value="Pending">Chờ xử lý</option>
-                  <option value="Shipped">Đã giao</option>
-                  <option value="Completed">Hoàn thành</option>
-                </select>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-
-
-        {selectedTab === "return" && (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th onClick={() => sortData("id")}>ID <ArrowUpDown className="sort-icon" /></th>
-                <th onClick={() => sortData("orderCode")}>Mã đơn <ArrowUpDown className="sort-icon" /></th>
-                <th onClick={() => sortData("customer")}>Khách hàng <ArrowUpDown className="sort-icon" /></th>
-                <th>Hành động</th>
+                <th>Nhận tại</th>
               </tr>
             </thead>
             <tbody>
               {currentItems
-                .filter((o) => o.status === "Shipped")
+                .filter((o) =>
+                  ["Paid", "Nhận tại quầy", "Giao hàng tận nơi"].includes(o.status)
+                )
                 .map((o, index) => (
                   <tr key={o.id}>
                     <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                     <td>{o.orderCode}</td>
                     <td>{o.customer}</td>
+                    <td>{o.status}</td>
                     <td>
-                      {o.status !== "ReturnRequested" ? (
-                        <button
-                          className="action-button"
-                          onClick={async () => {
+                      {["Nhận tại quầy", "Giao hàng tận nơi"].includes(o.status) ? (
+                       <span>
+                          {o.status === "Nhận tại quầy" ? "Đã nhận" : "Đang thực thi"}
+                        </span>
+                      ) : (
+                        //Nếu chưa chọn → hiển thị dropdown
+                        <select
+                          defaultValue=""
+                          onChange={async (e) => {
+                            const selectedMethod = e.target.value;
+                            if (!selectedMethod) return;
                             try {
-                              const res = await xuLyTraDoi(o.id);
+                              const res = await dongGoiGiaoHang(o.id, selectedMethod);
                               if (res.status === "success") {
                                 setOrders((prev) =>
                                   prev.map((ord) =>
                                     ord.id === o.id
-                                      ? { ...ord, status: "ReturnRequested" }
+                                      ? { ...ord, status: selectedMethod }
                                       : ord
                                   )
                                 );
                                 setData((prev) =>
                                   prev.map((ord) =>
                                     ord.id === o.id
-                                      ? { ...ord, status: "ReturnRequested" }
+                                      ? { ...ord, status: selectedMethod }
                                       : ord
                                   )
                                 );
                               } else {
-                                alert("Trả/đổi thất bại");
+                                alert("Cập nhật phương thức nhận hàng thất bại");
                               }
                             } catch (err) {
-                              alert("Lỗi khi xử lý trả/đổi: " + err.message);
+                              alert("Lỗi khi cập nhật: " + err.message);
                             }
                           }}
                         >
-                          Yêu cầu trả/đổi
+                          <option value="">-- Chọn --</option>
+                          <option value="Nhận tại quầy">Nhận tại quầy</option>
+                          <option value="Giao hàng tận nơi">Giao hàng tận nơi</option>
+                        </select>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        )}
+        {selectedTab === "status" && (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th onClick={() => sortData("id")}>
+                  ID <ArrowUpDown className="sort-icon" />
+                </th>
+                <th onClick={() => sortData("orderCode")}>
+                  Mã đơn <ArrowUpDown className="sort-icon" />
+                </th>
+                <th>Phương thức</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentItems
+                .filter((o) =>
+                  ["Completed", "Nhận tại quầy", "Giao hàng tận nơi"].includes(o.status)
+                )
+                .map((o, index) => (
+                  <tr key={o.id}>
+                    <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                    <td>{o.orderCode}</td>
+                    <td>{o.status}</td>
+                    <td>
+                      {o.status !== "Completed" ? (
+                        <button
+                          className="action-button"
+                          onClick={async () => {
+                            try {
+                              const res = await handleOrderStatusChange(o.id, "Completed");
+                              if (res.status === "success") {
+                                setOrders((prev) =>
+                                  prev.map((ord) =>
+                                    ord.id === o.id ? { ...ord, status: "Completed" } : ord
+                                  )
+                                );
+                                setData((prev) =>
+                                  prev.map((ord) =>
+                                    ord.id === o.id ? { ...ord, status: "Completed" } : ord
+                                  )
+                                );
+                              } else {
+                                alert("Cập nhật trạng thái thất bại");
+                              }
+                            } catch (err) {
+                            }
+                          }}
+                        >
+                          Hoàn thành
                         </button>
                       ) : (
-                        <span className="status-instock">Đã yêu cầu</span>
+                        <span className="status-instock">Đã hoàn thành</span>
                       )}
                     </td>
                   </tr>
@@ -743,7 +791,49 @@ const handlePrint = async () => {
           </table>
         )}
 
-        <Pagination
+
+      {selectedTab === "return" && (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th onClick={() => sortData("id")}>ID <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("orderCode")}>Mã đơn <ArrowUpDown className="sort-icon" /></th>
+              <th onClick={() => sortData("customer")}>Khách hàng <ArrowUpDown className="sort-icon" /></th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentItems
+              .filter((o) => o.status === "Completed")
+              .map((o, index) => (
+                <tr key={o.id}>
+                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                  <td>{o.orderCode}</td>
+                  <td>{o.customer}</td>
+                  <td>
+                      <button
+                        className="action-button"
+                        onClick={() => openReturnModal("add", o)}
+                      >
+                        Yêu cầu trả/đổi
+                      </button>
+                      <button
+                        className="action-button"
+                        onClick={() =>{
+                          console.log("→ Open return modal in VIEW mode for order:", o); 
+                          openReturnModal("view", o)}}
+                      >
+                        Xem lịch sử
+                      </button>
+                  </td>
+                </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+
+       <Pagination
           totalPages={totalPages}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
@@ -766,6 +856,14 @@ const handlePrint = async () => {
         users={users}
         role={role}
         modalType={modalType}
+      />
+      <ReturnRequestModal
+        show={showReturnModal}
+        mode={returnMode}
+        order={returnOrder}
+        requests={returnHistory}
+        onClose={closeReturnModal}
+        onSubmit={handleSubmitReturn}
       />
     </div>
   );
