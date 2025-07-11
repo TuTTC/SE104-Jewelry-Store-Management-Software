@@ -72,13 +72,18 @@ export async function xacNhanThanhToan(id) {
 }
 
 // Đóng gói & giao hàng
-export async function dongGoiGiaoHang(id) {
+export async function dongGoiGiaoHang(id, deliveryMethod) {
   const res = await fetch(`${API_URL}/${id}/giaohang`, {
     method: "POST",
-    headers: getAuthHeader(),
+    headers: {
+      ...getAuthHeader(),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ deliveryMethod })  // ✅ THÊM BODY
   });
   return handleResponse(res);
 }
+
 
 // Cập nhật trạng thái đơn hàng
 export async function capNhatTrangThaiDonHang(id, trangThai) {

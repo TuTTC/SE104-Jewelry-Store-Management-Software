@@ -263,14 +263,14 @@ const GeneralModalForm = ({
           <>
             {/* <input type="number" name="parameterId" value={formData.parameterId || ""} onChange={handleInputChange} placeholder="ID sản phẩm" required /> */}
             <label>Tên tham số</label>
-            <input type="text" name="paraName" value={formData.TenThamSo || ""}  placeholder="Tên tham số" required disabled />
+            <input type="text" name="TenThamSo" value={formData.TenThamSo || ""}  placeholder="Tên tham số" required disabled />
             <label>Giá trị</label>
-            <input type="number" name="paraValue" value={formData.GiaTri || ""} onChange={handleInputChange} placeholder="Giá trị" required />
+            <input type="number" name="GiaTri" value={formData.GiaTri || ""} onChange={handleInputChange} placeholder="Giá trị" required />
             <label>Mô tả</label>
-            <input type="text" name="paraDescribe" value={formData.MoTa || ""}  placeholder="Mô tả" required />
+            <input type="text" name="MoTa" value={formData.MoTa || ""}  placeholder="Mô tả" required />
             <label>Kích hoạt</label>
             <select
-              name="paraKH"
+              name="KichHoat"
               value={formData.KichHoat ? "Có" : "Không"}
               onChange={handleInputChange}
               required
