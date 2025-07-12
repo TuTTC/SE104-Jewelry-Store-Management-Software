@@ -616,37 +616,42 @@ const handleFormSubmit = async (formData, chiTietList) => {
                   <td>{o.total.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</td>
                   <td>{o.paymentMethod}</td>
                   <td>
-                    {!["Paid", "Shipped", "Completed"].includes(o.status) ? (
-                      <button
-                        className="action-button"
-                        onClick={async () => {
-                          try {
-                            const res = await xacNhanThanhToan(o.id);
-                            if (res.status === "success") {
-                              setOrders((prev) =>
-                                prev.map((ord) =>
-                                  ord.id === o.id ? { ...ord, status: "Paid" } : ord
-                                )
-                              );
-                              setData((prev) =>
-                                prev.map((ord) =>
-                                  ord.id === o.id ? { ...ord, status: "Paid" } : ord
-                                )
-                              );
-                            } else {
-                              alert("Xác nhận thanh toán thất bại");
-                            }
-                          } catch (err) {
-                            alert("Lỗi khi xác nhận thanh toán: " + err.message);
-                          }
-                        }}
-                      >
-                        Xác nhận
-                      </button>
-                    ) : (
-                      <span className="status-instock">Đã xác nhận</span>
-                    )}
-                  </td>
+  {!["Paid", "Shipped", "Completed"].includes(o.status) ? (
+    role !== "Khách hàng" ? (
+      <button
+        className="action-button"
+        onClick={async () => {
+          try {
+            const res = await xacNhanThanhToan(o.id);
+            if (res.status === "success") {
+              setOrders((prev) =>
+                prev.map((ord) =>
+                  ord.id === o.id ? { ...ord, status: "Paid" } : ord
+                )
+              );
+              setData((prev) =>
+                prev.map((ord) =>
+                  ord.id === o.id ? { ...ord, status: "Paid" } : ord
+                )
+              );
+            } else {
+              alert("Xác nhận thanh toán thất bại");
+            }
+          } catch (err) {
+            alert("Lỗi khi xác nhận thanh toán: " + err.message);
+          }
+        }}
+      >
+        Xác nhận
+      </button>
+    ) : (
+      <span className="status-disabled">Chờ xác nhận</span>
+    )
+  ) : (
+    <span className="status-instock">Đã xác nhận</span>
+  )}
+</td>
+
                 </tr>
               ))}
             </tbody>

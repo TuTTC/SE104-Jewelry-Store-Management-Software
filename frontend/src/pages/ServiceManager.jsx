@@ -337,22 +337,25 @@ const handleSuaPhieuDichVu = async (maPDV) => {
           </button>
         )}
           {selectedTab === "list-phieudichvu" && (
-          <div>
-            {role !== "Khách hàng" && (
+        <div>
+          {role !== "Khách hàng" && (
+            <>
               <button onClick={handleThemPhieuDichVu} className="action-button">
                 Thêm phiếu dịch vụ
               </button>
-            )}
+              <button onClick={handlePrintAllPDF} className="action-button">
+                Xuất danh sách phiếu dịch vụ
+              </button>
+              <button onClick={handleSearchServiceForm} className="action-button">
+            Tra cứu phiếu dịch vụ
+          </button>
+            </>
+          )}
 
-            <button onClick={handlePrintAllPDF} className="action-button">
-              Xuất danh sách phiếu dịch vụ
-            </button>
+          
+        </div>
+      )}
 
-            <button onClick={handleSearchServiceForm} className="action-button">
-              Tra cứu phiếu dịch vụ
-            </button>
-          </div>
-        )}
 
       </div>
 
