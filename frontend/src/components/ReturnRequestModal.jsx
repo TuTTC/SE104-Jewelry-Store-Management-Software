@@ -209,6 +209,7 @@ export default function ReturnRequestModal({ show, mode = "add", order, requests
             <table className="data-table" style={{ width: "100%", tableLayout: "auto" }}>
               <thead>
                 <tr>
+                  <th style={{ width: "5%" }}></th> {/* Cột checkbox */}
                   <th style={{ width: "40%" }}>Sản phẩm</th>
                   <th style={{ width: "15%" }}>Số lượng còn lại</th>
                   <th style={{ width: "15%" }}>Đơn giá</th>
@@ -219,7 +220,20 @@ export default function ReturnRequestModal({ show, mode = "add", order, requests
               <tbody>
                 {items.map((it, idx) => (
                   <tr key={it.ProductID}>
-                    <td>{it.ProductName}</td>
+                    <td>
+                      <input
+                        id={`return-${it.ProductID}`}
+                        type="checkbox"
+                        checked={it.selected}
+                        disabled={it.available <= 0}
+                        onChange={() => toggleSelect(idx)}
+                      />
+                    </td>
+                    <td>
+                      <label htmlFor={`return-${it.ProductID}`} className="item-label">
+                        {it.ProductName}
+                      </label>
+                    </td>
                     <td>{it.available}</td>
                     <td>{it.Amount.toLocaleString("vi-VN", { style: "currency", currency: "VND" })}</td>
                     <td>
@@ -228,17 +242,21 @@ export default function ReturnRequestModal({ show, mode = "add", order, requests
                         min={0}
                         max={it.available}
                         value={it.Quantity}
+                        disabled={!it.selected}
                         onChange={e => handleQuantityChange(idx, e.target.value)}
-                        disabled={!it.available}
                         style={{ width: "100%" }}
                       />
                     </td>
-                    <td>{(it.Quantity * it.Amount).toLocaleString("vi-VN", { style: "currency", currency: "VND" })}</td>
+                    <td>
+                      {(it.Quantity * it.Amount).toLocaleString("vi-VN", {
+                        style: "currency",
+                        currency: "VND"
+                      })}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-
             {/* Bảng sản phẩm mới (nếu đổi hàng) */}
             {type === 'exchange' && (
               <>
