@@ -307,7 +307,7 @@ def print_bao_cao(id):
             CHITIETPHIEUDICHVU.TinhTrang == "Đã giao"
         ).group_by(PHIEUDICHVU.MaPDV, PHIEUDICHVU.NgayLap, NGUOIDUNG.HoTen) \
         .order_by(PHIEUDICHVU.NgayLap).all()
-
+        total_dv = 0
         if dich_vu_list:
             elements.append(Spacer(1, 24))
             elements.append(Paragraph("DOANH THU DỊCH VỤ", styles["TitleTimes"]))

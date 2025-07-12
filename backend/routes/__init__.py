@@ -15,6 +15,9 @@ from .permissions import permission_bp
 from .inventory import tonkho_bp
 from .thamso import thamso_bp
 from .upload_img import upload_bp
+from .reports import reports_bp
+from .returns import return_bp
+from .sanpham import sanpham_bp
 # from .thongke import thongke_bp
 
 def register_routes(app):
@@ -35,4 +38,7 @@ def register_routes(app):
     app.register_blueprint(tonkho_bp, url_prefix='/api/inventory')
     app.register_blueprint(thamso_bp, url_prefix='/api/parameter')
     app.register_blueprint(upload_bp)
+    app.register_blueprint(reports_bp,url_prefix='/api/reports' )
+    app.register_blueprint(return_bp, url_prefix='/api')
+    app.register_blueprint(sanpham_bp, url_prefix='/api')
     # app.register_blueprint(thongke_bp, url_prefix='/api')

@@ -9,8 +9,8 @@ function getAuthHeader() {
   };
 }
 
+// Xử lý response trả về từ server
 const handleResponse = async (res) => {
-  // Trường hợp trả về blob (file PDF) thì không parse JSON
   const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
     const data = await res.json();
@@ -20,17 +20,15 @@ const handleResponse = async (res) => {
       throw error;
     }
     return data;
-  } else if (contentType.includes("application/pdf") || contentType.includes("application/octet-stream")) {
-    if (!res.ok) {
-      throw new Error("Không thể tải file");
-    }
+  } else if (
+    contentType.includes("application/pdf") ||
+    contentType.includes("application/octet-stream")
+  ) {
+    if (!res.ok) throw new Error("Không thể tải file");
     return res.blob();
   } else {
-    // Các loại khác, trả về raw text
     const text = await res.text();
-    if (!res.ok) {
-      throw new Error(text || "Có lỗi xảy ra");
-    }
+    if (!res.ok) throw new Error(text || "Có lỗi xảy ra");
     return text;
   }
 };
@@ -75,15 +73,11 @@ export async function xacNhanThanhToan(id) {
 export async function dongGoiGiaoHang(id, deliveryMethod) {
   const res = await fetch(`${API_URL}/${id}/giaohang`, {
     method: "POST",
-    headers: {
-      ...getAuthHeader(),
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ deliveryMethod })  // ✅ THÊM BODY
+    headers: getAuthHeader(),
+    body: JSON.stringify({ deliveryMethod }),
   });
   return handleResponse(res);
 }
-
 
 // Cập nhật trạng thái đơn hàng
 export async function capNhatTrangThaiDonHang(id, trangThai) {
@@ -104,12 +98,12 @@ export async function xuLyTraDoi(id) {
   return handleResponse(res);
 }
 
-// In danh sách đơn hàng (file PDF)
+// In danh sách đơn hàng (trả về PDF)
 export async function inDanhSachDonHang() {
   const res = await fetch(`${API_URL}/print`, {
     headers: getAuthHeader(),
   });
-  return handleResponse(res);
+  return handleResponse(res); // trả về blob
 }
 
 // Sửa thông tin đơn hàng

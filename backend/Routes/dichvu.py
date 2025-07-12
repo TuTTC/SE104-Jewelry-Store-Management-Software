@@ -155,9 +155,8 @@ def export_dichvu_pdf():
 
 
 # Tìm kiếm dịch vụ (lọc theo keyword và IsDisable=False)
+
 @dichvu_bp.route('/dichvu/search', methods=['GET'])
-@jwt_required()
-@permission_required("services:view")
 def search_phieudichvu():
     keyword = request.args.get('keyword', '')
 
@@ -180,5 +179,3 @@ def search_phieudichvu():
         })
 
     return jsonify({"status": "success", "data": data})
-
-

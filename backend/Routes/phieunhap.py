@@ -333,6 +333,7 @@ def export_phieu_nhap(id):
     phieu = PHIEUNHAP.query.get_or_404(id)
     chi_tiet = CHITIETPHIEUNHAP.query.filter_by(MaPN=id).all()
     nha_cc = NHACUNGCAP.query.get(phieu.MaNCC)
+    nguoi_nhap = phieu.nguoitao
 
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=landscape(A4))
@@ -382,6 +383,19 @@ def export_phieu_nhap(id):
     c.setFont("DejaVu", 12)
     total_y = y_position - len(data)*18 - 10
     c.drawRightString(width - 40, total_y, f"Tổng tiền: {float(phieu.TongTien):,.0f} VND")
+     # Người lập ký tên
+    sign_y = total_y - 60
+    c.setFont("DejaVu", 11)
+    c.drawString(50, sign_y, "Người lập phiếu")
+
+    # Vẽ đường kẻ để ký
+    c.line(50, sign_y - 15, 200, sign_y - 15)
+
+    # Ghi tên người lập (sử dụng quan hệ ORM)
+    if nguoi_nhap:
+        ten = nguoi_nhap.HoTen if nguoi_nhap.HoTen else f"UserID: {nguoi_nhap.UserID}"
+        c.setFont("DejaVu", 10)
+        c.drawString(50, sign_y - 30, ten)
 
     c.showPage()
     c.save()

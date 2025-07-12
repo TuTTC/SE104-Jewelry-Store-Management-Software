@@ -25,6 +25,8 @@ from reportlab.lib.styles import ParagraphStyle
 from flask_jwt_extended import jwt_required, get_jwt_identity
 # from permissions import permission_required 
 from flask import g
+from sqlalchemy.orm import joinedload
+from sqlalchemy import or_
 
 phieudichvu_bp = Blueprint('phieudichvu_bp', __name__)
 
@@ -566,3 +568,39 @@ def update_phieu_dich_vu(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+# Tìm kiếm phiếu dịch vụ theo tên khách hàng hoặc ghi chú
+@phieudichvu_bp.route("/phieudichvu/search", methods=["GET"])
+@jwt_required()
+@permission_required('serviceticket:view')
+def search_phieu_dich_vu():
+    keyword = request.args.get("keyword", "")
+
+    query = PHIEUDICHVU.query\
+        .join(NGUOIDUNG, PHIEUDICHVU.UserID == NGUOIDUNG.UserID)\
+        .options(joinedload(PHIEUDICHVU.khachhang))
+
+    if keyword:
+        query = query.filter(
+            or_(
+                NGUOIDUNG.HoTen.ilike(f"%{keyword}%"),
+                PHIEUDICHVU.GhiChu.ilike(f"%{keyword}%")
+            )
+        )
+
+    results = query.order_by(PHIEUDICHVU.NgayLap.desc()).all()
+
+    data = []
+    for pdv in results:
+        data.append({
+            "MaPDV": pdv.MaPDV,
+            "UserID": pdv.UserID,
+            "HoTen": pdv.khachhang.HoTen if pdv.khachhang else "",
+            "NgayLap": pdv.NgayLap.strftime("%Y-%m-%d"),
+            "TongTien": float(pdv.TongTien),
+            "TraTruoc": float(pdv.TraTruoc or 0),
+            "TienConLai": float(pdv.TongTien - (pdv.TraTruoc or 0)),
+            "GhiChu": pdv.GhiChu,
+            "TrangThai": pdv.TrangThai
+        })
+
+    return jsonify({"status": "success", "data": data})
