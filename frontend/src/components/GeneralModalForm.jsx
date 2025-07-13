@@ -143,11 +143,17 @@ const GeneralModalForm = ({
               <option value="employee">Nhân viên</option>
             </select>
             <label>Trạng thái</label>
-              <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
-              <option value="">Chọn trạng thái</option>
-              <option value="true" >Kích hoạt</option>
-              <option value="false">Khóa</option>
-          </select>
+              <select
+  name="status"
+  value={formData.status === true ? "true" : formData.status === false ? "false" : ""}
+  onChange={handleInputChange}
+  required
+>
+  <option value="">Chọn trạng thái</option>
+  <option value="true">Kích hoạt</option>
+  <option value="false">Khóa</option>
+</select>
+
           </>
         );
       case "categories":

@@ -401,7 +401,7 @@ const handleSuaPhieuDichVu = async (maPDV) => {
               </div>
             )}
           </th>
-          <th>Hành động</th>
+           {role !== "Khách hàng" && <th>Hành động</th>}
         </tr>
       </thead>
       <tbody>
@@ -426,6 +426,7 @@ const handleSuaPhieuDichVu = async (maPDV) => {
                     {s.TrangThai ? "Kích hoạt" : "Không hoạt động"}
                   </span>
                 </td>
+                {role !== "Khách hàng" && (
                 <td>
                   <button onClick={() => openModal("edit", s)} className="action-icon edit">
                     <Edit className="icon" />
@@ -434,6 +435,8 @@ const handleSuaPhieuDichVu = async (maPDV) => {
                     <Trash className="icon" />
                   </button>
                 </td>
+              )}
+
               </tr>
             ))
         )}

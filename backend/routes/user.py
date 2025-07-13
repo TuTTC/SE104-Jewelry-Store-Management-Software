@@ -60,6 +60,9 @@ def update_me():
         user.SoDienThoai = data['SoDienThoai']
     if 'DiaChi' in data:
         user.DiaChi = data['DiaChi']
+    # if 'TrangThai' in data:
+    #     user.TrangThai = data['TrangThai']
+
 
     db.session.commit()
     return jsonify({'message': 'Cập nhật thành công'}), 200
@@ -136,10 +139,10 @@ def update_user_by_id(user_id):
         user.DiaChi = data['DiaChi']
     if 'SoDienThoai' in data:
         user.SoDienThoai = data['SoDienThoai']
-    if 'TrangThai' in data:
-        if isinstance(data['TrangThai'], bool):
-            user.TrangThai = data['TrangThai']
-        elif str(data['TrangThai']).lower() == "true":
+    if 'status' in data:
+        if isinstance(data['status'], bool):
+            user.TrangThai = data['status']
+        elif str(data['status']).lower() == "true":
             user.TrangThai = True
         else:
             user.TrangThai = False

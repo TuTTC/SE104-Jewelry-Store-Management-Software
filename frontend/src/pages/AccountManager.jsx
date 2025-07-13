@@ -143,13 +143,15 @@ const openModal = (mode, data = null) => {
     setError("");
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+const handleInputChange = (e) => {
+  const { name, value } = e.target;
+
+  setFormData((prev) => ({
+    ...prev,
+    [name]: name === "status" ? value === "true" : value,
+  }));
+};
+
 
 const submitForm = async (e) => {
   e.preventDefault();
@@ -389,13 +391,14 @@ const payload = {
                   <td>{a.VaiTro}</td>
                   
                   <td>{new Date(a.TaoNgay).toLocaleDateString()}</td>
-                  <td>
-                    {a.TrangThai === "Kích hoạt" ? (
-                      <span className="status-instock">Kích hoạt</span>
-                    ) : (
-                      <span className="status-inactive">Khóa</span>
-                    )}
-                  </td>
+                 <td>
+                  {a.TrangThai === "Kích hoạt" ? (
+                    <span className="status-instock">Kích hoạt</span>
+                  ) : (
+                    <span className="status-inactive">Khóa</span>
+                  )}
+                </td>
+
                   <td>
                     <button onClick={() => openPermissionModal(a)} className="action-icon">
                       <ShieldCheck className="icon" />

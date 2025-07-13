@@ -8,6 +8,8 @@ import * as productApi from "../services/productApi";
 import { uploadImage } from "../services/upload_imgApi";
 import Pagination from '../components/Pagination';
 import * as supplierApi from "../services/supplierApi";
+import userApi from "../services/userApi";
+
 const ProductManager = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -34,9 +36,10 @@ const ProductManager = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [currentImage, setCurrentImage] = useState("");
   const [allProducts, setAllProducts] = useState([]);
-
-   const totalPages = Math.ceil(allProducts.length / pageSize);
-   const [suppliers, setSuppliers] = useState([]);
+  const [role, setRole] = useState("");
+  const totalPages = Math.ceil(allProducts.length / pageSize);
+  const [suppliers, setSuppliers] = useState([]);
+  // const role = JSON.parse(localStorage.getItem("user"))?.role || "";
 
 useEffect(() => {
   fetchSuppliers();
@@ -50,7 +53,19 @@ const fetchSuppliers = async () => {
     console.error("Lỗi khi lấy nhà cung cấp:", err);
   }
 };
-
+    useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const currentUser = await userApi.getCurrentUser();
+        setRole(currentUser?.VaiTro || "");
+      } catch (err) {
+        console.error("Lỗi lấy người dùng hiện tại:", err);
+      }
+    };
+  
+    fetchCurrentUser();
+  }, []);
+  
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -257,10 +272,17 @@ const fetchSuppliers = async () => {
         </h2>
         {/* <button onClick={handleUpdateAllPrices} className="action-button">Cập nhật giá</button> */}
         
-    <div className="action-buttons">
-      <button onClick={() => openModal('add')} className="action-button">Thêm sản phẩm</button>
-      <button onClick={exportToCSV} className="action-button"><Download className="icon" /> Xuất CSV</button>
-    </div>
+        {role !== "Khách hàng" && (
+      <div className="action-buttons">
+        <button onClick={() => openModal('add')} className="action-button">
+          Thêm sản phẩm
+        </button>
+        <button onClick={exportToCSV} className="action-button">
+          <Download className="icon" /> Xuất CSV
+        </button>
+      </div>
+    )}
+
       </div>
 
       <div className="table-container">
@@ -303,24 +325,31 @@ const fetchSuppliers = async () => {
 
               <th onClick={() => sortData("SoLuongTon")}>Số lượng <ArrowUpDown className="sort-icon" /></th>
 
-              <th className="relative">
-                Nhà cung cấp 
-                <Filter className="sort-icon" onClick={() => setShowSupplierFilter(!showSupplierFilter)} style={{ cursor: "pointer" }} />
-                {showSupplierFilter && (
-                  <div className="filter-popup">
-                    <select value={selectedSupplier} onChange={handleSupplierChange}>
-                      <option value="">Tất cả</option>
-                      {Array.from(new Set(products.map(p => p.TenNCC))).map((sup, index) => (
-                        <option key={index} value={sup}>{sup}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </th>
+              {role !== "Khách hàng" && (
+                <th className="relative">
+                  Nhà cung cấp 
+                  <Filter
+                    className="sort-icon"
+                    onClick={() => setShowSupplierFilter(!showSupplierFilter)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  {showSupplierFilter && (
+                    <div className="filter-popup">
+                      <select value={selectedSupplier} onChange={handleSupplierChange}>
+                        <option value="">Tất cả</option>
+                        {Array.from(new Set(products.map(p => p.TenNCC))).map((sup, index) => (
+                          <option key={index} value={sup}>{sup}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </th>
+              )}
+
 
               <th>Hình ảnh</th>
               <th>Ghi chú</th>
-              <th>Hành động</th>
+               {role !== "Khách hàng" && <th>Hành động</th>}
             </tr>
           </thead>
           <tbody>
@@ -331,9 +360,12 @@ const fetchSuppliers = async () => {
                 <td>{formatCurrency(p.GiaBan)}</td>
                 <td>{p.TenDM}</td>
                 <td>{p.SoLuongTon}</td>
+                {role !== "Khách hàng" && (
                 <td>
-  {suppliers.find((s) => s.MaNCC === p.MaNCC)?.TenNCC || "Không rõ"}
-</td>
+                  {suppliers.find((s) => s.MaNCC === p.MaNCC)?.TenNCC || "Không rõ"}
+                </td>
+              )}
+
 
                 <td>
                   <img
@@ -349,10 +381,17 @@ const fetchSuppliers = async () => {
                 </td>
 
                 <td>{p.MoTa}</td>
-                <td>
-                  <button onClick={() => openModal("edit", p)} className="action-icon edit"><Edit className="icon" /></button>
-                  <button onClick={() => handleDelete(p.MaSP)} className="action-icon delete"><Trash className="icon" /></button>
-                </td>
+                {role !== "Khách hàng" && (
+                  <td>
+                    <button onClick={() => openModal("edit", p)} className="action-icon edit">
+                      <Edit className="icon" />
+                    </button>
+                    <button onClick={() => handleDelete(p.MaSP)} className="action-icon delete">
+                      <Trash className="icon" />
+                    </button>
+                  </td>
+                )}
+
               </tr>
             ))}
           </tbody>
