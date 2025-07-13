@@ -202,7 +202,7 @@ const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
     
   const loadCustomers = async () => {
     try {
-      const res = await userApi.getAllUsers(); // trả về mảng [{ UserID, HoTen, VaiTro, TrangThai, ... }, …]
+      const res = await userApi.getCustomers(); // trả về mảng [{ UserID, HoTen, VaiTro, TrangThai, ... }, …]
       // Chỉ lấy khách hàng đang hoạt động
       const customers = res.filter(
         u => u.VaiTro === "Khách hàng" && u.TrangThai === "Kích hoạt"

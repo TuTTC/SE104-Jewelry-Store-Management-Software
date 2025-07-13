@@ -117,11 +117,14 @@ const userApi = {
     });
     return handleResponse(res);
   },
-    // 10. Lấy vai trò (role) hiện tại của người dùng
-  getCurrentUserRole: async () => {
-    const user = await userApi.getCurrentUser();
-    return user.data?.role || "";
+    // 10. Lấy danh sách khách hàng đang hoạt động
+  getCustomers: async () => {
+    const res = await fetch(`${BASE_URL}/users/customers`, {
+      headers: getAuthHeader(),
+    });
+    return handleResponse(res);
   },
+
 };
 
 
