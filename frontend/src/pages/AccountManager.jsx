@@ -389,13 +389,14 @@ const payload = {
                   <td>{a.VaiTro}</td>
                   
                   <td>{new Date(a.TaoNgay).toLocaleDateString()}</td>
-                  <td>
-                    {a.TrangThai === "Kích hoạt" ? (
-                      <span className="status-instock">Kích hoạt</span>
-                    ) : (
-                      <span className="status-inactive">Khóa</span>
-                    )}
-                  </td>
+                 <td>
+                  {a.TrangThai === "Kích hoạt" ? (
+                    <span className="status-instock">Kích hoạt</span>
+                  ) : (
+                    <span className="status-inactive">Khóa</span>
+                  )}
+                </td>
+
                   <td>
                     <button onClick={() => openPermissionModal(a)} className="action-icon">
                       <ShieldCheck className="icon" />

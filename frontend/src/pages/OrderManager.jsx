@@ -79,6 +79,7 @@ const OrdersManager = () => {
       alert("Lỗi khi lấy dữ liệu đơn hàng: " + err.message);
     }
   };
+  // const role = JSON.parse(localStorage.getItem("user"))?.VaiTro || "";
 
   useEffect(() => {
     const init = async () => {
@@ -106,6 +107,30 @@ const OrdersManager = () => {
 
     init();
   }, []);
+
+//   useEffect(() => {
+//   const init = async () => {
+//     try {
+//       const currentUser = await userApi.getCurrentUser();
+//       localStorage.setItem("user", JSON.stringify(currentUser)); // Lưu user để render không nháy
+
+//       // Các xử lý tiếp theo dùng currentUser hoặc currentUser.VaiTro
+//       await fetchOrders();
+
+//       if (["Admin", "Nhân viên"].includes(currentUser.VaiTro)) {
+//         await loadProducts();
+//         await loadCustomers();
+//       } else if (currentUser.VaiTro === "Khách hàng") {
+//         await loadProducts();
+//         setCustomers([currentUser]);
+//       }
+//     } catch (err) {
+//       console.error("Lỗi khi khởi tạo dữ liệu:", err);
+//     }
+//   };
+
+//   init();
+// }, []);
 
 
   useEffect(() => {

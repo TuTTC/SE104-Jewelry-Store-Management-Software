@@ -60,6 +60,9 @@ def update_me():
         user.SoDienThoai = data['SoDienThoai']
     if 'DiaChi' in data:
         user.DiaChi = data['DiaChi']
+    # if 'TrangThai' in data:
+    #     user.TrangThai = data['TrangThai']
+
 
     db.session.commit()
     return jsonify({'message': 'Cập nhật thành công'}), 200

@@ -36,9 +36,9 @@ const ProductManager = () => {
   const [currentImage, setCurrentImage] = useState("");
   const [role, setRole] = useState("");
   const [allProducts, setAllProducts] = useState([]);
-
-   const totalPages = Math.ceil(allProducts.length / pageSize);
-   const [suppliers, setSuppliers] = useState([]);
+  const totalPages = Math.ceil(allProducts.length / pageSize);
+  const [suppliers, setSuppliers] = useState([]);
+  // const role = JSON.parse(localStorage.getItem("user"))?.role || "";
 
 useEffect(() => {
   fetchSuppliers();
@@ -52,7 +52,6 @@ const fetchSuppliers = async () => {
     console.error("Lỗi khi lấy nhà cung cấp:", err);
   }
 };
-
     useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
