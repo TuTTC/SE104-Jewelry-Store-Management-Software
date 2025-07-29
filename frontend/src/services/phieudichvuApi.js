@@ -35,12 +35,25 @@ const handleResponse = async (res) => {
 
 // Lấy danh sách tất cả phiếu dịch vụ
 export async function getPhieuDichVuList() {
-  const res = await fetch(`${API_BASE}/phieudichvu`, {
-    headers: getAuthHeader(),
-  });
+  const url = `${API_BASE}/phieudichvu`;
+  const headers = getAuthHeader();
+  console.log("[API] GET", url);
+  console.log("[API] Auth headers:", headers);
+
+  const res = await fetch(url, { headers });
+  console.log("[API] Response status:", res.status);
+
+  // Thử parse JSON và log luôn
+  let json;
+  try {
+    json = await res.clone().json();
+    console.log("[API] Response JSON:", json);
+  } catch (e) {
+    console.error("[API] Không parse được JSON:", e);
+  }
+
   return await handleResponse(res);
 }
-
 // Lấy chi tiết phiếu dịch vụ theo ID
 export async function getPhieuDichVuById(id) {
   const res = await fetch(`${API_BASE}/phieudichvu/${id}`, {

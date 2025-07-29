@@ -227,7 +227,8 @@ def list_phieu_dichvu():
                 "TienConLai": float(p.TongTien - p.TraTruoc),
                 "TrangThai": p.TrangThai
             })
-
+        print("Danh sách phiếu dịch vụ:", result)  # Debug log
+        print("PERMISSIONS:", g.permissions)
         return jsonify({"status": "success", "data": result})
 
     except Exception as e:
@@ -456,11 +457,20 @@ def print_phieu_dich_vu(id):
 @permission_required('serviceticket:view')
 def print_danh_sach_pdv():
     try:
-        # Truy vấn tất cả phiếu dịch vụ
-        danh_sach = PHIEUDICHVU.query.order_by(PHIEUDICHVU.NgayLap.desc()).all()
+        from sqlalchemy import or_
+        # Truy vấn từng nhóm theo Trạng thái
+        hoan_thanh = PHIEUDICHVU.query.filter_by(TrangThai='Hoàn thành').order_by(PHIEUDICHVU.NgayLap.desc()).all()
+        chua_hoan_thanh = PHIEUDICHVU.query.filter_by(TrangThai='Chưa hoàn thành').order_by(PHIEUDICHVU.NgayLap.desc()).all()
 
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=20, bottomMargin=20, leftMargin=20, rightMargin=20)
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            topMargin=20,
+            bottomMargin=20,
+            leftMargin=20,
+            rightMargin=20
+        )
         elements = []
         styles = getSampleStyleSheet()
         style_normal = styles['Normal']
@@ -468,44 +478,42 @@ def print_danh_sach_pdv():
         style_title = styles['Title']
         style_title.fontName = 'DejaVu'
 
-        # Tiêu đề
-        elements.append(Paragraph("DANH SÁCH PHIẾU DỊCH VỤ", style_title))
-        elements.append(Spacer(1, 12))
+        def create_table(title, danh_sach):
+            elements.append(Paragraph(title, style_title))
+            elements.append(Spacer(1, 8))
+            data = [
+                ['STT', 'Số phiếu', 'Ngày lập', 'Người lập', 'Tổng tiền', 'Trả trước', 'Còn lại', 'Trạng thái']
+            ]
+            for i, pdv in enumerate(danh_sach, start=1):
+                nd = NGUOIDUNG.query.get(pdv.UserID)
+                data.append([
+                    str(i),
+                    str(pdv.MaPDV),
+                    pdv.NgayLap.strftime('%Y-%m-%d'),
+                    nd.HoTen if nd else 'Không rõ',
+                    f"{pdv.TongTien}₫",
+                    f"{pdv.TraTruoc}₫",
+                    f"{pdv.TongTien - pdv.TraTruoc}₫",
+                    pdv.trang_thai_thuc_te
+                ])
+            table = Table(data, colWidths=[30, 70, 80, 150, 80, 80, 80, 80])
+            table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'DejaVu'),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 16))  # Khoảng cách giữa hai bảng
 
-        # Tiêu đề bảng
-        data = [
-            ['STT', 'Số phiếu', 'Ngày lập', 'Người lập', 'Tổng tiền', 'Trả trước', 'Còn lại', 'Trạng thái']
-        ]
+        # In hai nhóm riêng biệt
+        create_table("DANH SÁCH PHIẾU DỊCH VỤ - HOÀN THÀNH", hoan_thanh)
+        create_table("DANH SÁCH PHIẾU DỊCH VỤ - CHƯA HOÀN THÀNH", chua_hoan_thanh)
 
-        # Nội dung bảng
-        for i, pdv in enumerate(danh_sach, start=1):
-            nd = NGUOIDUNG.query.get(pdv.UserID)
-            data.append([
-                str(i),
-                str(pdv.MaPDV),
-                pdv.NgayLap.strftime('%Y-%m-%d'),
-                nd.HoTen if nd else 'Không rõ',
-                f"{pdv.TongTien}₫",
-                f"{pdv.TraTruoc}₫",
-                f"{pdv.TongTien - pdv.TraTruoc}₫",
-                pdv.trang_thai_thuc_te
-            ])
-
-        # Cấu hình bảng
-        page_width = landscape(A4)[0] - doc.leftMargin - doc.rightMargin
-        table = Table(data, colWidths=[30, 70, 80, 150, 80, 80, 80, 80])
-        table.setStyle(TableStyle([
-            ('FONTNAME', (0,0), (-1,-1), 'DejaVu'),
-            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ]))
-
-        elements.append(table)
         doc.build(elements)
-
         buffer.seek(0)
+
         return send_file(buffer, as_attachment=True, download_name="danh_sach_phieu_dich_vu.pdf", mimetype='application/pdf')
 
     except Exception as e:

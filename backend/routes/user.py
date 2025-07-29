@@ -90,7 +90,27 @@ def get_all_users():
     
     return jsonify(result), 200
 
-
+# Lấy danh sách khách hàng đang hoạt động
+@user_bp.route('/users/customers', methods=['GET'])
+@jwt_required()
+def get_active_customers():
+    users = NGUOIDUNG.query.filter_by(TrangThai=True).join(VAITRO).filter(VAITRO.TenVaiTro == "Khách hàng").all()
+    result = []
+    for user in users:
+        item = {
+            'UserID': user.UserID,
+            'TenDangNhap': user.TenDangNhap,
+            'Email': user.Email,
+            'VaiTro': user.vaitro.TenVaiTro if user.vaitro else None,
+            'HoTen': user.HoTen,
+            'SoDienThoai': user.SoDienThoai,
+            'DiaChi': user.DiaChi,
+            'TaoNgay': user.TaoNgay.strftime("%Y-%m-%d %H:%M:%S") if user.TaoNgay else None,
+            'TrangThai': "Kích hoạt"
+        }
+        result.append(item)
+    
+    return jsonify(result), 200
 
 
 # 4. Lấy thông tin chi tiết theo ID (kèm quyền)
@@ -136,10 +156,10 @@ def update_user_by_id(user_id):
         user.DiaChi = data['DiaChi']
     if 'SoDienThoai' in data:
         user.SoDienThoai = data['SoDienThoai']
-    if 'TrangThai' in data:
-        if isinstance(data['TrangThai'], bool):
-            user.TrangThai = data['TrangThai']
-        elif str(data['TrangThai']).lower() == "true":
+    if 'status' in data:
+        if isinstance(data['status'], bool):
+            user.TrangThai = data['status']
+        elif str(data['status']).lower() == "true":
             user.TrangThai = True
         else:
             user.TrangThai = False

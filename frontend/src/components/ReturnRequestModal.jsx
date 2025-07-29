@@ -377,7 +377,7 @@ export default function ReturnRequestModal({ show, mode = "add", order, requests
         <div className="modal-actions">
           {mode === "add" && (
             <button type="button" className="action-button" onClick={handleSend} disabled={!canSend}>
-              Gửi yêu cầu
+              Lưu
             </button>
           )}
           <button type="button" className="action-button cancel" onClick={onClose}>

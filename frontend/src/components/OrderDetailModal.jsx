@@ -200,7 +200,7 @@ const OrderDetailModal = ({
             In chi tiết đơn hàng
           </button>
         )}
-        {role !== "Khách hàng" && (
+        {modalType!=="view" && (
         <button type="submit" className="action-button">
           Lưu
         </button>

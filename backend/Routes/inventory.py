@@ -451,51 +451,6 @@ def export_bao_cao_ton_kho_theo_thang():
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
-
-# @tonkho_bp.route("/capnhat_all", methods=["PUT"])
-# def capnhat_toan_bo_tonkho():
-#     """
-#     Cập nhật toàn bộ bảng tồn kho một lượt
-#     Expect JSON dạng:
-#     [
-#         { "MaSP": 1, "SoLuongTon": 100 },
-#         { "MaSP": 2, "SoLuongTon": 50 },
-#         ...
-#     ]
-#     """
-#     data = request.get_json()
-#     if not data or not isinstance(data, list):
-#         return jsonify({"error": "Dữ liệu không hợp lệ, cần gửi danh sách"}), 400
-
-#     try:
-#         for item in data:
-#             masp = item.get("MaSP")
-#             soluongton_moi = int(item.get("SoLuongTon", -1))
-
-#             if masp is None or soluongton_moi < 0:
-#                 continue  # Bỏ qua sản phẩm lỗi dữ liệu
-
-#             sanpham = SANPHAM.query.get(masp)
-#             if not sanpham:
-#                 continue  # Bỏ qua sản phẩm không tồn tại
-
-#             sanpham.SoLuongTon = soluongton_moi
-
-#             tonkho = TONKHO.query.filter_by(MaSP=masp).first()
-#             if tonkho:
-#                 tonkho.SoLuongTon = soluongton_moi
-#             else:
-#                 tonkho = TONKHO(MaSP=masp, SoLuongTon=soluongton_moi)
-#                 db.session.add(tonkho)
-
-#         db.session.commit()
-#         return jsonify({"message": "Cập nhật toàn bộ tồn kho thành công"})
-#     except Exception as e:
-#         db.session.rollback()
-#         return jsonify({"error": str(e)}), 500
-
-# API cập nhật số lượng tồn trong sản phẩm và đồng bộ sang bảng tồn kho
-# API cập nhật số lượng tồn kho hàng loạt và đồng bộ bảng TONKHO
 # API đồng bộ tồn kho từ bảng SANPHAM
 @tonkho_bp.route("/capnhat_all", methods=["PUT"])
 @jwt_required()

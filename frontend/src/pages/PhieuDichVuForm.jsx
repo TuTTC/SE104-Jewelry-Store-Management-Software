@@ -90,7 +90,7 @@ const PhieuDichVuForm = ({ visible, onClose, onSave, mode = "add", initialData =
 
       // 3. Tùy vai trò mà load khách hàng
       if (["Admin", "Nhân viên"].includes(userRole)) {
-        const allUsers = await userApi.getAllUsers();
+        const allUsers = await userApi.getCustomers();
         const customers = allUsers.filter(user =>
           user.VaiTro === "Khách hàng" &&
           (user.TrangThai === true || user.TrangThai === "Kích hoạt")

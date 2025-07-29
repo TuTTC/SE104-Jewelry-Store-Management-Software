@@ -85,6 +85,7 @@ const OrdersManager = () => {
       try {
         // Lấy người dùng hiện tại
         const currentUser = await userApi.getCurrentUser();
+        localStorage.setItem("user", JSON.stringify(currentUser));
         const userRole = currentUser?.VaiTro || "";
         setRole(userRole); //Cập nhật state
 
@@ -176,7 +177,7 @@ const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
     
   const loadCustomers = async () => {
     try {
-      const res = await userApi.getAllUsers(); // trả về mảng [{ UserID, HoTen, VaiTro, TrangThai, ... }, …]
+      const res = await userApi.getCustomers(); // trả về mảng [{ UserID, HoTen, VaiTro, TrangThai, ... }, …]
       // Chỉ lấy khách hàng đang hoạt động
       const customers = res.filter(
         u => u.VaiTro === "Khách hàng" && u.TrangThai === "Kích hoạt"
@@ -530,15 +531,21 @@ const handleFormSubmit = async (formData, chiTietList) => {
                     </button>
                   ) : (
                     <>
-                      <button onClick={() => openModal("edit", o)} className="action-icon edit">
+                      {/* <button onClick={() => openModal("edit", o)} className="action-icon edit">
                         <Edit className="icon" />
-                      </button>
-                      <button
+                      </button> */}
+                      {/* <button
                         onClick={() => handleDelete("orders", o.id)}
                         className="action-icon delete"
                       >
-                        <Trash className="icon" />
-                      </button>
+                        <Trash className="icon" /> */}
+                      {/* </button> */}
+                    <button
+                      onClick={() => openModal("view", o)} // mở modal xem chi tiết
+                      className="action-icon edit"
+                    >
+                      <Eye className="icon" />
+                    </button>
                     </>
                   )}
                 </td>
@@ -616,41 +623,41 @@ const handleFormSubmit = async (formData, chiTietList) => {
                   <td>{o.total.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })}</td>
                   <td>{o.paymentMethod}</td>
                   <td>
-  {!["Paid", "Shipped", "Completed"].includes(o.status) ? (
-    role !== "Khách hàng" ? (
-      <button
-        className="action-button"
-        onClick={async () => {
-          try {
-            const res = await xacNhanThanhToan(o.id);
-            if (res.status === "success") {
-              setOrders((prev) =>
-                prev.map((ord) =>
-                  ord.id === o.id ? { ...ord, status: "Paid" } : ord
-                )
-              );
-              setData((prev) =>
-                prev.map((ord) =>
-                  ord.id === o.id ? { ...ord, status: "Paid" } : ord
-                )
-              );
-            } else {
-              alert("Xác nhận thanh toán thất bại");
-            }
-          } catch (err) {
-            alert("Lỗi khi xác nhận thanh toán: " + err.message);
-          }
-        }}
-      >
-        Xác nhận
-      </button>
-    ) : (
-      <span className="status-disabled">Chờ xác nhận</span>
-    )
-  ) : (
-    <span className="status-instock">Đã xác nhận</span>
-  )}
-</td>
+                    {!["Paid", "Shipped", "Completed"].includes(o.status) ? (
+                      role !== "Khách hàng" ? (
+                        <button
+                          className="action-button"
+                          onClick={async () => {
+                            try {
+                              const res = await xacNhanThanhToan(o.id);
+                              if (res.status === "success") {
+                                setOrders((prev) =>
+                                  prev.map((ord) =>
+                                    ord.id === o.id ? { ...ord, status: "Paid" } : ord
+                                  )
+                                );
+                                setData((prev) =>
+                                  prev.map((ord) =>
+                                    ord.id === o.id ? { ...ord, status: "Paid" } : ord
+                                  )
+                                );
+                              } else {
+                                alert("Xác nhận thanh toán thất bại");
+                              }
+                            } catch (err) {
+                              alert("Lỗi khi xác nhận thanh toán: " + err.message);
+                            }
+                          }}
+                        >
+                          Xác nhận
+                        </button>
+                      ) : (
+                        <span className="status-disabled">Chờ xác nhận</span>
+                      )
+                    ) : (
+                      <span className="status-instock">Đã xác nhận</span>
+                    )}
+                  </td>
 
                 </tr>
               ))}
@@ -816,12 +823,14 @@ const handleFormSubmit = async (formData, chiTietList) => {
                   <td>{o.orderCode}</td>
                   <td>{o.customer}</td>
                   <td>
+                    {                      role !== "Khách hàng" &&(
                       <button
                         className="action-button"
                         onClick={() => openReturnModal("add", o)}
                       >
                         Yêu cầu trả/đổi
                       </button>
+            )}
                       <button
                         className="action-button"
                         onClick={() =>{

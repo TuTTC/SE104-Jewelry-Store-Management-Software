@@ -15,6 +15,7 @@ const handleResponse = async (res) => {
   if (contentType.includes("application/json")) {
     const data = await res.json();
     if (!res.ok) {
+      console.error("Lỗi API:", res.status, data);
       const error = new Error(data.error || "Có lỗi xảy ra");
       error.status = res.status;
       throw error;
@@ -114,6 +115,7 @@ export async function suaDonHang(id, payload) {
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
+  
 }
 
 // Cập nhật chi tiết đơn hàng

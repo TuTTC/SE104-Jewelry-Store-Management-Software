@@ -147,7 +147,7 @@ const openModal = (mode, data = null) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "status" ? value === "true" : value,
     }));
   };
 

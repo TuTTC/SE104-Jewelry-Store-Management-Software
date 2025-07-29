@@ -80,6 +80,22 @@ function ServiceManager() {
     setCurrentPage(1); // Đặt lại trang khi bộ lọc thay đổi
   }, [services, phieuDichVuList, selectedServiceStatus, selectedPhieuStatus]);
 
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const currentUser = await userApi.getCurrentUser();
+            console.log("USER:", currentUser);
+    console.log("ROLE:", currentUser?.VaiTro);
+        setRole(currentUser?.VaiTro || "");
+      } catch (err) {
+        console.error("Lỗi lấy người dùng hiện tại:", err);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+
   const fetchDichVu = async () => {
     const res = await danhSachDichVu();
     console.log("Dịch vụ nhận từ API:", res);
@@ -105,18 +121,6 @@ function ServiceManager() {
       alert("Lỗi kết nối khi lấy phiếu dịch vụ: " + err.message);
     }
   };
-  useEffect(() => {
-  const fetchCurrentUser = async () => {
-    try {
-      const currentUser = await userApi.getCurrentUser();
-      setRole(currentUser?.VaiTro || "");
-    } catch (err) {
-      console.error("Lỗi lấy người dùng hiện tại:", err);
-    }
-  };
-
-  fetchCurrentUser();
-}, []);
 
     
   const sortData = (key, isServiceTab = true) => {
@@ -401,7 +405,7 @@ const handleSuaPhieuDichVu = async (maPDV) => {
               </div>
             )}
           </th>
-          <th>Hành động</th>
+          {role !== "Khách hàng" && <th>Hành động</th>}
         </tr>
       </thead>
       <tbody>

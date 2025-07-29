@@ -60,27 +60,32 @@ from models import DichVu, NguoiDung, NguoiQuanLy, KhachHang, NhaCungCap, ChiTie
 
 with app.app_context():
     db.create_all()
-    # seed_roles()
-    # seed_danh_muc()
-    # seed_user()
-    # seed_nhacungcap()
+    # seed_roles() - 
+    # seed_danh_muc() -
+    # seed_user() -
+    # seed_nhacungcap() -
     # clear_users()
-    # seed_sanpham()
-    # seed_phieu_nhap()
-    # seed_permissions()
-    # seed_role_permissions()
+    # seed_sanpham() -
+    # seed_phieu_nhap() -
+    # seed_permissions() -
+    # seed_role_permissions() -
     # cap_nhat_gia_ban_cho_toan_bo_san_pham()
-    # seed_dichvu()
-    # seed_thamso()
+    # seed_dichvu() -
+    # seed_thamso() -
     # seed_khach_hang()
-    # seed_don_hang()
+    # seed_don_hang() -
     # seed_bao_cao()
-    # seed_chi_tiet_don_hang()
+    # seed_chi_tiet_don_hang() -
     # seed_them_khach_hang(30)
     # seed_phieu_dich_vu()
     # seed_chi_tiet_phieu_dich_vu()
-    # seed_phieudichvu()
+    # seed_phieudichvu() -
 
 from Routes import register_routes
 register_routes(app)
 
+if __name__ == "__main__":
+    app.run(debug=True)
+
+# Xuất app ra cho các file test
+application = app  # Hoặc: from main import app

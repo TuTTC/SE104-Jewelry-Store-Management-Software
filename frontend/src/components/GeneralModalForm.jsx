@@ -143,11 +143,16 @@ const GeneralModalForm = ({
               <option value="employee">Nhân viên</option>
             </select>
             <label>Trạng thái</label>
-              <select name="status" value={formData.status || ""} onChange={handleInputChange} required>
-              <option value="">Chọn trạng thái</option>
-              <option value="true" >Kích hoạt</option>
-              <option value="false">Khóa</option>
-          </select>
+              <select
+                name="status"
+                value={formData.status === true ? "true" : formData.status === false ? "false" : ""}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Chọn trạng thái</option>
+                <option value="true">Kích hoạt</option>
+                <option value="false">Khóa</option>
+              </select>
           </>
         );
       case "categories":
@@ -299,7 +304,9 @@ const GeneralModalForm = ({
           {error && <p className="error-message">{error}</p>}
           {renderSectionFields()}
           <div className="modal-actions">
-            <button type="submit" className="action-button">Lưu</button>
+            {currentSection !== "inventory" && (
+    <button type="submit" className="action-button">Lưu</button>
+  )}
             <button type="button" onClick={closeModal} className="action-button cancel">Hủy</button>
           </div>
         </form>
