@@ -8,7 +8,7 @@ export default function JewelryHomePage() {
     <div className="bg-white text-neutral-900 font-sans">
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-4 border-b">
-        <div className="text-xl font-bold">🌸</div>
+        <div className="text-xl font-bold">LOGO</div>
         <nav className="hidden md:flex gap-6 uppercase text-sm font-medium">
           <a href="#" className="hover:text-amber-500">Home</a>
           <a href="#" className="hover:text-amber-500">Jewelry</a>
@@ -18,9 +18,9 @@ export default function JewelryHomePage() {
           <a href="#" className="hover:text-amber-500">Contact</a>
         </nav>
         <div className="flex gap-4">
-          <button>📍</button>
-          <button>🔍</button>
-          <button>🛒</button>
+          <button>LOC</button>
+          <button>SEARCH</button>
+          <button>CART</button>
           <button>☰</button>
         </div>
       </header>
@@ -48,7 +48,7 @@ export default function JewelryHomePage() {
       <section className="grid md:grid-cols-2 gap-8 px-4 py-16 md:px-16 items-center">
         <img src="/timeless.jpg" alt="Timeless" className="rounded-md" />
         <div>
-          <h2 className="text-4xl font-thin leading-snug">Pure<br/>Timeless<br/>Values</h2>
+          <h2 className="text-4xl font-thin leading-snug">Pure<br />Timeless<br />Values</h2>
           <p className="mt-4 text-sm">
             We bring you exquisite 100% natural gemstones, meticulously crafted to honor elegance and sophistication. Each one is not just jewelry but a symbol of luck and prestige.
           </p>
@@ -150,10 +150,10 @@ export default function JewelryHomePage() {
           <div>
             <h5 className="font-semibold mb-2">Follow Us</h5>
             <div className="flex gap-2">
-              <span>📸</span>
-              <span>📘</span>
-              <span>🐦</span>
-              <span>📌</span>
+              <span>IG</span>
+              <span>FB</span>
+              <span>TW</span>
+              <span>PIN</span>
             </div>
           </div>
         </div>

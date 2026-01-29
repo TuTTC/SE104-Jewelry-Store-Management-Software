@@ -9,7 +9,7 @@ import {
   xoaDonHang,
   taoDonHang,
   suaDonHang,
-  getChiTietDonHang, 
+  getChiTietDonHang,
   capNhatChiTietDonHang,
   inChiTietDonHang
 } from "../services/donhangAPI";
@@ -34,7 +34,7 @@ const OrdersManager = () => {
         ...o,
         customerId: o.customerId ?? o.MaKH  // nếu API chỉ trả MaKH
       }));
-      console.log("▶️ Mapped orders:", data);
+      console.log("Mapped orders:", data);
       setOrders(data);
     }
   };
@@ -42,16 +42,16 @@ const OrdersManager = () => {
   useEffect(() => {
     fetchOrders();
   }, []);
-  
+
   const openModal = (section, type, data = {}) => {
     if (section !== "orders") return;
     setModalType(type);
-    
+
     const transformedData = type === "edit"
       ? {
-          ...data,
-          customerId: data.customerId ?? "",
-        }
+        ...data,
+        customerId: data.customerId ?? "",
+      }
       : {};
 
     setFormData(transformedData);
@@ -71,22 +71,22 @@ const OrdersManager = () => {
 
 
 
-  
+
   // Cập nhật trường trong từng dòng chi tiết đơn hàng
-const updateOrderDetail = (index, field, value) => {
-  setSelectedOrderDetails(prev => {
-    const next = [...prev];
-    const item = { ...next[index], [field]: value };
-    // cập nhật ThànhTiền nếu thay SoLuong hoặc GiaBan
-    if (field === "SoLuong" || field === "GiaBan") {
-      const qty = parseInt(item.SoLuong, 10) || 0;
-      const price = parseFloat(item.GiaBan) || 0;
-      item.ThanhTien = qty * price;
-    }
-    next[index] = item;
-    return next;
-  });
-};
+  const updateOrderDetail = (index, field, value) => {
+    setSelectedOrderDetails(prev => {
+      const next = [...prev];
+      const item = { ...next[index], [field]: value };
+      // cập nhật ThànhTiền nếu thay SoLuong hoặc GiaBan
+      if (field === "SoLuong" || field === "GiaBan") {
+        const qty = parseInt(item.SoLuong, 10) || 0;
+        const price = parseFloat(item.GiaBan) || 0;
+        item.ThanhTien = qty * price;
+      }
+      next[index] = item;
+      return next;
+    });
+  };
 
 
   // Xoá 1 dòng chi tiết
@@ -105,14 +105,14 @@ const updateOrderDetail = (index, field, value) => {
     try {
       const json = await capNhatChiTietDonHang(selectedOrderId, selectedOrderDetails);
       if (json.status === "success") {
-        alert("✅ Đã lưu chi tiết đơn hàng.");
+        alert("Da luu chi tiet don hang.");
         setViewModal(false);
         fetchOrders();
       } else {
-        alert("❌ Lỗi khi lưu: " + json.message);
+        alert("Loi khi luu: " + json.message);
       }
     } catch (err) {
-      alert("❌ Lỗi kết nối: " + err.message);
+      alert("Loi ket noi: " + err.message);
     }
   };
 
@@ -150,49 +150,49 @@ const updateOrderDetail = (index, field, value) => {
 
       if (res.status === "success") {
         await fetchOrders();  // Cập nhật lại danh sách thật từ DB
-        alert("✅ " + (modalType === "add" ? "Đã thêm" : "Đã cập nhật") + " đơn hàng.");
+        alert((modalType === "add" ? "Da them" : "Da cap nhat") + " don hang.");
         closeModal();
       } else {
-        alert("❌ " + (modalType === "add" ? "Thêm" : "Cập nhật") + " thất bại: " + res.message);
+        alert((modalType === "add" ? "Them" : "Cap nhat") + " that bai: " + res.message);
       }
     } catch (err) {
-      alert("❌ Lỗi kết nối tới API: " + err.message);
+      alert("Loi ket noi toi API: " + err.message);
     }
   };
 
-    const handleDelete = async (section, id) => {
+  const handleDelete = async (section, id) => {
     if (section !== "orders") return;
     if (window.confirm("Bạn có chắc chắn muốn xóa đơn hàng này?")) {
-        const res = await xoaDonHang(id);
-        if (res.status === "success") {
+      const res = await xoaDonHang(id);
+      if (res.status === "success") {
         setOrders((prev) => prev.filter((o) => o.id !== id));
-        } else {
-        alert("❌ Xóa đơn hàng thất bại");
-        }
+      } else {
+        alert("Xoa don hang that bai");
+      }
     }
-    };
-    const handleStatusChange = async (id, newStatus) => {
+  };
+  const handleStatusChange = async (id, newStatus) => {
     const res = await capNhatTrangThaiDonHang(id, newStatus);
     if (res.status === "success") {
-        setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
+      setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status: newStatus } : o)));
     } else {
-        alert("❌ Cập nhật trạng thái thất bại");
+      alert("Cap nhat trang thai that bai");
     }
-    };
-    const handleViewDetails = async (orderId) => {
-      try {
-        const json = await getChiTietDonHang(orderId);
-        if (json.status === "success") {
-          setSelectedOrderId(orderId);
-          setSelectedOrderDetails(json.data);
-          setViewModal(true);
-        } else {
-          alert("❌ Không thể lấy chi tiết đơn hàng.");
-        }
-      } catch {
-        alert("❌ Lỗi khi kết nối API.");
+  };
+  const handleViewDetails = async (orderId) => {
+    try {
+      const json = await getChiTietDonHang(orderId);
+      if (json.status === "success") {
+        setSelectedOrderId(orderId);
+        setSelectedOrderDetails(json.data);
+        setViewModal(true);
+      } else {
+        alert("Khong the lay chi tiet don hang.");
       }
-    };
+    } catch {
+      alert("Loi khi ket noi API.");
+    }
+  };
 
 
   return (
@@ -225,89 +225,89 @@ const updateOrderDetail = (index, field, value) => {
 
       <div className="tab-content">
 
-      {viewModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <h2>Chi tiết đơn hàng #{selectedOrderId}</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Mã SP</th>
-                  <th>Số lượng</th>
-                  <th>Giá bán</th>
-                  <th>Thành tiền</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedOrderDetails.map((row, index) => (
-                  <tr key={index}>
-                    <td>
-                      <input
-                        type="number"
-                        value={row.MaSP}
-                        onChange={(e) =>
-                          updateOrderDetail(index, "MaSP", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        value={row.SoLuong}
-                        onChange={(e) =>
-                          updateOrderDetail(index, "SoLuong", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        value={row.GiaBan}
-                        onChange={(e) =>
-                          updateOrderDetail(index, "GiaBan", e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>{(row.SoLuong * row.GiaBan).toFixed(2)}</td>
-                    <td>
-                      <button onClick={() => removeOrderDetail(index)}>🗑</button>
-                    </td>
+        {viewModal && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <h2>Chi tiết đơn hàng #{selectedOrderId}</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã SP</th>
+                    <th>Số lượng</th>
+                    <th>Giá bán</th>
+                    <th>Thành tiền</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {selectedOrderDetails.map((row, index) => (
+                    <tr key={index}>
+                      <td>
+                        <input
+                          type="number"
+                          value={row.MaSP}
+                          onChange={(e) =>
+                            updateOrderDetail(index, "MaSP", e.target.value)
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          value={row.SoLuong}
+                          onChange={(e) =>
+                            updateOrderDetail(index, "SoLuong", e.target.value)
+                          }
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          value={row.GiaBan}
+                          onChange={(e) =>
+                            updateOrderDetail(index, "GiaBan", e.target.value)
+                          }
+                        />
+                      </td>
+                      <td>{(row.SoLuong * row.GiaBan).toFixed(2)}</td>
+                      <td>
+                        <button onClick={() => removeOrderDetail(index)}>X</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-            <button onClick={addOrderDetail}>Thêm sản phẩm</button>
+              <button onClick={addOrderDetail}>Thêm sản phẩm</button>
 
-            <div className="modal-actions">
-              <button
-                className="action-button"
-                onClick={async () => {
-                  try {
-                    const blob = await inChiTietDonHang(selectedOrderId);
-                    const url = window.URL.createObjectURL(blob);
-                    window.open(url);  // hoặc dùng window.location.href = url để tải về
-                  } catch (err) {
-                    alert("❌ Lỗi khi tạo PDF: " + err.message);
-                  }
-                }}
-              >
-                In chi tiết đơn hàng
-              </button>
-              <button className="action-button" onClick={saveOrderDetails}>
-                Lưu
-              </button>
-              <button
-                className="action-button cancel"
-                onClick={() => setViewModal(false)}
-              >
-                Đóng
-              </button>
+              <div className="modal-actions">
+                <button
+                  className="action-button"
+                  onClick={async () => {
+                    try {
+                      const blob = await inChiTietDonHang(selectedOrderId);
+                      const url = window.URL.createObjectURL(blob);
+                      window.open(url);  // hoặc dùng window.location.href = url để tải về
+                    } catch (err) {
+                      alert("Loi khi tao PDF: " + err.message);
+                    }
+                  }}
+                >
+                  In chi tiết đơn hàng
+                </button>
+                <button className="action-button" onClick={saveOrderDetails}>
+                  Lưu
+                </button>
+                <button
+                  className="action-button cancel"
+                  onClick={() => setViewModal(false)}
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
 
         {/* PENDING TAB */}
@@ -378,7 +378,7 @@ const updateOrderDetail = (index, field, value) => {
                               )
                             );
                           } else {
-                            alert("❌ Xác nhận thanh toán thất bại");
+                            alert("Xac nhan thanh toan that bai");
                           }
                         }}
                       >
@@ -428,7 +428,7 @@ const updateOrderDetail = (index, field, value) => {
                               )
                             );
                           } else {
-                            alert("❌ Giao hàng thất bại");
+                            alert("Giao hang that bai");
                           }
                         }}
                       >
@@ -485,104 +485,104 @@ const updateOrderDetail = (index, field, value) => {
             </thead>
             <tbody>
               {orders
-              .filter((o) => o.status === "Shipped")
-              .map((o) => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
-                  <td>{o.orderCode}</td>
-                  <td>{o.customer}</td>
-                  <td>
-                    {o.status !== "ReturnRequested" ? (
-                      <button
-                        className="action-button"
-                        onClick={async () => {
-                          const res = await xuLyTraDoi(o.id);
-                          if (res.status === "success") {
-                            setOrders((prev) =>
-                              prev.map((ord) =>
-                                ord.id === o.id
-                                  ? { ...ord, status: "ReturnRequested" }
-                                  : ord
-                              )
-                            );
-                          } else {
-                            alert("❌ Trả/đổi thất bại");
-                          }
-                        }}
-                      >
-                        Yêu cầu trả/đổi
-                      </button>
-                    ) : (
-                      <span className="status-instock">Đã yêu cầu</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-
-      {/* LIST TAB */}
-      {selectedTab === "list" && (
-        <>
-          <div style={{ margin: "0 24px 16px" }}>
-            <label>
-              Lọc trạng thái:&nbsp;
-              <select
-                value={listFilter}
-                onChange={(e) => setListFilter(e.target.value)}
-              >
-                <option value="">Tất cả</option>
-                <option value="Pending">Pending</option>
-                <option value="Paid">Paid</option>
-                <option value="Shipped">Shipped</option>
-                <option value="ReturnRequested">ReturnRequested</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </label>
-          </div>
-
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Mã đơn</th>
-                <th>Khách hàng</th>
-                <th>Ngày</th>
-                <th>Tổng</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders
-                .filter((o) => !listFilter || o.status === listFilter)
+                .filter((o) => o.status === "Shipped")
                 .map((o) => (
                   <tr key={o.id}>
                     <td>{o.id}</td>
                     <td>{o.orderCode}</td>
                     <td>{o.customer}</td>
-                    <td>{o.date}</td>
-                    <td>{o.total}</td>
-                    <td>{o.status}</td>
                     <td>
-                      <button
-                        onClick={() => handleDelete("orders", o.id)}
-                        className="action-icon delete"
-                      >
-                        <Trash className="icon" />
-                      </button>
-                      <button onClick={() => handleViewDetails(o.id)} className="action-icon view">
-                        <Eye className="icon" />
-                      </button>
+                      {o.status !== "ReturnRequested" ? (
+                        <button
+                          className="action-button"
+                          onClick={async () => {
+                            const res = await xuLyTraDoi(o.id);
+                            if (res.status === "success") {
+                              setOrders((prev) =>
+                                prev.map((ord) =>
+                                  ord.id === o.id
+                                    ? { ...ord, status: "ReturnRequested" }
+                                    : ord
+                                )
+                              );
+                            } else {
+                              alert("Tra/doi that bai");
+                            }
+                          }}
+                        >
+                          Yêu cầu trả/đổi
+                        </button>
+                      ) : (
+                        <span className="status-instock">Đã yêu cầu</span>
+                      )}
                     </td>
                   </tr>
                 ))}
             </tbody>
           </table>
-        </>
-      )}
+        )}
+
+
+        {/* LIST TAB */}
+        {selectedTab === "list" && (
+          <>
+            <div style={{ margin: "0 24px 16px" }}>
+              <label>
+                Lọc trạng thái:&nbsp;
+                <select
+                  value={listFilter}
+                  onChange={(e) => setListFilter(e.target.value)}
+                >
+                  <option value="">Tất cả</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="ReturnRequested">ReturnRequested</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </label>
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Mã đơn</th>
+                  <th>Khách hàng</th>
+                  <th>Ngày</th>
+                  <th>Tổng</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders
+                  .filter((o) => !listFilter || o.status === listFilter)
+                  .map((o) => (
+                    <tr key={o.id}>
+                      <td>{o.id}</td>
+                      <td>{o.orderCode}</td>
+                      <td>{o.customer}</td>
+                      <td>{o.date}</td>
+                      <td>{o.total}</td>
+                      <td>{o.status}</td>
+                      <td>
+                        <button
+                          onClick={() => handleDelete("orders", o.id)}
+                          className="action-icon delete"
+                        >
+                          <Trash className="icon" />
+                        </button>
+                        <button onClick={() => handleViewDetails(o.id)} className="action-icon view">
+                          <Eye className="icon" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
 
       {/* Modal Form */}
@@ -592,9 +592,9 @@ const updateOrderDetail = (index, field, value) => {
         initialData={formData}
         onClose={closeModal}
         onSubmit={handleSubmit}
-        showModal={showModal}    
+        showModal={showModal}
         handleInputChange={handleInputChange}
-        error={error}                    
+        error={error}
       />
     </div>
   );
