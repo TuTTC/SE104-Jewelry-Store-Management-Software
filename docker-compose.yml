@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # MySQL Database Service
+  # ============================================
+  db:
+    image: mysql:8.0
+    container_name: jewelry_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: jewelry_store
+      MYSQL_USER: jewelry_user
+      MYSQL_PASSWORD: jewelry_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - jewelry_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot123"]
+      timeout: 20s
+      retries: 10
+
+  # ============================================
+  # Flask Backend Service
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jewelry_backend
+    restart: always
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=jewelry_store
+      - DB_USER=jewelry_user
+      - DB_PASSWORD=jewelry_pass
+      - FLASK_APP=run.py
+      - FLASK_ENV=development
+      - JWT_SECRET_KEY=your_super_secret_jwt_key_change_in_production
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - jewelry_network
+    command: flask run --host=0.0.0.0
+
+  # ============================================
+  # React Frontend Service
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jewelry_frontend
+    restart: always
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - jewelry_network
+
+# ============================================
+# Named Volumes
+# ============================================
+volumes:
+  mysql_data:
+    driver: local
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  jewelry_network:
+    driver: bridge
