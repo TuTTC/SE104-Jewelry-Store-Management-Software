@@ -16,7 +16,7 @@ def seed_sanpham():
 
 
         if SANPHAM.query.first():
-            print("✅ Bảng SANPHAM đã có dữ liệu, không cần seed.")
+            print("Bang SANPHAM da co du lieu, khong can seed.")
             return
 
 

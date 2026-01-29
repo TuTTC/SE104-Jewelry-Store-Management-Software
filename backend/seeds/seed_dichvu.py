@@ -3,7 +3,7 @@ from database import db
 
 def seed_dichvu():
     if db.session.query(DichVu).first():
-        print("✅ Bảng DICHVU đã có dữ liệu, không cần seed.")
+        print("Bang DICHVU da co du lieu, khong can seed.")
         return
 
     ds_dichvu = [
@@ -16,4 +16,4 @@ def seed_dichvu():
 
     db.session.bulk_save_objects(ds_dichvu)
     db.session.commit()
-    print("✅ Seed dữ liệu bảng DICHVU thành công.")
+    print("Seed du lieu bang DICHVU thanh cong.")

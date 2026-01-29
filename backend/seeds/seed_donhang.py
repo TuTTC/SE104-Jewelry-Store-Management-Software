@@ -7,12 +7,12 @@ import random
 def seed_donhang():
     try:
         if DonHang.query.first():
-            print("✅ Bảng DONHANG đã có dữ liệu, không cần seed.")
+            print("Bang DONHANG da co du lieu, khong can seed.")
             return
 
         khachhangs = KhachHang.query.all()
         if not khachhangs:
-            print("⚠️ Không tìm thấy khách hàng để tạo đơn hàng.")
+            print("Khong tim thay khach hang de tao don hang.")
             return
 
         for i in range(5):
@@ -26,7 +26,7 @@ def seed_donhang():
             db.session.add(donhang)
 
         db.session.commit()
-        print("✅ Đã seed dữ liệu bảng DONHANG.")
+        print("Da seed du lieu bang DONHANG.")
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Lỗi khi seed DONHANG: {e}")
+        print(f"Loi khi seed DONHANG: {e}")

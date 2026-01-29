@@ -14,25 +14,25 @@ def seed_danh_muc():
 
 #         existing_count = DANHMUC.query.count()
 #         if existing_count >= len(danh_muc_data):
-#             print("✅ Bảng DANHMUC đã có dữ liệu, không cần seed.")
+#             print("Bang DANHMUC da co du lieu, khong can seed.")
 #             return
 
 #         for dm in danh_muc_data:
 #             existing_dm = DANHMUC.query.filter_by(TenDM=dm["TenDM"]).first()
 #             if existing_dm:
-#                 existing_dm.MoTa = dm["MoTa"]  # Cập nhật mô tả mới nếu cần
-#                 print(f"🔄 Cập nhật mô tả cho danh mục '{dm['TenDM']}'.")
+#                 existing_dm.MoTa = dm["MoTa"]  # Cap nhat mo ta moi neu can
+#                 print(f"Cap nhat mo ta cho danh muc '{dm['TenDM']}'.")
 #             else:
 #                 danh_muc = DANHMUC(TenDM=dm["TenDM"], MoTa=dm["MoTa"])
 #                 db.session.add(danh_muc)
-#                 print(f"➕ Đã thêm danh mục '{dm['TenDM']}'.")
+#                 print(f"Da them danh muc '{dm['TenDM']}'.")
 
 #         db.session.commit()
-#         print("✅ Seed bảng DANHMUC hoàn tất!")
+#         print("Seed bang DANHMUC hoan tat!")
 
 #     except Exception as e:
 #         db.session.rollback()
-#         print("❌ Lỗi khi seed DANHMUC:", e)
+#         print("Loi khi seed DANHMUC:", e)
 
         if not DANHMUC.query.first():
             for dm in danh_muc_data:

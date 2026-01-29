@@ -8,7 +8,7 @@ def seed_chitietdonhang():
     try:
         # Nếu đã có dữ liệu chi tiết đơn hàng → bỏ qua
         if ChiTietDonHang.query.first():
-            print("✅ Bảng CHITIETDONHANG đã có dữ liệu, không cần seed.")
+            print("Bang CHITIETDONHANG da co du lieu, khong can seed.")
             return
 
         # Lấy dữ liệu đơn hàng và sản phẩm
@@ -16,7 +16,7 @@ def seed_chitietdonhang():
         sanphams = SANPHAM.query.all()
 
         if not donhangs or not sanphams:
-            print("⚠️ Chưa có dữ liệu trong bảng DONHANG hoặc SANPHAM.")
+            print("Chua co du lieu trong bang DONHANG hoac SANPHAM.")
             return
 
         for dh in donhangs:
@@ -39,7 +39,7 @@ def seed_chitietdonhang():
                 db.session.add(ct)
 
         db.session.commit()
-        print("✅ Đã seed bảng CHITIETDONHANG thành công.")
+        print("Da seed bang CHITIETDONHANG thanh cong.")
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Lỗi khi seed CHITIETDONHANG: {e}")
+        print(f"Loi khi seed CHITIETDONHANG: {e}")

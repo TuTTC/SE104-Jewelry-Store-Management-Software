@@ -7,12 +7,12 @@ from database import db
 def seed_khachhang():
     try:
         if KhachHang.query.first():
-            print("✅ Bảng KHACHHANG đã có dữ liệu, không cần seed.")
+            print("Bang KHACHHANG da co du lieu, khong can seed.")
             return
 
         users = NGUOIDUNG.query.filter_by(MaVaiTro=1).all()  # Giả định 1 là vai trò Khách hàng
         if not users:
-            print("⚠️ Không có người dùng với vai trò khách hàng.")
+            print("Khong co nguoi dung voi vai tro khach hang.")
             return
 
         ho_list = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Đặng"]
@@ -34,7 +34,7 @@ def seed_khachhang():
             db.session.add(kh)
 
         db.session.commit()
-        print(f"✅ Đã seed {len(users)} khách hàng thành công.")
+        print(f"Da seed {len(users)} khach hang thanh cong.")
     except Exception as e:
         db.session.rollback()
-        print(f"❌ Lỗi khi seed KHACHHANG: {e}")
+        print(f"Loi khi seed KHACHHANG: {e}")

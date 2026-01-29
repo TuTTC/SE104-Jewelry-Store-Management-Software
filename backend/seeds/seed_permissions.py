@@ -89,9 +89,9 @@ def seed_permissions():
 #                     user.permissions.append(permissions_dict[ten_quyen])
 
 #         db.session.commit()
-#         print("✅ Đã gán quyền cho các vai trò")
+#         print("Da gan quyen cho cac vai tro")
 
 #     except Exception as e:
 #         db.session.rollback()
-#         print(f"❌ Lỗi khi gán quyền: {e}")
+#         print(f"Loi khi gan quyen: {e}")
 

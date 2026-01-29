@@ -8,6 +8,6 @@ def seed_roles():
             VaiTro(TenVaiTro="Admin")
         ])
         db.session.commit()
-        print("✅ Đã seed vai trò 'Khách hàng' và 'Admin'")
+        print("Da seed vai tro 'Khach hang' va 'Admin'")
     else:
-        print("✅ Bảng VaiTro đã có dữ liệu, không cần seed")
+        print("Bang VaiTro da co du lieu, khong can seed")
