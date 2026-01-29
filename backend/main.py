@@ -2,10 +2,10 @@ from flask import Flask
 from flask_migrate import Migrate
 from database import db, Config
 from flask_jwt_extended import JWTManager
-from Routes.auth import auth_bp
-from Routes.user import user_bp
-from Routes.product import product_bp
-from Routes.category import category_bp
+from routes.auth import auth_bp
+from routes.user import user_bp
+from routes.product import product_bp
+from routes.category import category_bp
 from oauth import oauth
 from utils.roles import seed_roles
 from extensions import mail
@@ -72,6 +72,6 @@ with app.app_context():
     # seed_thamso()
 
 
-from Routes import register_routes
+from routes import register_routes
 register_routes(app)
 

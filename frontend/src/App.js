@@ -4,7 +4,7 @@ import './App.css';
 
 import Auth from './pages/auth/Auth';
 import PrivateRoute from './routes/PrivateRoute';
-import AdminLayout from './Layouts/AdminLayout';
+import AdminLayout from './layouts/AdminLayout';
 
 import Dashboard from './pages/Dashboard';
 import AccountManager from './pages/AccountManager';
